@@ -1,7 +1,10 @@
 #pragma once
 
-#include "hdtBulletHelper.h"
+#include <bullet/BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h>
+#include <LinearMath/btTransform.h>
+
 #include "hdtBoneScaleConstraint.h"
+#include "hdtSkinnedMeshBone.h"
 
 namespace hdt
 {

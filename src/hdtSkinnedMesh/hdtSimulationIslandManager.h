@@ -1,7 +1,7 @@
 #pragma once
 
-#include "hdtDispatcher.h"
 #include <BulletCollision/CollisionDispatch/btSimulationIslandManager.h>
+#include <BulletCollision/BroadphaseCollision/btDispatcher.h>
 
 namespace hdt
 {

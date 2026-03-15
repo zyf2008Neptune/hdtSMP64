@@ -1,11 +1,24 @@
 #pragma once
 
+#include <algorithm>
+#include <unordered_set>
+#include <vector>
+
+#include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <BulletCollision/CollisionShapes/btCollisionShape.h>
+#include <LinearMath/btScalar.h>
+#include <LinearMath/btTransform.h>
+#include <LinearMath/btVector3.h>
+#include <RE/B/BSIntrusiveRefCounted.h>
+#include <RE/B/BSTSmartPointer.h>
+
+#include "FrameworkUtils.h"
+#include "hdtAABB.h"
+#include "hdtBone.h"
 #include "hdtBulletHelper.h"
 #include "hdtSkinnedMeshBone.h"
 #include "hdtVertex.h"
-#include "hdtAABB.h"
-
-#include <BulletCollision/Gimpact/btBoxCollision.h>
 
 namespace hdt
 {

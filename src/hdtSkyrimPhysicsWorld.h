@@ -1,23 +1,34 @@
 #pragma once
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <mutex>
 
-#include "ActorManager.h"
-#include "hdtSkyrimSystem.h"
-#include "hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
+#include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
+#include <LinearMath/btVector3.h>
+#include <RE/B/BSTEvent.h>
+#include <RE/N/NiPoint3.h>
+#include <SKSE/Events.h>
+#include <ppl.h>
+
 #include "Events.h"
+#include "hdtConvertNi.h"
+#include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
+#include "hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
 
 namespace hdt
 {
-	constexpr float RESET_PHYSICS = -10.0f;
+	inline constexpr float RESET_PHYSICS = -10.0f;
 
-	class SkyrimPhysicsWorld : 
-		protected SkinnedMeshWorld, 
+	class SkyrimPhysicsWorld :
+		protected SkinnedMeshWorld,
 		public RE::BSTEventSink<Events::FrameEvent>,
-		public RE::BSTEventSink<Events::ShutdownEvent>, 
-		public RE::BSTEventSink<SKSE::CameraEvent>, 
+		public RE::BSTEventSink<Events::ShutdownEvent>,
+		public RE::BSTEventSink<SKSE::CameraEvent>,
 		public RE::BSTEventSink<Events::FrameSyncEvent>
 	{
 	public:
-
 		static SkyrimPhysicsWorld* get();
 
 		void doUpdate(float delta);
@@ -36,7 +47,7 @@ namespace hdt
 		RE::BSEventNotifyControl ProcessEvent(const Events::ShutdownEvent* e, RE::BSTEventSource<Events::ShutdownEvent>*) override;
 		RE::BSEventNotifyControl ProcessEvent(const SKSE::CameraEvent* evn, RE::BSTEventSource<SKSE::CameraEvent>* dispatcher) override;
 
-		bool isSuspended() { return m_suspended; }
+		bool isSuspended() const { return m_suspended; }
 
 		void suspend(bool loading = false)
 		{
@@ -47,8 +58,7 @@ namespace hdt
 		void resume()
 		{
 			m_suspended = false;
-			if (m_loading)
-			{
+			if (m_loading) {
 				resetSystems();
 				m_loading = false;
 			}
@@ -72,7 +82,7 @@ namespace hdt
 
 		bool m_useRealTime = false;
 		int min_fps = 60;
-		int m_percentageOfFrameTime = 300; // percentage of time per frame doing hdt. Profiler shows 30% is reasonable. Out of 1000.
+		int m_percentageOfFrameTime = 300;  // percentage of time per frame doing hdt. Profiler shows 30% is reasonable. Out of 1000.
 		float m_timeTick = 1 / 60.f;
 		int m_maxSubSteps = 4;
 		bool m_clampRotations = true;
@@ -85,18 +95,17 @@ namespace hdt
 		bool disabled = false;
 		uint8_t m_resetPc;
 		bool m_doMetrics = false;
-		int m_sampleSize = 5; // how many samples (each sample taken every second) for determining average time per activeSkeleton.
+		int m_sampleSize = 5;  // how many samples (each sample taken every second) for determining average time per activeSkeleton.
 
 		//wind settings
 		bool m_enableWind = true;
-		float m_windStrength = 2.0f; // compare to gravity acceleration of 9.8
-		float m_distanceForNoWind = 50.0f; // how close to wind obstruction to fully block wind
-		float m_distanceForMaxWind = 3000.0f; // how far to wind obstruction to not block wind
+		float m_windStrength = 2.0f;           // compare to gravity acceleration of 9.8
+		float m_distanceForNoWind = 50.0f;     // how close to wind obstruction to fully block wind
+		float m_distanceForMaxWind = 3000.0f;  // how far to wind obstruction to not block wind
 
 	private:
-
-		SkyrimPhysicsWorld(void);
-		~SkyrimPhysicsWorld(void);
+		SkyrimPhysicsWorld();
+		~SkyrimPhysicsWorld() = default;
 
 		std::mutex m_lock;
 

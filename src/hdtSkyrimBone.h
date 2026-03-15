@@ -1,6 +1,9 @@
 #pragma once
 
-#include "hdtConvertNi.h"
+#include <BulletDynamics/Dynamics/btRigidBody.h>
+#include <RE/N/NiNode.h>
+
+#include "FrameworkUtils.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshBone.h"
 
 namespace hdt

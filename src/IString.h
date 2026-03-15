@@ -3,14 +3,12 @@
 namespace hdt
 {
 	// Unified Const String Class
-	class IString : 
-		public RE::BSIntrusiveRefCounted
+	struct IString : RE::BSIntrusiveRefCounted
 	{
-	public:
 		virtual ~IString() = default;
-		
+
 		// add
-		virtual const char* cstr() const = 0;
-		virtual size_t size() const = 0;
+		virtual auto cstr() const -> const char* = 0;
+		virtual auto size() const -> size_t = 0;
 	};
 }

@@ -8,7 +8,7 @@
     "rapidcsv",
     "detours", 
     "spdlog", 
-	"bullet3",
+	  "bullet3",
     "xbyak"
   ]
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "StringImpl.h"
 
 namespace hdt
@@ -12,27 +14,22 @@ namespace hdt
 
 		// 2 (copy)
 		IDStr(const IDStr& a_rhs) :
-			_ptr(a_rhs._ptr)
-		{}
+			_ptr(a_rhs._ptr) {}
 
 		// 3 (move)
 		IDStr(IDStr&& a_rhs) noexcept :
-			_ptr(std::exchange(a_rhs._ptr, nullptr))
-		{}
+			_ptr(std::exchange(a_rhs._ptr, nullptr)) {}
 
 		// 4 (init)
 		IDStr(const char* str) :
-			_ptr(!str ? nullptr : StringManager::instance()->get(str, str + strlen(str)))
-		{
-		}
+			_ptr(!str ? nullptr : StringManager::instance()->get(str, str + strlen(str))) {}
 
 		// 5 (init)
 		IDStr(const std::string& str) :
-			_ptr(!str.c_str() ? nullptr : StringManager::instance()->get(str.c_str(), str.c_str() + str.length()))
-		{}
+			_ptr(!str.c_str() ? nullptr : StringManager::instance()->get(str.c_str(), str.c_str() + str.length())) {}
 
 		// 0 (copy)
-		inline IDStr& operator=(const IDStr& a_rhs)
+		auto operator=(const IDStr& a_rhs) -> IDStr&
 		{
 			if (this != std::addressof(a_rhs)) {
 				_ptr = a_rhs._ptr;
@@ -42,7 +39,7 @@ namespace hdt
 		}
 
 		// (move)
-		inline IDStr& operator=(IDStr&& a_rhs) noexcept
+		auto operator=(IDStr&& a_rhs) noexcept -> IDStr&
 		{
 			if (this != std::addressof(a_rhs)) {
 				_ptr = a_rhs._ptr;
@@ -58,17 +55,17 @@ namespace hdt
 			return static_cast<bool>(_ptr.get());
 		}
 
-		bool operator==(const IDStr& lhs) const noexcept
+		auto operator==(const IDStr& lhs) const noexcept -> bool
 		{
 			return _ptr == lhs._ptr;
 		}
 
-		constexpr IString& operator*() const noexcept
+		constexpr auto operator*() const noexcept -> IString&
 		{
 			return *_ptr;
 		}
 
-		constexpr IString* operator->() const noexcept
+		constexpr auto operator->() const noexcept -> IString*
 		{
 			return _ptr.get();
 		}
@@ -83,20 +80,21 @@ namespace hdt
 			return _ptr;
 		}
 
-		constexpr IString* get() const noexcept
+		constexpr auto get() const noexcept -> IString*
 		{
 			return _ptr.get();
 		}
 
-		inline bool operator==(const IDStr& a_rhs)
+		auto operator==(const IDStr& a_rhs) -> bool
 		{
 			return _ptr == a_rhs._ptr;
 		}
 
-		inline bool operator!=(const IDStr& a_rhs)
+		auto operator!=(const IDStr& a_rhs) -> bool
 		{
 			return !(*this == a_rhs);
 		}
+
 	private:
 		RE::BSTSmartPointer<IString> _ptr{ nullptr };
 	};

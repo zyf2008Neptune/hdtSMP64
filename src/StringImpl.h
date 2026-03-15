@@ -1,5 +1,14 @@
 #pragma once
 
+#include <atomic>
+#include <cstdint>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+
+#include <RE/B/BSTSmartPointer.h>
+
 #include "IString.h"
 
 namespace hdt
@@ -8,46 +17,50 @@ namespace hdt
 	{
 	public:
 		StringImpl(size_t hash, std::string&& str);
-		virtual ~StringImpl();
-		
-		virtual const char* cstr() const { return m_str.c_str(); }
-		virtual size_t size() const { return m_str.size(); }
+		~StringImpl() override = default;
 
-		inline size_t hash() const { return m_hash; }
-		inline const std::string str() const { return m_str; }
+		auto cstr() const -> const char* override { return m_str.c_str(); }
+		auto size() const -> size_t override { return m_str.size(); }
 
-		inline const uint32_t GetRefCount() const noexcept { return _refCount; }
+		auto hash() const -> size_t { return m_hash; }
+		auto str() const -> std::string { return m_str; }
+
+		auto GetRefCount() const noexcept -> std::uint32_t { return _refCount; }
+
 	protected:
-		size_t			m_hash;
-		std::string		m_str;
+		size_t m_hash;
+		std::string m_str;
 	};
 
 	class StringManager final
 	{
 	public:
-		static constexpr size_t BucketCount = 65536;
+		static constexpr std::uint32_t BucketCount = 65536;
 
 		//
-		struct Bucket
+		class Bucket
 		{
 		public:
-			StringImpl* get(size_t hash, std::string&& str);
-			void clean();
+			auto get(size_t hash, std::string&& str) -> StringImpl*;
+			auto clean() -> void;
+
 		protected:
 			std::vector<RE::BSTSmartPointer<StringImpl>> m_list;
-			std::mutex									 m_lock;
+			std::mutex m_lock;
 		};
 
 	public:
-		static StringManager* instance();
+		static auto instance() -> StringManager*;
 
 		//
-		StringImpl* get(const char* begin, const char* end);
+		auto get(const char* begin, const char* end) -> StringImpl*;
+
 	private:
-		Bucket							m_buckets[BucketCount];
+		Bucket m_buckets[BucketCount];
 		RE::BSTSmartPointer<StringImpl> m_empty;
-		std::thread						m_gcThread;
-		std::atomic_bool				m_gcExit;
+		std::thread m_gcThread;
+		std::atomic_bool m_gcExit;
+
 	private:
 		StringManager();
 		~StringManager();

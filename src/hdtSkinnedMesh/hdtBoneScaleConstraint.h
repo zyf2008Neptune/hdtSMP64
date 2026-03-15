@@ -1,6 +1,9 @@
 #pragma once
 
-#include "hdtSkinnedMeshBody.h"
+#include <RE/B/BSIntrusiveRefCounted.h>
+#include <BulletDynamics/ConstraintSolver/btTypedConstraint.h>
+
+#include "hdtSkinnedMeshBone.h"
 
 namespace hdt
 {

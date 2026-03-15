@@ -1,4 +1,5 @@
 #include "hdtSkinnedMeshBone.h"
+#include <algorithm>
 
 namespace hdt
 {
@@ -13,11 +14,7 @@ namespace hdt
 
 		m_rig.setUserPointer(this);
 	}
-
-	SkinnedMeshBone::~SkinnedMeshBone()
-	{
-	}
-
+	
 	void SkinnedMeshBone::internalUpdate()
 	{
 		auto t = m_rigToLocal * m_rig.getInterpolationWorldTransform();

@@ -1,14 +1,29 @@
 #pragma once
 
-#include "hdtSkinnedMeshShape.h"
-#include "hdtDispatcher.h"
-#ifdef CUDA
-#include "hdtCudaInterface.h"
+#include <cstdint>
+#include <new>
 
+#include <BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h>
+#include <BulletCollision/BroadphaseCollision/btDispatcher.h>
+#include <BulletCollision/CollisionDispatch/btCollisionCreateFunc.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h>
+#include <BulletCollision/CollisionDispatch/btManifoldResult.h>
+#include <LinearMath/btScalar.h>
+#include <LinearMath/btVector3.h>
+
+#include "hdtCollisionAlgorithm.h"
+#include "hdtDispatcher.h"
+#include "hdtSkinnedMeshBody.h"
+#include "hdtSkinnedMeshShape.h"
+
+#ifdef CUDA
+#	include "hdtCudaInterface.h"
 // Define this to do actual collision checking on GPU. This is currently slow and has very inconsistent
 // framerate. If not defined, the GPU will still be used if available for vertex and bounding box
 // calculations, but collision will be done on the CPU.
-#define USE_GPU_COLLISION
+#	define USE_GPU_COLLISION
 #endif
 
 namespace hdt
@@ -18,44 +33,44 @@ namespace hdt
 	public:
 		SkinnedMeshAlgorithm(const btCollisionAlgorithmConstructionInfo& ci);
 
-		void processCollision([[maybe_unused]] const btCollisionObjectWrapper* body0Wrap, [[maybe_unused]] const btCollisionObjectWrapper* body1Wrap, [[maybe_unused]] const btDispatcherInfo& dispatchInfo, [[maybe_unused]] btManifoldResult* resultOut) override
-		{
-		}
+		void processCollision([[maybe_unused]] const btCollisionObjectWrapper* body0Wrap,
+			[[maybe_unused]] const btCollisionObjectWrapper* body1Wrap,
+			[[maybe_unused]] const btDispatcherInfo& dispatchInfo,
+			[[maybe_unused]] btManifoldResult* resultOut) override
+		{}
 
-		btScalar calculateTimeOfImpact([[maybe_unused]] btCollisionObject* body0, [[maybe_unused]] btCollisionObject* body1, [[maybe_unused]] const btDispatcherInfo& dispatchInfo, [[maybe_unused]] btManifoldResult* resultOut) override
+		btScalar calculateTimeOfImpact([[maybe_unused]] btCollisionObject* body0,
+			[[maybe_unused]] btCollisionObject* body1, [[maybe_unused]] const btDispatcherInfo& dispatchInfo,
+			[[maybe_unused]] btManifoldResult* resultOut) override
 		{
 			return 1;
-		} // TOI cost too much
-		void getAllContactManifolds([[maybe_unused]] btManifoldArray& manifoldArray) override
-		{
-		}
+		}  // TOI cost too much
+		void getAllContactManifolds([[maybe_unused]] btManifoldArray& manifoldArray) override {}
 
 		struct CreateFunc : public btCollisionAlgorithmCreateFunc
 		{
 			btCollisionAlgorithm* CreateCollisionAlgorithm(btCollisionAlgorithmConstructionInfo& ci,
-			                                               [[maybe_unused]] const btCollisionObjectWrapper* body0Wrap,
-			                                               [[maybe_unused]] const btCollisionObjectWrapper* body1Wrap) override
+				[[maybe_unused]] const btCollisionObjectWrapper* body0Wrap,
+				[[maybe_unused]] const btCollisionObjectWrapper* body1Wrap) override
 			{
-				void* mem = ci.m_dispatcher1->allocateCollisionAlgorithm(sizeof(SkinnedMeshAlgorithm));
+				auto mem = ci.m_dispatcher1->allocateCollisionAlgorithm(sizeof(SkinnedMeshAlgorithm));
 				return new(mem) SkinnedMeshAlgorithm(ci);
 			}
 		};
 
 		static void registerAlgorithm(btCollisionDispatcherMt* dispatcher);
 
-		static const int MaxCollisionCount = 256;
+		static constexpr std::uint16_t MaxCollisionCount = 256;
 
 #ifdef CUDA
-		static std::function<void()> queueCollision(
-			SkinnedMeshBody* body0Wrap,
-			SkinnedMeshBody* body1Wrap,
+		static std::function<void()> queueCollision(SkinnedMeshBody* body0Wrap, SkinnedMeshBody* body1Wrap,
 			CollisionDispatcher* dispatcher);
 #endif
 
 		static void processCollision(SkinnedMeshBody* body0Wrap, SkinnedMeshBody* body1Wrap,
-		                             CollisionDispatcher* dispatcher);
-	protected:
+			CollisionDispatcher* dispatcher);
 
+	protected:
 		struct CollisionMerge
 		{
 			btVector3 normal;
@@ -89,7 +104,12 @@ namespace hdt
 				buffer = new CollisionMerge[mergeSize];
 			}
 
-			void release() { if (buffer) delete[] buffer; }
+			void release() const
+			{
+				if (buffer) {
+					delete[] buffer;
+				}
+			}
 
 			CollisionMerge* get(int x, int y) { return &buffer[x * mergeStride + y]; }
 

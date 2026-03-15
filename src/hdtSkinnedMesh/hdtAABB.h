@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cfloat>
+
+#include <LinearMath/btVector3.h>
 #include "hdtBulletHelper.h"
 
 namespace hdt
@@ -8,27 +11,26 @@ namespace hdt
 	{
 		Aabb() { invalidate(); }
 
-		Aabb(__m128 mmin, __m128 mmax) : m_min(mmin), m_max(mmax)
-		{
-		}
+		Aabb(__m128 mmin, __m128 mmax) :
+			m_min(mmin), m_max(mmax) {}
 
 		__m128 m_min;
 		__m128 m_max;
 
-		void extendMargin(float margin)
+		auto extendMargin(float margin) -> void
 		{
 			auto margin3 = _mm_set_ps1(margin);
 			m_min -= margin3;
 			m_max += margin3;
 		}
 
-		Aabb extended(float margin) const
+		auto extended(float margin) const -> Aabb
 		{
 			auto margin3 = _mm_set_ps1(margin);
-			return Aabb(m_min - margin3, m_max + margin3);
+			return { m_min - margin3, m_max + margin3 };
 		}
 
-		bool collideWith(const btVector3& rhs) const
+		auto collideWith(const btVector3& rhs) const -> bool
 		{
 			auto flag0 = _mm_cmplt_ps(m_min, rhs.get128());
 			auto flag1 = _mm_cmplt_ps(rhs.get128(), m_max);
@@ -36,7 +38,7 @@ namespace hdt
 			return (flag & 0x7) == 7;
 		}
 
-		bool collideWith(const Aabb& rhs) const
+		auto collideWith(const Aabb& rhs) const -> bool
 		{
 			auto flag0 = _mm_cmplt_ps(rhs.m_max, m_min);
 			auto flag1 = _mm_cmplt_ps(m_max, rhs.m_min);
@@ -50,36 +52,36 @@ namespace hdt
 			return overlap;*/
 		}
 
-		bool collideWithSphere(const btVector3& p, float radius) const
+		auto collideWithSphere(const btVector3& p, float radius) const -> bool
 		{
 			return extended(radius).collideWith(p);
 		}
 
-		void invalidate()
+		auto invalidate() -> void
 		{
 			m_min = setAll(FLT_MAX);
 			m_max = setAll(-FLT_MAX);
 		}
 
-		void merge(const btVector3& p)
+		auto merge(const btVector3& p) -> void
 		{
 			m_min = _mm_min_ps(m_min, p.get128());
 			m_max = _mm_max_ps(m_max, p.get128());
 		}
 
-		void merge(const Aabb& rhs)
+		auto merge(const Aabb& rhs) -> void
 		{
 			m_min = _mm_min_ps(m_min, rhs.m_min);
 			m_max = _mm_max_ps(m_max, rhs.m_max);
 		}
 
-		void mergeAdd(const btVector3& p)
+		auto mergeAdd(const btVector3& p) -> void
 		{
 			m_min = _mm_min_ps(m_min, _mm_add_ps(m_min, p.get128()));
 			m_max = _mm_max_ps(m_max, _mm_add_ps(m_max, p.get128()));
 		}
 
-		void mergeSub(const btVector3& p)
+		auto mergeSub(const btVector3& p) -> void
 		{
 			m_min = _mm_min_ps(m_min, _mm_sub_ps(m_min, p.get128()));
 			m_max = _mm_max_ps(m_max, _mm_sub_ps(m_max, p.get128()));
@@ -88,17 +90,15 @@ namespace hdt
 
 	struct BoundingSphere
 	{
-		BoundingSphere()
-		{
-		}
+		BoundingSphere() = default;
 
-		BoundingSphere(const btVector3& center, float radius)
-			: m_centerRadius(center)
+		BoundingSphere(const btVector3& center, float radius) :
+			m_centerRadius(center)
 		{
 			m_centerRadius[3] = radius;
 		}
 
-		bool isCollide(const BoundingSphere& rhs) const
+		auto isCollide(const BoundingSphere& rhs) const -> bool
 		{
 			btVector3 ca = m_centerRadius;
 			btVector3 cb = rhs.m_centerRadius;
@@ -107,9 +107,9 @@ namespace hdt
 			return (ca - cb).length2() < (ra + rb) * (ra + rb);
 		}
 
-		btVector3 center() const { return m_centerRadius; }
-		float radius() const { return m_centerRadius.w(); }
-		Aabb getAabb() const { return Aabb(center().get128(), center().get128()).extended(radius()); }
+		auto center() const -> btVector3 { return m_centerRadius; }
+		auto radius() const -> float { return m_centerRadius.w(); }
+		auto getAabb() const -> Aabb { return Aabb(center().get128(), center().get128()).extended(radius()); }
 
 		btVector4 m_centerRadius;
 	};

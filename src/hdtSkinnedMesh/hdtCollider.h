@@ -1,7 +1,12 @@
 #pragma once
 
-#include "hdtAABB.h"
+#include <emmintrin.h>
 #include <functional>
+#include <utility>
+#include <vector>
+
+#include "hdtAABB.h"
+#include "hdtBulletHelper.h"
 
 namespace hdt
 {
@@ -15,7 +20,7 @@ namespace hdt
 		Collider(int i0, int i1, int i2) { vertices[0] = i0, vertices[1] = i1, vertices[2] = i2; }
 		Collider(const Collider& rhs) { operator=(rhs); }
 
-		Collider& operator =(const Collider& rhs)
+		Collider& operator=(const Collider& rhs)
 		{
 			__m128i* dst = (__m128i*)this;
 			__m128i* src = (__m128i*)&rhs;
@@ -26,8 +31,8 @@ namespace hdt
 
 		union
 		{
-			U32 vertex; // vertexshape
-			U32 vertices[3]; // triangleshape
+			U32 vertex;       // vertexshape
+			U32 vertices[3];  // triangleshape
 		};
 
 		float flexible;
@@ -80,7 +85,6 @@ namespace hdt
 		void optimize();
 
 		bool empty() const { return children.empty() && colliders.empty(); }
-
 
 		bool collapseCollideL(ColliderTree* r);
 		bool collapseCollideR(ColliderTree* r);

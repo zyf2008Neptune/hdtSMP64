@@ -1,5 +1,11 @@
 #include "hdtSimulationIslandManager.h"
 
+#include <BulletCollision/BroadphaseCollision/btDispatcher.h>
+#include <BulletCollision/CollisionDispatch/btSimulationIslandManager.h>
+#include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <LinearMath/btScalar.h>
+
 namespace hdt
 {
 	void SimulationIslandManager::findUnions(btDispatcher* dispatcher, [[maybe_unused]] btCollisionWorld* colWorld)

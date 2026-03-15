@@ -1,8 +1,15 @@
 #include "hdtConvertNi.h"
 
+#include <LinearMath/btMatrix3x3.h>
+#include <LinearMath/btQuaternion.h>
+#include <RE/N/NiMatrix3.h>
+#include <RE/N/NiTransform.h>
+
+#include "hdtSkinnedMesh/hdtBulletHelper.h"
+
 namespace hdt
 {
-	btQuaternion convertNi(const RE::NiMatrix3& rhs)
+	auto convertNi(const RE::NiMatrix3& rhs) -> btQuaternion
 	{
 		//using namespace DirectX;
 		//auto mat = XMLoadFloat3x3((const XMFLOAT3X3*)&rhs);
@@ -25,7 +32,7 @@ namespace hdt
 		return q;
 	}
 
-	RE::NiTransform convertBt(const btQsTransform& rhs)
+	auto convertBt(const btQsTransform& rhs) -> RE::NiTransform
 	{
 		RE::NiTransform ret;
 
@@ -36,13 +43,13 @@ namespace hdt
 		return ret;
 	}
 
-	RE::NiMatrix3 convertBt(const btQuaternion& rhs)
+	auto convertBt(const btQuaternion& rhs) -> RE::NiMatrix3
 	{
 		btMatrix3x3 mat(rhs.normalized());
 		return convertBt(mat);
 	}
 
-	RE::NiPoint3 convertBt(const btVector3& rhs)
+	auto convertBt(const btVector3& rhs) -> RE::NiPoint3
 	{
 		RE::NiPoint3 ret;
 		ret.x = rhs[0];
@@ -51,7 +58,7 @@ namespace hdt
 		return ret;
 	}
 
-	RE::NiMatrix3 convertBt(const btMatrix3x3& rhs)
+	auto convertBt(const btMatrix3x3& rhs) -> RE::NiMatrix3
 	{
 		RE::NiMatrix3 ret;
 		ret.entry[0][0] = rhs[0][0];

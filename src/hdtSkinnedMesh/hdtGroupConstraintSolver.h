@@ -1,12 +1,20 @@
 #pragma once
 
-#include <BulletDynamics/ConstraintSolver/btNNCGConstraintSolver.h>
-#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
-#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
-#include <BulletDynamics/MLCPSolvers/btMLCPSolver.h>
-#include "hdtSkinnedMeshSystem.h"
+#include <memory>
+#include <vector>
 
-#include <mutex>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <BulletCollision/NarrowPhaseCollision/btPersistentManifold.h>
+#include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h>
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
+#include <BulletDynamics/ConstraintSolver/btSolverBody.h>
+#include <BulletDynamics/ConstraintSolver/btSolverConstraint.h>
+#include <BulletDynamics/ConstraintSolver/btTypedConstraint.h>
+#include <LinearMath/btScalar.h>
+
+#include "hdtBulletHelper.h"
+#include "hdtConstraintGroup.h"
 
 namespace hdt
 {

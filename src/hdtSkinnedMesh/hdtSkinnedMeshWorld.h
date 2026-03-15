@@ -1,6 +1,16 @@
 #pragma once
 
+#include <vector>
+
+#include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
+#include <LinearMath/btScalar.h>
+#include <LinearMath/btVector3.h>
+#include <RE/B/BSTSmartPointer.h>
+
 #include "hdtGroupConstraintSolver.h"
+#include "hdtSkinnedMeshBody.h"
+#include "hdtSkinnedMeshSystem.h"
 
 namespace hdt
 {

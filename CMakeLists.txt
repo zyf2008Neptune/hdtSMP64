@@ -6,6 +6,7 @@ project(
 	LANGUAGES CXX
 )
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
 	message(FATAL_ERROR "in-source builds are not allowed")
@@ -19,7 +20,8 @@ endmacro()
 
 set_from_environment(CompiledPluginsPath)
 if(NOT DEFINED CompiledPluginsPath)
-	message(FATAL_ERROR "CompiledPluginsPath is not set")
+	#message(FATAL_ERROR "CompiledPluginsPath is not set")
+	set(CompiledPluginsPath "${PROJECT_BINARY_DIR}")
 endif()
 
 

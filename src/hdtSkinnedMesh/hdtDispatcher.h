@@ -1,10 +1,14 @@
 #pragma once
 
-#include "hdtBulletHelper.h"
-#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
-#include <ppl.h>
-#include <ppltasks.h>
+#include <mutex>
+#include <utility>
 #include <vector>
+
+#include <BulletCollision/BroadphaseCollision/btDispatcher.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <BulletCollision/NarrowPhaseCollision/btPersistentManifold.h>
 
 namespace hdt
 {

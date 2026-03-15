@@ -1,11 +1,47 @@
 #include "hdtSkyrimPhysicsWorld.h"
+
+#include <algorithm>
+#include <cfloat>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+#include <Windows.h>
+
+#include <BulletDynamics/Dynamics/btRigidBody.h>
+#include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
+#include <LinearMath/btScalar.h>
+#include <LinearMath/btVector3.h>
+#include <RE/B/BSTEvent.h>
+#include <RE/B/BSTimer.h>
+#include <RE/B/BSTSmartPointer.h>
+#include <RE/N/NiNode.h>
+#include <RE/N/NiPoint3.h>
+#include <RE/P/PlayerCamera.h>
+#include <RE/U/UI.h>
+#include <SKSE/Events.h>
+#include <SKSE/Logger.h>
+
+#include "ActorManager.h"
+#include "Events.h"
+#include "FrameworkUtils.h"
+#include "hdtConvertNi.h"
+#include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
+#include "hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
+#include "hdtSkyrimBody.h"
+#include "hdtSkyrimSystem.h"
+#include "PCH.h"
 #include "PluginInterfaceImpl.h"
 
 namespace hdt
 {
-	static const float* timeStamp = (float*)0x12E355C;
+	static const auto timeStamp = reinterpret_cast<float*>(0x12E355C);
 
-	SkyrimPhysicsWorld::SkyrimPhysicsWorld(void)
+	SkyrimPhysicsWorld::SkyrimPhysicsWorld()
 	{
 		gDisableDeactivation = true;
 		setGravity(btVector3(0, 0, -9.8f * scaleSkyrim));
@@ -14,11 +50,7 @@ namespace hdt
 		m_averageInterval = m_timeTick;
 		m_accumulatedInterval = 0;
 	}
-
-	SkyrimPhysicsWorld::~SkyrimPhysicsWorld(void)
-	{
-	}
-
+	
 	//void hdtSkyrimPhysicsWorld::suspend()
 	//{
 	//	m_suspended++;
@@ -48,7 +80,7 @@ namespace hdt
 	SkyrimPhysicsWorld* SkyrimPhysicsWorld::get()
 	{
 		static SkyrimPhysicsWorld g_World;
-		return &g_World;
+		return std::addressof(g_World);
 	}
 
 	void SkyrimPhysicsWorld::doUpdate(float interval)
