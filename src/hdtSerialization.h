@@ -1,5 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
+#include <vector>
+
 namespace hdt
 {
 	class SerializerBase;
@@ -10,18 +14,18 @@ namespace hdt
 
 	struct _uint32_to_str_t
 	{
-		union _uin32_cstr
+		struct _uin32_cstr
 		{
 			uint32_t _number;
-			char _buffer[4];
+			std::string _buffer;
 		};
 
-		std::string operator()(uint32_t number)
+		auto operator()(uint32_t number) const -> std::string
 		{
 			_uin32_cstr _union{};
 			_union._number = number;
-			auto str = std::string(_union._buffer, 4);
-			return std::string(str.rbegin(), str.rend());
+			auto& str = _union._buffer;
+			return { str.rbegin(), str.rend() };
 		}
 	};
 
@@ -32,30 +36,31 @@ namespace hdt
 	public:
 		SerializerBase() = default;
 		virtual ~SerializerBase() = default;
-		virtual uint32_t StorageName() = 0;
-		virtual uint32_t FormatVersion() = 0;
+		virtual auto StorageName() -> uint32_t = 0;
+		virtual auto FormatVersion() -> uint32_t = 0;
 
-		virtual void SaveData(SKSE::SerializationInterface*) = 0;
-		virtual void ReadData(SKSE::SerializationInterface*, uint32_t) = 0;
+		virtual auto SaveData(SKSE::SerializationInterface*) -> void = 0;
+		virtual auto ReadData(SKSE::SerializationInterface*, uint32_t) -> void = 0;
 
-		static inline std::vector<SerializerBase*>& GetSerializerList() { return g_SerializerList; };
+		static auto GetSerializerList() -> std::vector<SerializerBase*>& { return g_SerializerList; }
 
-		static void Save(SKSE::SerializationInterface* intfc)
+		static auto Save(SKSE::SerializationInterface* intfc) -> void
 		{
 			for (auto data_block : g_SerializerList) {
 				// Console_Print("[HDT-SMP] Saving data, type: %s version: %08X", UInt32toStr(data_block->StorageName()).c_str(), data_block->FormatVersion());
 				data_block->SaveData(intfc);
 			}
-		};
+		}
 
-		static void Load(SKSE::SerializationInterface* intfc)
+		static auto Load(SKSE::SerializationInterface* intfc) -> void
 		{
 			uint32_t type, version, length;
 			//auto load_begin = clock();
 			while (intfc->GetNextRecordInfo(type, version, length)) {
-				auto record = std::find_if(g_SerializerList.begin(), g_SerializerList.end(), [type, version](SerializerBase* a_srlzr) {
-					return type == a_srlzr->StorageName() && version == a_srlzr->FormatVersion();
-				});
+				auto record = std::ranges::find_if(g_SerializerList,
+					[type, version](SerializerBase* a_srlzr) {
+						return type == a_srlzr->StorageName() && version == a_srlzr->FormatVersion();
+					});
 
 				if (record == g_SerializerList.end()) {
 					continue;
@@ -66,49 +71,44 @@ namespace hdt
 			}
 			//Less than a microsecond
 			//Console_Print("[HDT-SMP] Serializer loading cost: %.3f sec.", (clock() - load_begin) / 1000.0f);
-		};
+		}
 	};
 
 	template <class _Storage_t = void, class _Stream_t = std::stringstream>
 	class Serializer : public SerializerBase
 	{
 	public:
-		Serializer()
-		{
-			g_SerializerList.push_back(this);
-		};
+		Serializer() { g_SerializerList.push_back(this); }
 
-		~Serializer() {};
+		~Serializer() override = default;
 
-		virtual _Stream_t Serialize() = 0;
-		virtual _Storage_t Deserialize(_Stream_t&) = 0;
+		virtual auto Serialize() -> _Stream_t = 0;
+		virtual auto Deserialize(_Stream_t&) -> _Storage_t = 0;
 
-		void SaveData(SKSE::SerializationInterface*) override;
-		void ReadData(SKSE::SerializationInterface*, uint32_t) override;
+		auto SaveData(SKSE::SerializationInterface*) -> void override;
+		auto ReadData(SKSE::SerializationInterface*, uint32_t) -> void override;
 
 	protected:
-		static inline std::string _toString(_Stream_t& _stream)
-		{
-			return _stream.rdbuf()->str();
-		};
+		static auto _toString(_Stream_t& _stream) -> std::string { return _stream.rdbuf()->str(); }
 	};
 
 	template <class _Storage_t, class _Stream_t>
-	inline void Serializer<_Storage_t, _Stream_t>::SaveData(SKSE::SerializationInterface* intfc)
+	auto Serializer<_Storage_t, _Stream_t>::SaveData(SKSE::SerializationInterface* intfc) -> void
 	{
 		_Stream_t s_data_block = this->Serialize();
 		if (intfc->OpenRecord(this->StorageName(), this->FormatVersion())) {
-			intfc->WriteRecordData(_toString(s_data_block).c_str(), static_cast<uint32_t>(_toString(s_data_block).length()));
+			intfc->WriteRecordData(_toString(s_data_block).c_str(),
+				static_cast<uint32_t>(_toString(s_data_block).length()));
 		}
 		// Console_Print("Writing Data: \"%s\" \nStatus: %s", _toString(s_data_block).c_str(), success?"Succeeded":"Failed");
 	}
 
 	template <class _Storage_t, class _Stream_t>
-	inline void Serializer<_Storage_t, _Stream_t>::ReadData(SKSE::SerializationInterface* intfc, uint32_t length)
+	auto Serializer<_Storage_t, _Stream_t>::ReadData(SKSE::SerializationInterface* intfc, uint32_t length) -> void
 	{
-		char* data_block = new char[length];
-		intfc->ReadRecordData(data_block, length);
-		std::string s_data(data_block, length);
+		std::string s_data;
+		s_data.resize(length);
+		intfc->ReadRecordData(s_data.data(), length);
 		//_MESSAGE("Reading Data: %s", s_data.c_str());
 		_Stream_t _stream;
 		_stream << s_data;

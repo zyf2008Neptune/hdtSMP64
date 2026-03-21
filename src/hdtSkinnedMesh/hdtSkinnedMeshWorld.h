@@ -14,53 +14,62 @@
 
 namespace hdt
 {
-	class SkinnedMeshWorld : protected btDiscreteDynamicsWorldMt
-	{
-	public:
+    class SkinnedMeshWorld : protected btDiscreteDynamicsWorldMt
+    {
+    public:
+        SkinnedMeshWorld();
+        ~SkinnedMeshWorld() override;
 
-		SkinnedMeshWorld();
-		~SkinnedMeshWorld();
+        virtual auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
+        virtual auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
 
-		virtual void addSkinnedMeshSystem(SkinnedMeshSystem* system);
-		virtual void removeSkinnedMeshSystem(SkinnedMeshSystem* system);
+        auto stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
+                            btScalar fixedTimeStep = btScalar(1.) / btScalar(60.)) -> int override;
 
-		int stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
-		                   btScalar fixedTimeStep = btScalar(1.) / btScalar(60.)) override;
+        auto getWind() -> btVector3& { return m_windSpeed; }
+        auto getWind() const -> const btVector3& { return m_windSpeed; }
 
-		btVector3& getWind() { return m_windSpeed; }
-		const btVector3& getWind() const { return m_windSpeed; }
+    protected:
+        virtual auto resetTransformsToOriginal() -> void
+        {
+            for (const auto& m_system : m_systems)
+            {
+                m_system->resetTransformsToOriginal();
+            }
+        }
 
-	protected:
+        auto readTransform(float timeStep) const -> void
+        {
+            for (const auto& m_system : m_systems)
+            {
+                m_system->readTransform(timeStep);
+            }
+        }
 
-		void resetTransformsToOriginal()
-		{
-			for (int i = 0; i < m_systems.size(); ++i) m_systems[i]->resetTransformsToOriginal();
-		}
+        auto writeTransform() const -> void
+        {
+            for (const auto& m_system : m_systems)
+            {
+                m_system->writeTransform();
+            }
+        }
 
-		void readTransform(float timeStep)
-		{
-			for (int i = 0; i < m_systems.size(); ++i) m_systems[i]->readTransform(timeStep);
-		}
+        auto applyGravity() -> void override;
+        auto applyWind() const -> void;
 
-		void writeTransform() { for (int i = 0; i < m_systems.size(); ++i) m_systems[i]->writeTransform(); }
+        auto predictUnconstraintMotion(btScalar timeStep) -> void override;
+        auto integrateTransforms(btScalar timeStep) -> void override;
+        auto performDiscreteCollisionDetection() -> void override;
+        auto solveConstraints(btContactSolverInfo& solverInfo) -> void override;
 
-		void applyGravity() override;
-		void applyWind();
+        std::vector<RE::BSTSmartPointer<SkinnedMeshSystem>> m_systems;
 
-		void predictUnconstraintMotion(btScalar timeStep) override;
-		void integrateTransforms(btScalar timeStep) override;
-		void performDiscreteCollisionDetection() override;
-		void solveConstraints(btContactSolverInfo& solverInfo) override;
+        btVector3 m_windSpeed; // world windspeed
 
-		std::vector<RE::BSTSmartPointer<SkinnedMeshSystem>> m_systems;
-
-		btVector3 m_windSpeed; // world windspeed
-
-	private:
-
-		std::vector<SkinnedMeshBody*> _bodies;
-		std::vector<SkinnedMeshShape*> _shapes;
-		btConstraintSolverPoolMt* m_solverPool;
-		GroupConstraintSolver m_constraintSolver;
-	};
+    private:
+        std::vector<SkinnedMeshBody*> _bodies;
+        std::vector<SkinnedMeshShape*> _shapes;
+        btConstraintSolverPoolMt* m_solverPool;
+        GroupConstraintSolver m_constraintSolver;
+    };
 }

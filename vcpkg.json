@@ -3,6 +3,7 @@
   "version": "1",
   "dependencies": 
   [
+    "boost-beast",
     "directxtk",
     "fmt",
     "rapidcsv",

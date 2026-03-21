@@ -232,6 +232,7 @@ find_package(Bullet CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(xbyak REQUIRED CONFIG)
 find_package(fmt CONFIG REQUIRED)
+find_package(Boost REQUIRED COMPONENTS beast)
 
 include_directories(${BULLET_INCLUDE_DIRS})
 
@@ -241,8 +242,11 @@ target_link_libraries(
 		CommonLibSSE::CommonLibSSE
 		xbyak::xbyak
 		spdlog::spdlog
-		${DETOURS_LIBRARY}
+		fmt::fmt
+		Boost::beast
+		
 		${BULLET_LIBRARIES}
+		${DETOURS_LIBRARY}
 )
 
 target_precompile_headers(

@@ -1,23 +1,46 @@
 #pragma once
 
-#include "NetImmerseUtils.h"
-#include "FrameworkUtils.h"
+#include <cstdint>
+#include <limits>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "hdtSkyrimSystem.h"
-#include "DynamicHDT.h"
+#include <RE/A/Actor.h>
+#include <RE/B/BSFaceGenNiNode.h>
+#include <RE/B/BSFadeNode.h>
+#include <RE/B/BSGeometry.h>
+#include <RE/B/BSTEvent.h>
+#include <RE/B/BSTSmartPointer.h>
+#include <RE/M/MenuOpenCloseEvent.h>
+#include <RE/N/NiAVObject.h>
+#include <RE/N/NiNode.h>
+#include <RE/N/NiPoint3.h>
+#include <RE/N/NiSmartPointer.h>
+#include <RE/T/TESObjectREFR.h>
+
 #include "Events.h"
+#include "FrameworkUtils.h"
+#include "IString.h"
+#include "hdtDefaultBBP.h"
+#include "hdtSkinnedMesh/hdtSkinnedMeshBody.h"
+#include "hdtSkyrimSystem.h"
 
 namespace hdt
 {
-	class ActorManager : 
-		public RE::BSTEventSink<Events::ArmorAttachEvent>, 
-		public RE::BSTEventSink<Events::ArmorDetachEvent>, 
-		public RE::BSTEventSink<Events::SkinSingleHeadGeometryEvent>, 
-		public RE::BSTEventSink<Events::SkinAllHeadGeometryEvent>, 
-		public RE::BSTEventSink<Events::FrameEvent>, 
+	class ActorManager :
+		public RE::BSTEventSink<Events::ArmorAttachEvent>,
+		public RE::BSTEventSink<Events::ArmorDetachEvent>,
+		public RE::BSTEventSink<Events::SkinSingleHeadGeometryEvent>,
+		public RE::BSTEventSink<Events::SkinAllHeadGeometryEvent>,
+		public RE::BSTEventSink<Events::FrameEvent>,
 		public RE::BSTEventSink<Events::ShutdownEvent>
 	{
 		using IDType = uint32_t;
+
 	public:
 		enum class ItemState
 		{
@@ -37,6 +60,7 @@ namespace hdt
 			e_ActiveNearPlayer,
 			e_ActiveIsPlayer
 		};
+
 		int activeSkeletons = 0;
 
 	private:
@@ -49,25 +73,25 @@ namespace hdt
 		{
 			DefaultBBP::PhysicsFile_t physicsFile;
 
-			void setPhysics(RE::BSTSmartPointer<SkyrimSystem>& system, bool active);
-			void clearPhysics();
-			bool hasPhysics() const { return m_physics.get(); }
-			ActorManager::ItemState state() const;
+			auto setPhysics(const RE::BSTSmartPointer<SkyrimSystem>& system, bool active) -> void;
+			auto clearPhysics() -> void;
+			auto hasPhysics() const -> bool { return m_physics.get(); }
+			auto state() const -> ItemState;
 
-			const std::vector<RE::BSTSmartPointer<SkinnedMeshBody>>& meshes() const;
+			auto meshes() const -> const std::vector<RE::BSTSmartPointer<SkinnedMeshBody>>&;
 
-			void updateActive(bool active);
+			auto updateActive(bool active) const -> void;
 
 			// Update windfactor for all armors attached to skeleton.
 			// a_windFactor is a percentage [0,1] with 0 being no wind efect to 1 being full wind effect.
-			void setWindFactor(float a_windFactor);
+			auto setWindFactor(float a_windFactor) const -> void;
 
 			RE::BSTSmartPointer<SkyrimSystem> m_physics;
 		};
 
 		struct Head
 		{
-			struct HeadPart : public PhysicsItem
+			struct HeadPart : PhysicsItem
 			{
 				RE::NiPointer<RE::BSGeometry> headPart;
 				RE::NiPointer<RE::NiNode> origPartRootNode;
@@ -85,7 +109,7 @@ namespace hdt
 			bool isActive = true; // false when hidden by a wig
 		};
 
-		struct Armor : public PhysicsItem
+		struct Armor : PhysicsItem
 		{
 			IDType id;
 			RE::BSTSmartPointer<IString> prefix;
@@ -95,7 +119,7 @@ namespace hdt
 			// and set back to false the name map is fixed (see fixArmorNameMaps()),
 			bool mustFixNameMap = false;
 			// @brief The string is the first name attributed by the Skyrim executable, to be able to detect the change.
-			std::string armorCurrentMeshName = "";
+			std::string armorCurrentMeshName;
 		};
 
 		struct Skeleton
@@ -107,13 +131,13 @@ namespace hdt
 			SkeletonState state;
 			bool mustFixOneArmorMap = false;
 
-			std::string name();
-			void addArmor(RE::NiNode* armorModel);
-			void attachArmor(RE::NiNode* armorModel, RE::NiAVObject* attachedNode);
+			auto name() const -> std::string;
+			auto addArmor(RE::NiNode* armorModel) -> void;
+			auto attachArmor(RE::NiNode* armorModel, RE::NiAVObject* attachedNode) -> void;
 
-			void cleanArmor();
-			void cleanHead(bool cleanAll = false);
-			void clear();
+			auto cleanArmor() -> void;
+			auto cleanHead(bool cleanAll = false) -> void;
+			auto clear() -> void;
 
 			// @brief This calculates and sets the distance from skeleton to player, and a value that is the cosinus
 			// between the camera orientation vector and the camera to skeleton vector, multiplied by the length
@@ -121,36 +145,39 @@ namespace hdt
 			// can be directly used for our needs later; the distance is provided squared for performance reasons.
 			// @param sourcePosition the position of the camera
 			// @param sourceOrientation the orientation of the camera
-			void calculateDistanceAndOrientationDifferenceFromSource(RE::NiPoint3 sourcePosition, RE::NiPoint3 sourceOrientation);
+			auto calculateDistanceAndOrientationDifferenceFromSource(RE::NiPoint3 sourcePosition,
+				RE::NiPoint3 sourceOrientation) -> void;
 
-			bool isPlayerCharacter() const;
-			bool isInPlayerView();
+			auto isPlayerCharacter() const -> bool;
+			auto isInPlayerView() const -> bool;
 			bool hasPhysics = false;
-			std::optional<RE::NiPoint3> position() const;
+			auto position() const -> std::optional<RE::NiPoint3>;
 
 			// @brief Update windfactor for skeleton
 			// @param a_windFactor is a percentage [0,1] with 0 being no wind efect to 1 being full wind effect.
-			void updateWindFactor(float a_windFactor);
+			auto updateWindFactor(float a_windFactor) -> void;
 			// @brief Get windfactor for skeleton
-			float getWindFactor();
+			auto getWindFactor() const -> float;
 
 			// @brief Updates the states and activity of skeletons, their heads parts and armors.
 			// @param playerCell The skeletons not in the player cell are automatically inactive.
 			// @param deactivate If set to true, the concerned skeleton will be inactive, regardless of other elements.
-			bool updateAttachedState(const RE::NiNode* playerCell, bool deactivate);
+			auto updateAttachedState(const RE::NiNode* playerCell, bool deactivate) -> bool;
 
 			// bool deactivate(); // FIXME useless?
-			void reloadMeshes();
+			auto reloadMeshes() -> void;
 
-			void scanHead();
-			void processGeometry(RE::BSFaceGenNiNode* head, RE::BSGeometry* geometry);
+			auto scanHead() -> void;
+			auto processGeometry(RE::BSFaceGenNiNode* head, RE::BSGeometry* geometry) -> void;
 
-			static void doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, IString* prefix, std::unordered_map<IDStr, IDStr>& map);
-			static void doSkeletonClean(RE::NiNode* dst, IString* prefix);
-			static RE::NiNode* cloneNodeTree(RE::NiNode* src, IString* prefix, std::unordered_map<IDStr, IDStr>& map);
-			static void renameTree(RE::NiNode* root, IString* prefix, std::unordered_map<IDStr, IDStr>& map);
+			static auto doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, IString* prefix,
+				std::unordered_map<IDStr, IDStr>& map) -> void;
+			static auto doSkeletonClean(RE::NiNode* dst, IString* prefix) -> void;
+			static auto cloneNodeTree(RE::NiNode* src, IString* prefix,
+				std::unordered_map<IDStr, IDStr>& map) -> RE::NiNode*;
+			static auto renameTree(RE::NiNode* root, IString* prefix, std::unordered_map<IDStr, IDStr>& map) -> void;
 
-			std::vector<Armor>& getArmors() { return armors; }
+			auto getArmors() -> std::vector<Armor>& { return armors; }
 
 			// @brief This is the squared distance between the skeleton and the camera.
 			float m_distanceFromCamera2 = std::numeric_limits<float>::max();
@@ -159,8 +186,8 @@ namespace hdt
 			float m_cosAngleFromCameraDirectionTimesSkeletonDistance = -1.;
 
 		private:
-			bool isActiveInScene() const;
-			bool checkPhysics();
+			auto isActiveInScene() const -> bool;
+			auto checkPhysics() -> bool;
 
 			bool isActive = false;
 			float currentWindFactor = 0.f;
@@ -171,18 +198,18 @@ namespace hdt
 		std::recursive_mutex m_lock;
 		std::vector<Skeleton> m_skeletons;
 
-		Skeleton& getSkeletonData(RE::NiNode* skeleton);
-		ActorManager::Skeleton* get3rdPersonSkeleton(RE::Actor* actor);
-		static void setHeadActiveIfNoHairArmor(RE::Actor* actor, Skeleton* skeleton);
+		auto getSkeletonData(RE::NiNode* skeleton) -> Skeleton&;
+		auto get3rdPersonSkeleton(const RE::Actor* actor) -> Skeleton*;
+		static auto setHeadActiveIfNoHairArmor(RE::Actor* actor, Skeleton* skeleton) -> void;
 
 	public:
-		ActorManager();
-		~ActorManager();
+		ActorManager() = default;
+		~ActorManager() override = default;
 
-		static ActorManager* instance();
+		static auto instance() -> ActorManager*;
 
-		static IDStr armorPrefix(IDType id);
-		static IDStr headPrefix(IDType id);
+		static auto armorPrefix(IDType id) -> IDStr;
+		static auto headPrefix(IDType id) -> IDStr;
 
 		/*
 		fix: take into account the unexpected armors names changes done by the Skyrim executable.
@@ -210,26 +237,34 @@ namespace hdt
 		4) and then add in.physicsfile the new name;
 		5) finally remove the information that a fix must be applied for this armor.
 		*/
-		void fixArmorNameMaps();
+		static auto fixArmorNameMaps() -> void;
 
-		RE::BSEventNotifyControl ProcessEvent(const Events::ArmorAttachEvent* e, RE::BSTEventSource<Events::ArmorAttachEvent>*) override;
-		RE::BSEventNotifyControl ProcessEvent(const Events::ArmorDetachEvent* e, RE::BSTEventSource<Events::ArmorDetachEvent>*) override;
+		auto ProcessEvent(const Events::ArmorAttachEvent* e,
+			RE::BSTEventSource<Events::ArmorAttachEvent>*) -> RE::BSEventNotifyControl override;
+		auto ProcessEvent(const Events::ArmorDetachEvent* e,
+			RE::BSTEventSource<Events::ArmorDetachEvent>*) -> RE::BSEventNotifyControl override;
 
 		// @brief On this event, we decide which skeletons will be active for physics this frame.
-		RE::BSEventNotifyControl ProcessEvent(const Events::FrameEvent* e, RE::BSTEventSource<Events::FrameEvent>*) override;
+		auto ProcessEvent(const Events::FrameEvent* e,
+			RE::BSTEventSource<Events::FrameEvent>*) -> RE::BSEventNotifyControl override;
 
-		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent*, RE::BSTEventSource<RE::MenuOpenCloseEvent>*);
-		RE::BSEventNotifyControl ProcessEvent(const Events::ShutdownEvent*, RE::BSTEventSource<Events::ShutdownEvent>*) override;
-		RE::BSEventNotifyControl ProcessEvent(const Events::SkinSingleHeadGeometryEvent*, RE::BSTEventSource<Events::SkinSingleHeadGeometryEvent>*) override;
-		RE::BSEventNotifyControl ProcessEvent(const Events::SkinAllHeadGeometryEvent*, RE::BSTEventSource<Events::SkinAllHeadGeometryEvent>*) override;
+		auto ProcessEvent(const RE::MenuOpenCloseEvent*,
+			RE::BSTEventSource<RE::MenuOpenCloseEvent>*) -> RE::BSEventNotifyControl;
+		auto ProcessEvent(const Events::ShutdownEvent*,
+			RE::BSTEventSource<Events::ShutdownEvent>*) -> RE::BSEventNotifyControl override;
+		auto ProcessEvent(const Events::SkinSingleHeadGeometryEvent*,
+			RE::BSTEventSource<Events::SkinSingleHeadGeometryEvent>*) -> RE::BSEventNotifyControl override;
+		auto ProcessEvent(const Events::SkinAllHeadGeometryEvent*,
+			RE::BSTEventSource<Events::SkinAllHeadGeometryEvent>*) -> RE::BSEventNotifyControl override;
 
-		bool skeletonNeedsParts(RE::NiNode* skeleton);
-		std::vector<Skeleton>& getSkeletons();//Altered by Dynamic HDT
+		static auto skeletonNeedsParts(RE::NiNode* skeleton) -> bool;
+		auto getSkeletons() -> std::vector<Skeleton>&; //Altered by Dynamic HDT
 
 		bool m_skinNPCFaceParts = true;
 		bool m_disableSMPHairWhenWigEquipped = false;
-		bool m_autoAdjustMaxSkeletons = true; // Whether to dynamically change the maxActive skeletons to maintain min_fps
-		int m_maxActiveSkeletons = 20; // The maximum active skeletons; hard limit
+		bool m_autoAdjustMaxSkeletons =
+			true;                         // Whether to dynamically change the maxActive skeletons to maintain min_fps
+		int m_maxActiveSkeletons = 20;    // The maximum active skeletons; hard limit
 		float m_minCullingDistance = 500; // The distance from the camera under which we never cull the skeletons.
 
 		// @brief Depending on this setting, we avoid to calculate the physics of the PC when it is in 1st person view.
@@ -237,8 +272,8 @@ namespace hdt
 
 	private:
 		RE::NiPoint3 m_cameraPositionDuringFrame;
-		static RE::NiNode* getCameraNode();
+		static auto getCameraNode() -> RE::NiNode*;
 
-		void setSkeletonsActive(const bool updateMetrics = false);
+		auto setSkeletonsActive(bool updateMetrics = false) -> void;
 	};
 }
