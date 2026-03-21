@@ -18,114 +18,116 @@
 
 namespace hdt
 {
-	struct SolverBodyMt
-	{
-	public:
-		SolverBodyMt();
-		~SolverBodyMt();
+    class SolverBodyMt
+    {
+    public:
+        SolverBodyMt() = default;
+        ~SolverBodyMt() = default;
 
-		btSolverBody* m_body;
+        btSolverBody* m_body;
 
-		void lock() { m_lock.lock(); }
-		void unlock() { m_lock.unlock(); }
+        auto lock() -> void { m_lock.lock(); }
+        auto unlock() -> void { m_lock.unlock(); }
 
-		SolverBodyMt(const SolverBodyMt& rhs) : m_body(rhs.m_body)
-		{
-		}
+        SolverBodyMt(const SolverBodyMt& rhs) :
+            m_body(rhs.m_body) {}
 
-		SolverBodyMt& operator=(const SolverBodyMt& rhs) { m_body = rhs.m_body; }
+        auto operator=(const SolverBodyMt& rhs) -> SolverBodyMt&
+        {
+            m_body = rhs.m_body;
+            return *this;
+        }
 
-	private:
-		SpinLock m_lock;
-	};
+    private:
+        SpinLock m_lock;
+    };
 
-	class SolverTask
-	{
-	public:
-		SolverTask(SolverBodyMt* A, SolverBodyMt* B);
+    class SolverTask
+    {
+    public:
+        SolverTask(SolverBodyMt* A, SolverBodyMt* B);
 
-		virtual ~SolverTask()
-		{
-		}
+        virtual ~SolverTask() = default;
 
-		virtual void solve() = 0;
+        virtual auto solve() -> void = 0;
 
-	protected:
-		SolverBodyMt* m_bodyA;
-		SolverBodyMt* m_bodyB;
-		SolverBodyMt* m_lockOrderA;
-		SolverBodyMt* m_lockOrderB;
-	};
+    protected:
+        SolverBodyMt* m_bodyA;
+        SolverBodyMt* m_bodyB;
+        SolverBodyMt* m_lockOrderA;
+        SolverBodyMt* m_lockOrderB;
+    };
 
-	typedef std::shared_ptr<SolverTask> SolverTaskPtr;
+    using SolverTaskPtr = std::shared_ptr<SolverTask>;
 
-	class NonContactSolverTask : public SolverTask
-	{
-	public:
+    class NonContactSolverTask : public SolverTask
+    {
+    public:
+        NonContactSolverTask(SolverBodyMt* A, SolverBodyMt* B, btSolverConstraint** begin, btSolverConstraint** end,
+                             btSingleConstraintRowSolver s);
+        auto solve() -> void override;
 
-		NonContactSolverTask(SolverBodyMt* A, SolverBodyMt* B, btSolverConstraint** begin, btSolverConstraint** end,
-		                     btSingleConstraintRowSolver s);
-		void solve() override;
+    protected:
+        btSolverConstraint** m_begin;
+        btSolverConstraint** m_end;
+        btSingleConstraintRowSolver m_solver;
+    };
 
-	protected:
-		btSolverConstraint** m_begin;
-		btSolverConstraint** m_end;
-		btSingleConstraintRowSolver m_solver;
-	};
+    class ObsoleteSolverTask : public SolverTask
+    {
+    public:
+        ObsoleteSolverTask(SolverBodyMt* A, SolverBodyMt* B, btTypedConstraint* c, float t);
+        auto solve() -> void override;
 
-	class ObsoleteSolverTask : public SolverTask
-	{
-	public:
+    protected:
+        float m_timeStep;
+        btTypedConstraint* m_constraint;
+    };
 
-		ObsoleteSolverTask(SolverBodyMt* A, SolverBodyMt* B, btTypedConstraint* c, float t);
-		void solve() override;
+    class ContactSolverTask : public SolverTask
+    {
+    public:
+        ContactSolverTask(SolverBodyMt* A, SolverBodyMt* B, btSolverConstraint* c, btSolverConstraint* f0,
+                          btSolverConstraint* f1, btSingleConstraintRowSolver sl, btSingleConstraintRowSolver s);
+        auto solve() -> void override;
 
-	protected:
-		float m_timeStep;
-		btTypedConstraint* m_constraint;
-	};
+    protected:
+        btSolverConstraint* m_contact;
+        btSolverConstraint* m_friction0;
+        btSolverConstraint* m_friction1;
 
-	class ContactSolverTask : public SolverTask
-	{
-	public:
-		ContactSolverTask(SolverBodyMt* A, SolverBodyMt* B, btSolverConstraint* c, btSolverConstraint* f0,
-		                  btSolverConstraint* f1, btSingleConstraintRowSolver sl, btSingleConstraintRowSolver s);
-		void solve() override;
-	protected:
-		btSolverConstraint* m_contact;
-		btSolverConstraint* m_friction0;
-		btSolverConstraint* m_friction1;
+        btSingleConstraintRowSolver m_solver;
+        btSingleConstraintRowSolver m_solverLowerLimit;
+    };
 
-		btSingleConstraintRowSolver m_solver;
-		btSingleConstraintRowSolver m_solverLowerLimit;
-	};
+    class GroupConstraintSolver : public btSequentialImpulseConstraintSolverMt
+    {
+        using Base = btSequentialImpulseConstraintSolverMt;
 
-	class GroupConstraintSolver : public btSequentialImpulseConstraintSolverMt
-	{
-		typedef btSequentialImpulseConstraintSolverMt Base;
-	public:
-		GroupConstraintSolver();
+    public:
+        GroupConstraintSolver();
 
-		btScalar solveSingleIteration(int iteration, btCollisionObject** bodies, int numBodies,
-		                              btPersistentManifold** manifoldPtr, int numManifolds,
-		                              btTypedConstraint** constraints, int numConstraints,
-		                              const btContactSolverInfo& infoGlobal, btIDebugDraw* debugDrawer) override;
-		btScalar solveGroupCacheFriendlySetup(btCollisionObject** bodies, int numBodies,
-		                                      btPersistentManifold** manifoldPtr, int numManifolds,
-		                                      btTypedConstraint** constraints, int numConstraints,
-		                                      const btContactSolverInfo& infoGlobal,
-		                                      btIDebugDraw* debugDrawer) override;
-		btScalar solveGroupCacheFriendlyFinish(btCollisionObject** bodies, int numBodies,
-		                                       const btContactSolverInfo& infoGlobal) override;
+        auto solveSingleIteration(int iteration, btCollisionObject** bodies, int numBodies,
+                                  btPersistentManifold** manifoldPtr, int numManifolds,
+                                  btTypedConstraint** constraints, int numConstraints,
+                                  const btContactSolverInfo& infoGlobal,
+                                  btIDebugDraw* debugDrawer) -> btScalar override;
+        auto solveGroupCacheFriendlySetup(btCollisionObject** bodies, int numBodies,
+                                          btPersistentManifold** manifoldPtr, int numManifolds,
+                                          btTypedConstraint** constraints, int numConstraints,
+                                          const btContactSolverInfo& infoGlobal,
+                                          btIDebugDraw* debugDrawer) -> btScalar override;
+        auto solveGroupCacheFriendlyFinish(btCollisionObject** bodies, int numBodies,
+                                           const btContactSolverInfo& infoGlobal) -> btScalar override;
 
-		static btSingleConstraintRowSolver getResolveSingleConstraintRowGenericAVX();
-		static btSingleConstraintRowSolver getResolveSingleConstraintRowLowerLimitAVX();
+        static auto getResolveSingleConstraintRowGenericAVX() -> btSingleConstraintRowSolver;
+        static auto getResolveSingleConstraintRowLowerLimitAVX() -> btSingleConstraintRowSolver;
 
-		std::vector<ConstraintGroup*> m_groups;
-		std::vector<SolverBodyMt> m_bodiesMt;
-		std::vector<btSolverConstraint*> m_nonContactConstraintRowPtrs;
-		std::vector<SolverTaskPtr> m_tasks;
-		std::vector<SolverTaskPtr> m_contactTasks;
-		std::vector<SolverTaskPtr> m_nonContactTasks;
-	};
-}
+        std::vector<ConstraintGroup*> m_groups;
+        std::vector<SolverBodyMt> m_bodiesMt;
+        std::vector<btSolverConstraint*> m_nonContactConstraintRowPtrs;
+        std::vector<SolverTaskPtr> m_tasks;
+        std::vector<SolverTaskPtr> m_contactTasks;
+        std::vector<SolverTaskPtr> m_nonContactTasks;
+    };
+} // namespace hdt

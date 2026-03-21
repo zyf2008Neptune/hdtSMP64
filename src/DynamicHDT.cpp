@@ -1,69 +1,70 @@
 #include "DynamicHDT.h"
-#include "hdtSkyrimSystem.h"
+
+#include <boost/beast/core/string.hpp>
+
 #include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
+#include "hdtSkyrimSystem.h"
 
-uint32_t hdt::util::splitArmorAddonFormID(std::string nodeName)
+auto hdt::util::splitArmorAddonFormID(const std::string& nodeName) -> uint32_t
 {
-	try 
-	{
-		return std::stoul(nodeName.substr(1, 8), nullptr, 16);
-	}
-	catch (...) 
-	{
-		return 0;
-	}
+    try
+    {
+        return std::stoul(nodeName.substr(1, 8), nullptr, 16);
+    }
+    catch (...)
+    {
+        return 0;
+    }
 }
 
-std::string hdt::util::UInt32toString(uint32_t formID)
+auto hdt::util::UInt32toString(uint32_t formID) -> std::string { return fmt::format("{:08X}", formID); }
+
+auto _deprefix(std::string_view str_with_prefix) -> std::string
 {
-	char buffer[16];
-	sprintf_s(buffer, "%08X", formID);
-	return std::string(buffer);
+    std::string str_no_prefix{str_with_prefix};
+    auto autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;
+    auto str_size = autoRenameSubstr.size();
+    if (str_with_prefix.size() >= autoRenameSubstr.size() &&
+        boost::beast::iequals(str_with_prefix.substr(0, str_size), autoRenameSubstr))
+    {
+        str_no_prefix = str_with_prefix.substr(str_with_prefix.find(' ') + 1);
+    }
+
+    return str_no_prefix;
 }
 
-std::string _deprefix(std::string str_with_prefix) 
+auto _match_name(const RE::BSFixedString& a, const RE::BSFixedString& b) -> bool
 {
-	std::string str_no_prefix = str_with_prefix;
-	if (str_with_prefix.find("hdtSSEPhysics_AutoRename_") == 0) 
-	{
-		str_no_prefix = str_with_prefix.substr(str_with_prefix.find(' ') + 1);
-	}
+    if (a.empty() || b.empty())
+    {
+        return false;
+    }
 
-	return str_no_prefix;
+    return boost::beast::iequals(_deprefix(a), _deprefix(b));
 }
 
-bool _match_name(hdt::IDStr& a, hdt::IDStr& b) 
+auto hdt::util::transferCurrentPosesBetweenSystems(hdt::SkyrimSystem* src, hdt::SkyrimSystem* dst) -> void
 {
-	if (!a || !b)
-	{
-		return false;
-	}
-	
-	return _deprefix(a->cstr()) == _deprefix(b->cstr());
-}
+    for (auto& b1 : src->getBones())
+    {
+        if (!b1)
+        {
+            continue;
+        }
+        for (auto& b2 : dst->getBones())
+        {
+            if (!b2)
+            {
+                continue;
+            }
 
-void hdt::util::transferCurrentPosesBetweenSystems(hdt::SkyrimSystem* src, hdt::SkyrimSystem* dst)
-{
-	for (auto& b1 : src->getBones()) 
-	{
-		if (!b1)
-		{
-			continue;
-		}
-		for (auto& b2 : dst->getBones()) 
-		{
-			if (!b2)
-			{
-				continue;
-			}
-
-			if (_match_name(b1->m_name, b2->m_name)) 
-			{
-				b2->m_rig.setWorldTransform(b1->m_rig.getWorldTransform());
-				b2->m_rig.setAngularVelocity(b1->m_rig.getAngularVelocity());
-				b2->m_rig.setLinearVelocity(b1->m_rig.getLinearVelocity());
-				break;
-			}
-		}
-	}
+            if (_match_name(b1->m_name, b2->m_name))
+            {
+                b2->m_rig.setWorldTransform(b1->m_rig.getWorldTransform());
+                b2->m_rig.setAngularVelocity(b1->m_rig.getAngularVelocity());
+                b2->m_rig.setLinearVelocity(b1->m_rig.getLinearVelocity());
+                break;
+            }
+        }
+    }
 }

@@ -300,7 +300,7 @@ auto SMPDebug_PrintDetailed(const bool includeItems) -> void
                     for (const auto& mesh : armor.meshes())
                     {
                         RE::ConsoleLog::GetSingleton()->Print("[HDT-SMP] ---- has collision mesh %s",
-                                                              mesh->m_name->cstr());
+                                                              mesh->m_name.c_str());
                     }
                 }
             }
@@ -322,7 +322,7 @@ auto SMPDebug_PrintDetailed(const bool includeItems) -> void
                         for (const auto& mesh : headPart.meshes())
                         {
                             RE::ConsoleLog::GetSingleton()->Print("[HDT-SMP] ---- has collision mesh %s",
-                                                                  mesh->m_name->cstr());
+                                                                  mesh->m_name.c_str());
                         }
                     }
                 }

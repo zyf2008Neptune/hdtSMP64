@@ -12,9 +12,6 @@
 #endif
 #pragma warning(pop)
 
-#include "FrameworkUtils.h"
-#include "IString.h"
-
 //
 #include <algorithm>
 #include <atomic>
@@ -62,75 +59,66 @@ namespace logger = SKSE::log;
 
 namespace util
 {
-	using SKSE::stl::report_and_fail;
+    using SKSE::stl::report_and_fail;
 }
 
 namespace RE
 {
-	template <class T1, class T2>
-	[[nodiscard]] constexpr bool operator==(const BSTSmartPointer<T1>& a_lhs, T2* a_rhs)
-	{
-		return a_lhs.get() == a_rhs;
-	}
+    template <class T1, class T2>
+    [[nodiscard]] constexpr auto operator==(const BSTSmartPointer<T1>& a_lhs, T2* a_rhs) -> bool
+    {
+        return a_lhs.get() == a_rhs;
+    }
 
-	template <class T1, class T2>
-	[[nodiscard]] constexpr bool operator!=(const BSTSmartPointer<T1>& a_lhs, T2* a_rhs)
-	{
-		return !(a_lhs.get() == a_rhs);
-	}
+    template <class T1, class T2>
+    [[nodiscard]] constexpr auto operator!=(const BSTSmartPointer<T1>& a_lhs, T2* a_rhs) -> bool
+    {
+        return !(a_lhs.get() == a_rhs);
+    }
 
-	template <class T1, class T2>
-	[[nodiscard]] constexpr bool operator==(const NiPointer<T1>& a_lhs, T2* a_rhs)
-	{
-		return a_lhs.get() == a_rhs;
-	}
+    template <class T1, class T2>
+    [[nodiscard]] constexpr auto operator==(const NiPointer<T1>& a_lhs, T2* a_rhs) -> bool
+    {
+        return a_lhs.get() == a_rhs;
+    }
 
-	template <class T1, class T2>
-	[[nodiscard]] constexpr bool operator!=(const NiPointer<T1>& a_lhs, T2* a_rhs)
-	{
-		return !(a_lhs.get() == a_rhs);
-	}
+    template <class T1, class T2>
+    [[nodiscard]] constexpr auto operator!=(const NiPointer<T1>& a_lhs, T2* a_rhs) -> bool
+    {
+        return !(a_lhs.get() == a_rhs);
+    }
 }
 
 // WRAPPER FUNCTIONS(makes the overall code cleaner as it's a function call instead of defineing RE::NiPointer<T>{...} / RE::BSTSmartPointer<T>{...} every time...
 namespace hdt
 {
-	template <class T>
-	[[nodiscard]] RE::NiPointer<T> make_nismart(T* a_ptr)
-	{
-		RE::NiPointer<T> result;
-		result.reset(a_ptr);
-		return result;
-	}
+    template <class T>
+    [[nodiscard]] auto make_nismart(T* a_ptr) -> RE::NiPointer<T>
+    {
+        RE::NiPointer<T> result;
+        result.reset(a_ptr);
+        return result;
+    }
 
-	template <class T>
-	[[nodiscard]] RE::BSTSmartPointer<T> make_smart(T* a_ptr)
-	{
-		RE::BSTSmartPointer<T> result;
-		result.reset(a_ptr);
-		return result;
-	}
+    template <class T>
+    [[nodiscard]] auto make_smart(T* a_ptr) -> RE::BSTSmartPointer<T>
+    {
+        RE::BSTSmartPointer<T> result;
+        result.reset(a_ptr);
+        return result;
+    }
 }
 
 namespace std
 {
-	template <>
-	struct hash<hdt::IDStr>
-	{
-		size_t operator()(const hdt::IDStr& id) const noexcept
-		{
-			return std::hash<std::string>()(id->cstr());
-		}
-	};
-
-	template <>
-	struct hash<hdt::IString>
-	{
-		size_t operator()(const hdt::IString& id) const noexcept
-		{
-			return std::hash<std::string>()(id.cstr());
-		}
-	};
+    template <typename CharT>
+    struct hash<RE::detail::BSFixedString<CharT>>
+    {
+        [[nodiscard]] auto operator()(const RE::detail::BSFixedString<CharT>& a_key) const noexcept -> std::size_t
+        {
+            return std::hash<const CharT*>{}(a_key.data());
+        }
+    };
 }
 
 #define DLLEXPORT __declspec(dllexport)
