@@ -182,7 +182,7 @@ namespace hdt
         XMLReader* m_reader;
         std::unordered_map<RE::BSFixedString, RE::BSFixedString> m_renameMap;
 
-        auto findObjectByName(const RE::BSFixedString& name) -> RE::NiNode*;
+        [[nodiscard]] auto findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*;
         auto getOrCreateBone(const RE::BSFixedString& name) -> SkyrimBone*;
 
         std::string m_filePath;
@@ -194,12 +194,12 @@ namespace hdt
         std::unordered_map<RE::BSFixedString, std::shared_ptr<btCollisionShape>> m_shapes;
         std::vector<std::shared_ptr<btCollisionShape>> m_shapeRefs;
 
-        auto generateMeshBody(const std::string name, DefaultBBP::NameSet_t* names)
+        auto generateMeshBody(const std::string& name, DefaultBBP::NameSet_t* names)
             -> std::pair<RE::BSTSmartPointer<SkyrimBody>, VertexOffsetMap>;
 
         auto findBones(const RE::BSFixedString& bodyAName, const RE::BSFixedString& bodyBName, SkyrimBone*& bodyA,
                        SkyrimBone*& bodyB) -> bool;
-        auto parseFrameType(const std::string& name, FrameType& type, btTransform& frame) -> bool;
+        auto parseFrameType(const std::string& name, FrameType& type, btTransform& frame) const -> bool;
         static auto calcFrame(FrameType type, const btTransform& frame, const btQsTransform& trA,
                               const btQsTransform& trB, btTransform& frameA, btTransform& frameB) -> void;
         auto readFrameLerp(btTransform& tr) const -> void;
@@ -216,7 +216,7 @@ namespace hdt
         auto createBoneFromNodeName(const RE::BSFixedString& bodyName, const RE::BSFixedString& templateName = "",
                                     const bool readTemplate = false,
                                     const SkyrimSystem* old_system = nullptr) -> SkyrimBone*;
-        auto readOrUpdateBone(SkyrimSystem* old_system = nullptr) -> void;
+        auto readOrUpdateBone(const SkyrimSystem* old_system = nullptr) -> void;
         auto readPerVertexShape(DefaultBBP::NameMap_t meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readPerTriangleShape(DefaultBBP::NameMap_t* meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readGenericConstraint() -> RE::BSTSmartPointer<Generic6DofConstraint>;
