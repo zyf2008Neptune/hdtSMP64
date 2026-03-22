@@ -100,7 +100,7 @@ namespace hdt
             U32 m_collisionFilter = 0;
         };
 
-        enum struct FrameType
+        enum struct FrameType:uint8_t
         {
             FrameInA,
             FrameInB,

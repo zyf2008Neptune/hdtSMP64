@@ -12,9 +12,9 @@ namespace hdt
     struct SkyrimBody : SkinnedMeshBody
     {
         SkyrimBody();
-        ~SkyrimBody() override = default;
+        ~SkyrimBody();
 
-        enum class SharedType
+        enum class SharedType : uint8_t
         {
             SHARED_PUBLIC,
             SHARED_INTERNAL,

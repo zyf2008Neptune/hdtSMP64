@@ -9,9 +9,11 @@ namespace hdt
         m_shared = SharedType::SHARED_PUBLIC;
     }
 
+    SkyrimBody::~SkyrimBody() {}
+
     auto SkyrimBody::canCollideWith(const SkinnedMeshBody* rhs) const -> bool
     {
-        const auto body = reinterpret_cast<SkyrimBody*>(const_cast<SkinnedMeshBody*>(rhs));
+        const auto body = dynamic_cast<const SkyrimBody*>(rhs);
         if (m_disabled || body->m_disabled)
         {
             return false;
@@ -39,8 +41,6 @@ namespace hdt
                 return false;
             }
             break;
-        default:
-            return false;
         }
 
         return SkinnedMeshBody::canCollideWith(rhs);
@@ -54,4 +54,4 @@ namespace hdt
         }
         SkinnedMeshBody::internalUpdate();
     }
-}
+} // namespace hdt

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <bit>
 #include <cassert>
 #include <cfloat>
 #include <limits>
@@ -103,17 +104,15 @@ namespace hdt
             return std::numeric_limits<float>::infinity();
         }
 
-        static constexpr auto threehalfs = 1.5F;
-        const float x2 = number * 0.5F;
+        const __m128 n = _mm_set_ss(number);
+        const __m128 est = _mm_rsqrt_ss(n);
 
-        // safe bit-level cast (C++20+)
-        auto i = std::bit_cast<U32>(number);
-        i = 0x5f375a86u - (i >> 1); // initial magic approximation
-        auto res = std::bit_cast<float>(i);
+        const __m128 muls = _mm_mul_ss(_mm_mul_ss(n, est), est);
 
-        // one Newton-Raphson iteration is often sufficient:
-        res = res * (threehalfs - (x2 * res * res));
-        return res;
+        const __m128 half_est = _mm_mul_ss(est, _mm_set_ss(0.5f));
+        const __m128 three_minus_muls = _mm_sub_ss(_mm_set_ss(3.0f), muls);
+
+        return _mm_cvtss_f32(_mm_mul_ss(half_est, three_minus_muls));
     }
 
     template <class T>
@@ -148,13 +147,7 @@ namespace hdt
         return (x + a - 1) & -a;
     }
 
-    inline auto aligned2Pow(const U32 lim) -> U32
-    {
-        unsigned long size;
-        _BitScanReverse(&size, lim);
-        size = 1 << size;
-        return size;
-    }
+    inline auto aligned2Pow(const U32 lim) -> U32 { return std::bit_floor(lim); }
 
     ATTRIBUTE_ALIGNED16(class) btQsTransform
     {
@@ -261,7 +254,7 @@ namespace hdt
         btMatrix4x3(const btQsTransform& t)
         {
             this->setRotation(t.getBasis());
-            __m128 scale = pshufd<0xFF>(t.getOrigin().get128());
+            const __m128 scale = pshufd<0xFF>(t.getOrigin().get128());
             m_row[0] = _mm_mul_ps(m_row[0], scale);
             m_row[1] = _mm_mul_ps(m_row[1], scale);
             m_row[2] = _mm_mul_ps(m_row[2], scale);
@@ -280,10 +273,10 @@ namespace hdt
         auto operator*(const btVector3& rhs) const -> btVector3
         {
 #ifdef BT_ALLOW_SSE4
-            auto v = _mm_blend_ps(rhs.get128(), _mm_set_ps1(1), 0x8);
+            const auto v = _mm_blend_ps(rhs.get128(), _mm_set_ps1(1), 0x8);
             __m128 xmm0 = _mm_dp_ps(m_row[0], v, 0xF1);
-            __m128 xmm1 = _mm_dp_ps(m_row[1], v, 0xF2);
-            __m128 xmm2 = _mm_dp_ps(m_row[2], v, 0xF4);
+            const __m128 xmm1 = _mm_dp_ps(m_row[1], v, 0xF2);
+            const __m128 xmm2 = _mm_dp_ps(m_row[2], v, 0xF4);
             xmm0 = _mm_or_ps(xmm0, xmm1);
             xmm0 = _mm_or_ps(xmm0, xmm2);
 #else
@@ -304,7 +297,7 @@ namespace hdt
         auto mulPack(const btVector3& rhs, float packW) const -> __m128
         {
 #ifdef BT_ALLOW_SSE4
-            auto v = _mm_blend_ps(rhs.get128(), _mm_set_ps1(1), 0x8);
+            const auto v = _mm_blend_ps(rhs.get128(), _mm_set_ps1(1), 0x8);
             __m128 xmm0 = _mm_dp_ps(m_row[0], v, 0xF1); // x, 0, 0, 0
             __m128 xmm1 = _mm_dp_ps(m_row[1], v, 0xF2); // 0, y, 0, 0
             xmm0 = _mm_or_ps(xmm0, xmm1); // x, y, 0, 0
@@ -348,7 +341,7 @@ namespace hdt
             btMatrix3x3 rot;
             rot.setRotation(t.getBasis());
             rot = rot.transpose();
-            __m128 scale = pshufd<0xFF>(t.getOrigin().get128());
+            const __m128 scale = pshufd<0xFF>(t.getOrigin().get128());
             m_col[0] = rot[0].get128() * scale;
             m_col[1] = rot[1].get128() * scale;
             m_col[2] = rot[2].get128() * scale;

@@ -37,7 +37,7 @@ namespace hdt
 
     public:
         SkinnedMeshBody();
-        ~SkinnedMeshBody() override = default;
+        ~SkinnedMeshBody();
 
         struct CollisionShape : public btCollisionShape // a shape only used for markout
         {

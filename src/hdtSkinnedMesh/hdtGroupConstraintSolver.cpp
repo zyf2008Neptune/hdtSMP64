@@ -65,16 +65,16 @@ namespace hdt
         const __m128 lowerLimit = _mm_set_ps1(c.m_lowerLimit);
         const __m128 upperLimit = _mm_set_ps1(c.m_upperLimit);
 
-        __m256 invMass = pack256(body1.internalGetInvMass().mVec128, body2.internalGetInvMass().mVec128);
+        const __m256 invMass = pack256(body1.internalGetInvMass().mVec128, body2.internalGetInvMass().mVec128);
         __m256 deltaLinearVelocity =
             pack256(body1.internalGetDeltaLinearVelocity().mVec128, body2.internalGetDeltaLinearVelocity().mVec128);
         __m256 deltaAngularVelocity =
             pack256(body1.internalGetDeltaAngularVelocity().mVec128, body2.internalGetDeltaAngularVelocity().mVec128);
 
-        __m256 contactNormal = pack256(c.m_contactNormal1.mVec128, c.m_contactNormal2.mVec128);
-        __m256 relposCrossNormal = pack256(c.m_relpos1CrossNormal.mVec128, c.m_relpos2CrossNormal.mVec128);
-        __m256 deltaVelDotn = _mm256_add_ps(_mm256_dp_ps(contactNormal, deltaLinearVelocity, 0x7f),
-                                            _mm256_dp_ps(relposCrossNormal, deltaAngularVelocity, 0x7f));
+        const __m256 contactNormal = pack256(c.m_contactNormal1.mVec128, c.m_contactNormal2.mVec128);
+        const __m256 relposCrossNormal = pack256(c.m_relpos1CrossNormal.mVec128, c.m_relpos2CrossNormal.mVec128);
+        const __m256 deltaVelDotn = _mm256_add_ps(_mm256_dp_ps(contactNormal, deltaLinearVelocity, 0x7f),
+                                                  _mm256_dp_ps(relposCrossNormal, deltaAngularVelocity, 0x7f));
         deltaImpulse = FMNADD(_mm256_castps256_ps128(deltaVelDotn), tmp, deltaImpulse);
         deltaImpulse = FMNADD(_mm256_extractf128_ps(deltaVelDotn, 1), tmp, deltaImpulse);
 
@@ -85,7 +85,7 @@ namespace hdt
         // DOT_PRODUCT(c.m_relpos2CrossNormal.mVec128, body2.internalGetDeltaAngularVelocity().mVec128)); deltaImpulse =
         // FMNADD(deltaVel1Dotn, tmp, deltaImpulse); deltaImpulse = FMNADD(deltaVel2Dotn, tmp, deltaImpulse);
         tmp = _mm_add_ps(c.m_appliedImpulse, deltaImpulse); // sum
-        auto appliedImpulse = _mm_max_ps(_mm_min_ps(tmp, upperLimit), lowerLimit);
+        const auto appliedImpulse = _mm_max_ps(_mm_min_ps(tmp, upperLimit), lowerLimit);
         deltaImpulse = _mm_sub_ps(appliedImpulse, c.m_appliedImpulse);
         c.m_appliedImpulse = appliedImpulse;
         // const __m128 maskLower = _mm_cmpgt_ps(tmp, lowerLimit);
@@ -94,8 +94,8 @@ namespace hdt
         // c.m_appliedImpulse), deltaImpulse, maskUpper), maskLower); c.m_appliedImpulse = _mm_blendv_ps(lowerLimit,
         // _mm_blendv_ps(upperLimit, tmp, maskUpper), maskLower);
 
-        auto deltaImpulse2 = pack256(deltaImpulse, deltaImpulse);
-        auto angularComponent = pack256(c.m_angularComponentA.mVec128, c.m_angularComponentB.mVec128);
+        const auto deltaImpulse2 = pack256(deltaImpulse, deltaImpulse);
+        const auto angularComponent = pack256(c.m_angularComponentA.mVec128, c.m_angularComponentB.mVec128);
         deltaLinearVelocity = FMADD256(_mm256_mul_ps(contactNormal, invMass), deltaImpulse2, deltaLinearVelocity);
         deltaAngularVelocity = FMADD256(angularComponent, deltaImpulse2, deltaAngularVelocity);
         std::tie(body1.internalGetDeltaLinearVelocity().mVec128, body2.internalGetDeltaLinearVelocity().mVec128) =
@@ -121,16 +121,16 @@ namespace hdt
         __m128 deltaImpulse = _mm_set_ps1(c.m_rhs - btScalar(c.m_appliedImpulse) * c.m_cfm);
         const __m128 lowerLimit = _mm_set_ps1(c.m_lowerLimit);
 
-        __m256 invMass = pack256(body1.internalGetInvMass().mVec128, body2.internalGetInvMass().mVec128);
+        const __m256 invMass = pack256(body1.internalGetInvMass().mVec128, body2.internalGetInvMass().mVec128);
         __m256 deltaLinearVelocity =
             pack256(body1.internalGetDeltaLinearVelocity().mVec128, body2.internalGetDeltaLinearVelocity().mVec128);
         __m256 deltaAngularVelocity =
             pack256(body1.internalGetDeltaAngularVelocity().mVec128, body2.internalGetDeltaAngularVelocity().mVec128);
 
-        __m256 contactNormal = pack256(c.m_contactNormal1.mVec128, c.m_contactNormal2.mVec128);
-        __m256 relposCrossNormal = pack256(c.m_relpos1CrossNormal.mVec128, c.m_relpos2CrossNormal.mVec128);
-        __m256 deltaVelDotn = _mm256_add_ps(_mm256_dp_ps(contactNormal, deltaLinearVelocity, 0x7f),
-                                            _mm256_dp_ps(relposCrossNormal, deltaAngularVelocity, 0x7f));
+        const __m256 contactNormal = pack256(c.m_contactNormal1.mVec128, c.m_contactNormal2.mVec128);
+        const __m256 relposCrossNormal = pack256(c.m_relpos1CrossNormal.mVec128, c.m_relpos2CrossNormal.mVec128);
+        const __m256 deltaVelDotn = _mm256_add_ps(_mm256_dp_ps(contactNormal, deltaLinearVelocity, 0x7f),
+                                                  _mm256_dp_ps(relposCrossNormal, deltaAngularVelocity, 0x7f));
         deltaImpulse = FMNADD(_mm256_castps256_ps128(deltaVelDotn), tmp, deltaImpulse);
         deltaImpulse = FMNADD(_mm256_extractf128_ps(deltaVelDotn, 1), tmp, deltaImpulse);
         // const __m128 deltaVel1Dotn = _mm_add_ps(DOT_PRODUCT(c.m_contactNormal1.mVec128,
@@ -141,15 +141,15 @@ namespace hdt
         // FMNADD(deltaVel1Dotn, tmp, deltaImpulse); deltaImpulse = FMNADD(deltaVel2Dotn, tmp, deltaImpulse);
 
         tmp = _mm_add_ps(c.m_appliedImpulse, deltaImpulse);
-        auto appliedImpulse = _mm_max_ps(tmp, lowerLimit);
+        const auto appliedImpulse = _mm_max_ps(tmp, lowerLimit);
         deltaImpulse = _mm_sub_ps(appliedImpulse, c.m_appliedImpulse);
         c.m_appliedImpulse = appliedImpulse;
         // const __m128 mask = _mm_cmpgt_ps(tmp, lowerLimit);
         // deltaImpulse = _mm_blendv_ps(_mm_sub_ps(lowerLimit, c.m_appliedImpulse), deltaImpulse, mask);
         // c.m_appliedImpulse = _mm_blendv_ps(lowerLimit, tmp, mask);
 
-        auto deltaImpulse2 = pack256(deltaImpulse, deltaImpulse);
-        auto angularComponent = pack256(c.m_angularComponentA.mVec128, c.m_angularComponentB.mVec128);
+        const auto deltaImpulse2 = pack256(deltaImpulse, deltaImpulse);
+        const auto angularComponent = pack256(c.m_angularComponentA.mVec128, c.m_angularComponentB.mVec128);
         deltaLinearVelocity = FMADD256(_mm256_mul_ps(contactNormal, invMass), deltaImpulse2, deltaLinearVelocity);
         deltaAngularVelocity = FMADD256(angularComponent, deltaImpulse2, deltaAngularVelocity);
         std::tie(body1.internalGetDeltaLinearVelocity().mVec128, body2.internalGetDeltaLinearVelocity().mVec128) =
@@ -209,7 +209,7 @@ namespace hdt
         std::scoped_lock lb(*m_lockOrderB);
 
         m_solverLowerLimit(*m_bodyA->m_body, *m_bodyB->m_body, *m_contact);
-        float totalImpulse = m_contact->m_appliedImpulse;
+        const float totalImpulse = m_contact->m_appliedImpulse;
 
         if (totalImpulse > 0)
         {
@@ -246,8 +246,8 @@ namespace hdt
                                                              const btContactSolverInfo& infoGlobal,
                                                              btIDebugDraw* debugDrawer) -> btScalar
     {
-        auto ret = Base::solveGroupCacheFriendlySetup(bodies, numBodies, manifoldPtr, numManifolds, constraints,
-                                                      numConstraints, infoGlobal, debugDrawer);
+        const auto ret = Base::solveGroupCacheFriendlySetup(bodies, numBodies, manifoldPtr, numManifolds, constraints,
+                                                            numConstraints, infoGlobal, debugDrawer);
 
         concurrency::parallel_for_each(m_groups.begin(), m_groups.end(),
                                        [&](ConstraintGroup* i)
@@ -277,8 +277,8 @@ namespace hdt
         if (m_tmpSolverNonContactConstraintPool.size())
         {
             {
-                auto begin = &m_tmpSolverNonContactConstraintPool[0];
-                auto end = begin + m_tmpSolverNonContactConstraintPool.size();
+                const auto begin = std::addressof(m_tmpSolverNonContactConstraintPool[0]);
+                const auto end = begin + m_tmpSolverNonContactConstraintPool.size();
                 m_nonContactConstraintRowPtrs.reserve(m_tmpSolverNonContactConstraintPool.size());
                 for (auto i = begin; i < end; ++i)
                 {
@@ -299,9 +299,9 @@ namespace hdt
             for (auto& m_nonContactConstraintRowPtr : m_nonContactConstraintRowPtrs)
             {
                 auto curr = &m_nonContactConstraintRowPtr;
-                auto c = m_nonContactConstraintRowPtr;
-                auto a = &m_bodiesMt[c->m_solverBodyIdA];
-                auto b = &m_bodiesMt[c->m_solverBodyIdB];
+                const auto c = m_nonContactConstraintRowPtr;
+                const auto a = std::addressof(m_bodiesMt[c->m_solverBodyIdA]);
+                const auto b = std::addressof(m_bodiesMt[c->m_solverBodyIdB]);
                 if (lastA != a || lastB != b)
                 {
                     if (lastA && lastB)
@@ -333,13 +333,13 @@ namespace hdt
             if (constraints[j]->isEnabled())
             {
                 btTypedConstraint::btConstraintInfo1 info1;
-                constraints[j]->getInfo1(&info1);
+                constraints[j]->getInfo1(std::addressof(info1));
                 if (!info1.m_numConstraintRows && !info1.nub)
                 {
-                    int bodyAid = getOrInitSolverBody(constraints[j]->getRigidBodyA(), infoGlobal.m_timeStep);
-                    int bodyBid = getOrInitSolverBody(constraints[j]->getRigidBodyB(), infoGlobal.m_timeStep);
-                    auto bodyA = &m_bodiesMt[bodyAid];
-                    auto bodyB = &m_bodiesMt[bodyBid];
+                    const int bodyAid = getOrInitSolverBody(constraints[j]->getRigidBodyA(), infoGlobal.m_timeStep);
+                    const int bodyBid = getOrInitSolverBody(constraints[j]->getRigidBodyB(), infoGlobal.m_timeStep);
+                    auto bodyA = std::addressof(m_bodiesMt[bodyAid]);
+                    auto bodyB = std::addressof(m_bodiesMt[bodyBid]);
                     auto task = std::static_pointer_cast<SolverTask>(
                         std::make_shared<ObsoleteSolverTask>(bodyA, bodyB, constraints[j], infoGlobal.m_timeStep));
                     m_tasks.emplace_back(task);
@@ -350,13 +350,13 @@ namespace hdt
 
         for (auto i = 0; i < m_tmpSolverContactConstraintPool.size(); ++i)
         {
-            int multiplier = (infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS) ? 2 : 1;
-            auto c = &m_tmpSolverContactConstraintPool[i];
-            auto a = &m_bodiesMt[c->m_solverBodyIdA];
-            auto b = &m_bodiesMt[c->m_solverBodyIdB];
-            auto f0 = &m_tmpSolverContactFrictionConstraintPool[i * multiplier];
+            const int multiplier = (infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS) ? 2 : 1;
+            auto c = std::addressof(m_tmpSolverContactConstraintPool[i]);
+            auto a = std::addressof(m_bodiesMt[c->m_solverBodyIdA]);
+            auto b = std::addressof(m_bodiesMt[c->m_solverBodyIdB]);
+            auto f0 = std::addressof(m_tmpSolverContactFrictionConstraintPool[i * multiplier]);
             auto f1 = infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS
-                ? &m_tmpSolverContactFrictionConstraintPool[i * multiplier + 1]
+                ? std::addressof(m_tmpSolverContactFrictionConstraintPool[i * multiplier + 1])
                 : nullptr;
             auto task = std::static_pointer_cast<SolverTask>(std::make_shared<ContactSolverTask>(
                 a, b, c, f0, f1, getActiveConstraintRowSolverLowerLimit(), getActiveConstraintRowSolverGeneric()));
@@ -373,7 +373,7 @@ namespace hdt
     auto GroupConstraintSolver::solveGroupCacheFriendlyFinish(btCollisionObject** bodies, int numBodies,
                                                               const btContactSolverInfo& infoGlobal) -> btScalar
     {
-        auto ret = Base::solveGroupCacheFriendlyFinish(bodies, numBodies, infoGlobal);
+        const auto ret = Base::solveGroupCacheFriendlyFinish(bodies, numBodies, infoGlobal);
         m_tasks.clear();
         m_contactTasks.clear();
         m_nonContactTasks.clear();
@@ -394,7 +394,7 @@ namespace hdt
 
     GroupConstraintSolver::GroupConstraintSolver()
     {
-        int cpuFeatures = btCpuFeatureUtility::getCpuFeatures();
+        const int cpuFeatures = btCpuFeatureUtility::getCpuFeatures();
         if ((cpuFeatures & btCpuFeatureUtility::CPU_FEATURE_FMA3) &&
             (cpuFeatures & btCpuFeatureUtility::CPU_FEATURE_SSE4_1))
         {
@@ -409,7 +409,7 @@ namespace hdt
         [[maybe_unused]] btTypedConstraint** constraints, [[maybe_unused]] int numConstraints,
         const btContactSolverInfo& infoGlobal, [[maybe_unused]] btIDebugDraw* debugDrawer) -> btScalar
     {
-        int maxIterations = m_maxOverrideNumSolverIterations > infoGlobal.m_numIterations
+        const int maxIterations = m_maxOverrideNumSolverIterations > infoGlobal.m_numIterations
             ? m_maxOverrideNumSolverIterations
             : infoGlobal.m_numIterations;
         if (iteration <= (maxIterations * 3 + 3) / 4)

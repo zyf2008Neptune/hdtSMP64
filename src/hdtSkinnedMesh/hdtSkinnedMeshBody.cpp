@@ -103,7 +103,13 @@ __kernel void updateVertices(
             }
         }
 #endif
-        m_collisionShape = &m_bulletShape;
+        m_collisionShape = std::addressof(m_bulletShape);
+    }
+
+    SkinnedMeshBody::~SkinnedMeshBody()
+    {
+        // m_bonesGPU.discard_data();
+        // m_verticesGPU.discard_data();
     }
 
     __forceinline auto calcVertexState(__m128 skinPos, const Bone& bone, __m128 w) -> __m128
@@ -157,17 +163,17 @@ __kernel void updateVertices(
     {
         for (size_t i = 0; i < m_skinnedBones.size(); ++i)
         {
-            auto& v = m_skinnedBones.at(i);
+            auto& v = m_skinnedBones[i];
             auto boneT = v.ptr->m_currentTransform;
-            m_bones.at(i).m_vertexToWorld = btMatrix4x3T(boneT) * v.vertexToBone;
-            m_bones.at(i).m_maginMultipler = v.ptr->m_marginMultipler * boneT.getScale();
+            m_bones[i].m_vertexToWorld = btMatrix4x3T(boneT) * v.vertexToBone;
+            m_bones[i].m_maginMultipler = v.ptr->m_marginMultipler * boneT.getScale();
         }
 
         const auto size = static_cast<int>(m_vpos.size());
 
         for (auto idx = 0; idx < size; ++idx)
         {
-            auto& v = m_vertices.at(idx);
+            auto& v = m_vertices[idx];
             auto p = v.m_skinPos.get128();
             auto w = _mm_load_ps(v.m_weight);
             auto flg = _mm_movemask_ps(_mm_cmplt_ps(_mm_set_ps1(FLT_EPSILON), w));

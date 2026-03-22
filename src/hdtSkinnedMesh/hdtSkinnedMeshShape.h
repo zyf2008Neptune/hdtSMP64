@@ -1,172 +1,182 @@
 #pragma once
 
+#include <LinearMath/btScalar.h>
+
 #include "hdtCollisionAlgorithm.h"
 #include "hdtCollider.h"
 #include "hdtSkinnedMeshBody.h"
 
 namespace hdt
 {
-	class PerVertexShape;
-	class PerTriangleShape;
+    class PerVertexShape;
+    class PerTriangleShape;
 #ifdef CUDA
-	class CudaPerVertexShape;
-	class CudaPerTriangleShape;
+    class CudaPerVertexShape;
+    class CudaPerTriangleShape;
 #endif // CUDA
 
-	class SkinnedMeshShape : 
-		public RE::BSIntrusiveRefCounted
-	{
-	public:
-		BT_DECLARE_ALIGNED_ALLOCATOR();
+    class SkinnedMeshShape :
+        public RE::BSIntrusiveRefCounted
+    {
+    public:
+        BT_DECLARE_ALIGNED_ALLOCATOR()
 
-		SkinnedMeshShape(SkinnedMeshBody* body);
-		virtual ~SkinnedMeshShape();
+        SkinnedMeshShape(SkinnedMeshBody* body);
+        virtual ~SkinnedMeshShape() {}
 
-		virtual PerVertexShape* asPerVertexShape() { return nullptr; }
-		virtual PerTriangleShape* asPerTriangleShape() { return nullptr; }
+        virtual auto asPerVertexShape() -> PerVertexShape* { return nullptr; }
+        virtual auto asPerTriangleShape() -> PerTriangleShape* { return nullptr; }
 
-		const Aabb& getAabb() const { return m_tree.aabbAll; }
+        auto getAabb() const -> const Aabb& { return m_tree.aabbAll; }
 
-		virtual void clipColliders();
-		virtual void finishBuild() = 0;
-		virtual void internalUpdate() = 0;
-		virtual int getBonePerCollider() = 0;
-		virtual void markUsedVertices(bool* flags) = 0;
-		virtual void remapVertices(UINT* map) = 0;
+        virtual auto clipColliders() -> void;
+        virtual auto finishBuild() -> void = 0;
+        virtual auto internalUpdate() -> void = 0;
+        virtual auto getBonePerCollider() -> int = 0;
+        virtual auto markUsedVertices(bool* flags) -> void = 0;
+        virtual auto remapVertices(UINT* map) -> void = 0;
 
-		virtual float getColliderBoneWeight(const Collider* c, int boneIdx) = 0;
-		virtual int getColliderBoneIndex(const Collider* c, int boneIdx) = 0;
+        virtual auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float = 0;
+        virtual auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int = 0;
 #ifndef CUDA
-		virtual btVector3 baryCoord(const Collider* c, const btVector3& p) = 0;
-		virtual float baryWeight(const btVector3 & w, int boneIdx) = 0;
+        virtual auto baryCoord(const Collider* c, const btVector3& p) -> btVector3 = 0;
+        virtual auto baryWeight(const btVector3& w, int boneIdx) -> float = 0;
 #endif // !CUDA
 
-		SkinnedMeshBody* m_owner;
+        SkinnedMeshBody* m_owner;
 #ifdef CUDA
-		std::shared_ptr<Aabb[]> m_aabb;
+        std::shared_ptr<Aabb[]> m_aabb;
 #else
-		vectorA16<Aabb> m_aabb;
+        vectorA16<Aabb> m_aabb;
 #endif // CUDA
-		vectorA16<Collider> m_colliders;
-		ColliderTree m_tree;
-		float m_windEffect = 0.f; //effect from xml m_windEffect
+        vectorA16<Collider> m_colliders;
+        ColliderTree m_tree;
+        float m_windEffect = 0.f; //effect from xml m_windEffect
 
 #ifdef ENABLE_CL
-		cl::Buffer		m_aabbCL;
-		cl::Buffer		m_colliderCL;
-		cl::Event		m_eDoneCL;
-		virtual void internalUpdateCL() = 0;
+        cl::Buffer m_aabbCL;
+        cl::Buffer m_colliderCL;
+        cl::Event m_eDoneCL;
+        virtual void internalUpdateCL() = 0;
 #endif
-	};
+    };
 
-	class PerVertexShape : public SkinnedMeshShape
-	{
-	public:
+    class PerVertexShape : public SkinnedMeshShape
+    {
+    public:
 #ifdef CUDA
-		using CudaType = CudaPerVertexShape;
+        using CudaType = CudaPerVertexShape;
 #endif // CUDA
 
-		PerVertexShape(SkinnedMeshBody* body);
-		virtual ~PerVertexShape();
+        PerVertexShape(SkinnedMeshBody* body);
+        ~PerVertexShape() override;
 
-		PerVertexShape* asPerVertexShape() override { return this; }
+        auto asPerVertexShape() -> PerVertexShape* override { return this; }
 
-		void internalUpdate() override;
-		int getBonePerCollider() override { return 4; }
+        auto internalUpdate() -> void override;
+        auto getBonePerCollider() -> int override { return 4; }
 
-		float getColliderBoneWeight(const Collider* c, int boneIdx) override
-		{
-			return m_owner->m_vertices[c->vertex].m_weight[boneIdx];
-		}
+        auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float override
+        {
+            return m_owner->m_vertices[c->vertex].m_weight[boneIdx];
+        }
 
-		int getColliderBoneIndex(const Collider* c, int boneIdx) override
-		{
-			return m_owner->m_vertices[c->vertex].getBoneIdx(boneIdx);
-		}
+        auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int override
+        {
+            return m_owner->m_vertices[c->vertex].getBoneIdx(boneIdx);
+        }
 
 #ifndef CUDA
-		btVector3 baryCoord([[maybe_unused]] const Collider* c, [[maybe_unused]] const btVector3& p) override { return btVector3(1, 1, 1); }
-		float baryWeight([[maybe_unused]] const btVector3 & w, [[maybe_unused]] int boneIdx) override { return 1; }
+        auto baryCoord([[maybe_unused]] const Collider* c, [[maybe_unused]] const btVector3& p) -> btVector3 override
+        {
+            return btVector3(1, 1, 1);
+        }
+
+        auto baryWeight([[maybe_unused]] const btVector3& w, [[maybe_unused]] int boneIdx) -> float override
+        {
+            return 1;
+        }
 #endif // !CUDA
-		void finishBuild() override;
-		void markUsedVertices(bool* flags) override;
-		void remapVertices(UINT* map) override;
+        auto finishBuild() -> void override;
+        auto markUsedVertices(bool* flags) -> void override;
+        auto remapVertices(UINT* map) -> void override;
 
-		void autoGen();
+        auto autoGen() -> void;
 
-		struct ShapeProp
-		{
-			float margin = 1.0f;
-		} m_shapeProp;
+        struct ShapeProp
+        {
+            float margin = 1.0f;
+        } m_shapeProp;
 
 #ifdef CUDA
-		std::shared_ptr<CudaPerVertexShape> m_cudaObject;
+        std::shared_ptr<CudaPerVertexShape> m_cudaObject;
 #endif // CUDA
 
 #ifdef ENABLE_CL
-		static hdtCLKernel		m_kernel;
-		virtual void internalUpdateCL();
+        static hdtCLKernel m_kernel;
+        virtual void internalUpdateCL();
 #endif
-	};
+    };
 
-	class PerTriangleShape : public SkinnedMeshShape
-	{
-	public:
+    class PerTriangleShape : public SkinnedMeshShape
+    {
+    public:
 #ifdef CUDA
-		using CudaType = CudaPerTriangleShape;
+        using CudaType = CudaPerTriangleShape;
 #endif
 
-		PerTriangleShape(SkinnedMeshBody* body);
-		virtual ~PerTriangleShape();
+        PerTriangleShape(SkinnedMeshBody* body);
+        ~PerTriangleShape() override;
 
-		PerVertexShape* asPerVertexShape() override { return m_verticesCollision.get(); }
-		PerTriangleShape* asPerTriangleShape() override { return this; }
+        auto asPerVertexShape() -> PerVertexShape* override { return m_verticesCollision.get(); }
+        auto asPerTriangleShape() -> PerTriangleShape* override { return this; }
 
-		void internalUpdate() override;
-		int getBonePerCollider() override { return 12; }
+        auto internalUpdate() -> void override;
+        auto getBonePerCollider() -> int override { return 12; }
 
-		float getColliderBoneWeight(const Collider* c, int boneIdx) override
-		{
-			return m_owner->m_vertices[c->vertices[boneIdx / 4]].m_weight[boneIdx % 4];
-		}
+        auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float override
+        {
+            return m_owner->m_vertices[c->vertices[boneIdx / 4]].m_weight[boneIdx % 4];
+        }
 
-		int getColliderBoneIndex(const Collider* c, int boneIdx) override
-		{
-			return m_owner->m_vertices[c->vertices[boneIdx / 4]].getBoneIdx(boneIdx % 4);
-		}
+        auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int override
+        {
+            return m_owner->m_vertices[c->vertices[boneIdx / 4]].getBoneIdx(boneIdx % 4);
+        }
 
 #ifndef CUDA
-		btVector3 baryCoord(const Collider* c, const btVector3& p) override
-		{
-			return BaryCoord(
-				m_owner->m_vpos[c->vertices[0]].pos(),
-				m_owner->m_vpos[c->vertices[1]].pos(),
-				m_owner->m_vpos[c->vertices[2]].pos(),
-				p);
-		}
-		float baryWeight(const btVector3 & w, int boneIdx) override { return w[boneIdx / 4]; }
+        auto baryCoord(const Collider* c, const btVector3& p) -> btVector3 override
+        {
+            return BaryCoord(
+                m_owner->m_vpos[c->vertices[0]].pos(),
+                m_owner->m_vpos[c->vertices[1]].pos(),
+                m_owner->m_vpos[c->vertices[2]].pos(),
+                p);
+        }
+
+        auto baryWeight(const btVector3& w, int boneIdx) -> float override { return w[boneIdx / 4]; }
 #endif
-		void finishBuild() override;
-		void markUsedVertices(bool* flags) override;
-		void remapVertices(UINT* map) override;
+        auto finishBuild() -> void override;
+        auto markUsedVertices(bool* flags) -> void override;
+        auto remapVertices(UINT* map) -> void override;
 
-		void addTriangle(int p0, int p1, int p2);
+        auto addTriangle(int p0, int p1, int p2) -> void;
 
-		struct ShapeProp
-		{
-			float margin = 1.0f;
-			float penetration = 1.f;
-		} m_shapeProp;
+        struct ShapeProp
+        {
+            float margin = 1.0f;
+            float penetration = 1.f;
+        } m_shapeProp;
 
-		RE::BSTSmartPointer<PerVertexShape> m_verticesCollision;
+        RE::BSTSmartPointer<PerVertexShape> m_verticesCollision;
 
 #ifdef CUDA
-		std::shared_ptr<CudaPerTriangleShape> m_cudaObject;
+        std::shared_ptr<CudaPerTriangleShape> m_cudaObject;
 #endif
 
 #ifdef ENABLE_CL
-		static hdtCLKernel		m_kernel;
-		virtual void internalUpdateCL();
+        static hdtCLKernel m_kernel;
+        virtual void internalUpdateCL();
 #endif
-	};
+    };
 }
