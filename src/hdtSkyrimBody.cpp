@@ -14,6 +14,12 @@ namespace hdt
     auto SkyrimBody::canCollideWith(const SkinnedMeshBody* rhs) const -> bool
     {
         const auto body = dynamic_cast<const SkyrimBody*>(rhs);
+
+        if (!body)
+        {
+            return SkinnedMeshBody::canCollideWith(rhs);
+        }
+
         if (m_disabled || body->m_disabled)
         {
             return false;

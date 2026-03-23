@@ -6,9 +6,9 @@
 #include <SKSE/SKSE.h>
 
 #ifdef NDEBUG
-#	include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/basic_file_sink.h>
 #else
-#	include <spdlog/sinks/msvc_sink.h>
+#include <spdlog/sinks/msvc_sink.h>
 #endif
 #pragma warning(pop)
 
@@ -35,23 +35,23 @@
 #include <vector>
 
 #if defined(__has_include)
-#	if __has_include(<amp.h>) && __has_include(<amp_graphics.h>) \
+#if __has_include(<amp.h>) && __has_include(<amp_graphics.h>) \
      && __has_include(<amp_math.h>) && __has_include(<amp_short_vectors.h>)
-#		include <amp.h>
-#		include <amp_graphics.h>
-#		include <amp_math.h>
-#		include <amp_short_vectors.h>
-#	else
-#		pragma message("C++ AMP headers not found — building without C++ AMP support")
+#include <amp.h>
+#include <amp_graphics.h>
+#include <amp_math.h>
+#include <amp_short_vectors.h>
+#else
+#pragma message("C++ AMP headers not found — building without C++ AMP support")
 // Minimal stubs for types you actually use from AMP can go here.
 // Keep this small — add only the declarations your project needs.
 
-#	endif
+#endif
 #else
-#	include <amp.h>
-#	include <amp_graphics.h>
-#	include <amp_math.h>
-#	include <amp_short_vectors.h>
+#include <amp.h>
+#include <amp_graphics.h>
+#include <amp_math.h>
+#include <amp_short_vectors.h>
 #endif
 
 using namespace std::literals;
@@ -88,9 +88,10 @@ namespace RE
     {
         return !(a_lhs.get() == a_rhs);
     }
-}
+} // namespace RE
 
-// WRAPPER FUNCTIONS(makes the overall code cleaner as it's a function call instead of defineing RE::NiPointer<T>{...} / RE::BSTSmartPointer<T>{...} every time...
+// WRAPPER FUNCTIONS(makes the overall code cleaner as it's a function call instead of defineing RE::NiPointer<T>{...} /
+// RE::BSTSmartPointer<T>{...} every time...
 namespace hdt
 {
     template <class T>
@@ -108,7 +109,7 @@ namespace hdt
         result.reset(a_ptr);
         return result;
     }
-}
+} // namespace hdt
 
 namespace std
 {
@@ -117,10 +118,14 @@ namespace std
     {
         [[nodiscard]] auto operator()(const RE::detail::BSFixedString<CharT>& a_key) const noexcept -> std::size_t
         {
-            return std::hash<std::string_view>{}(a_key.data());
+            if (a_key.empty())
+            {
+                return 0;
+            }
+            return std::hash<std::basic_string_view<CharT>>{}(std::basic_string_view<CharT>{a_key.data()});
         }
     };
-}
+} // namespace std
 
 #define DLLEXPORT __declspec(dllexport)
 
