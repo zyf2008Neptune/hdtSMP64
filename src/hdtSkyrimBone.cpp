@@ -45,7 +45,7 @@ namespace hdt
     auto SkyrimBone::resetTransformToOriginal() -> void
     {
         m_node->local = convertBt(m_origTransform);
-        updateTransformUpDown(m_node, false);
+        updateTransformUpDown(m_node.get(), false);
     }
 
     auto SkyrimBone::readTransform(float timeStep) -> void
@@ -138,7 +138,7 @@ namespace hdt
 
         if (m_forceUpdateType == 1)
         {
-            updateTransformUpDown(m_node, false);
+            updateTransformUpDown(m_node.get(), false);
         }
         else if (m_forceUpdateType == 2)
         {

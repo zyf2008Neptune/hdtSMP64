@@ -30,23 +30,41 @@ namespace hdt
         case SharedType::SHARED_PUBLIC:
             break;
         case SharedType::SHARED_INTERNAL:
+        {
+            if (!m_mesh || !body->m_mesh)
+            {
+                break;
+            }
             if (m_mesh->m_skeleton != body->m_mesh->m_skeleton)
             {
                 return false;
             }
             break;
+        }
         case SharedType::SHARED_EXTERNAL:
+        {
+            if (!m_mesh || !body->m_mesh)
+            {
+                break;
+            }
             if (m_mesh->m_skeleton == body->m_mesh->m_skeleton)
             {
                 return false;
             }
             break;
+        }
         case SharedType::SHARED_PRIVATE:
+        {
+            if (!m_mesh || !body->m_mesh)
+            {
+                break;
+            }
             if (m_mesh != body->m_mesh)
             {
                 return false;
             }
             break;
+        }
         }
 
         return SkinnedMeshBody::canCollideWith(rhs);

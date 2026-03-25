@@ -744,7 +744,7 @@ namespace hdt
                 return &i;
             }
         }
-        return 0;
+        return nullptr;
     }
 
     auto ActorManager::Skeleton::doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, std::string_view prefix,
@@ -838,24 +838,48 @@ namespace hdt
 
     auto ActorManager::Skeleton::doSkeletonClean(RE::NiNode* dst, std::string_view prefix) -> void
     {
-        auto& children = dst->GetChildren();
+        std::vector<std::pair<RE::NiNode*, RE::NiAVObject*>> toDetach;
 
-        for (uint16_t i = children.size(); i-- > 0;)
+        std::function<void(RE::NiNode*)> traverse = [&](RE::NiNode* node)
         {
-            const auto child = castNiNode(children[i].get());
-            if (!child)
+            if (!node)
             {
-                continue;
+                return;
             }
+            for (auto& childPtr : node->GetChildren())
+            {
+                if (!childPtr)
+                {
+                    continue;
+                }
+                auto rawChild = childPtr.get();
 
-            if (prefix == std::string_view(child->name).substr(0, prefix.size()))
-            {
-                dst->DetachChildAt2(i);
+                auto cname = rawChild->name.c_str();
+                auto childName = (cname && cname[0]) ? std::string_view(cname) : std::string_view{};
+
+                if (childName.size() >= prefix.size() && childName.starts_with(prefix))
+                {
+                    {
+                        toDetach.emplace_back(node, rawChild);
+                    }
+                }
+                else
+                {
+                    auto childNode = rawChild->AsNode();
+                    if (childNode)
+                    {
+                        traverse(childNode);
+                    }
+                }
             }
-            else
-            {
-                doSkeletonClean(child, prefix);
-            }
+        };
+
+        traverse(dst);
+
+        for (auto& [parent, child] : toDetach)
+        {
+            RE::NiPointer<RE::NiAVObject> ref;
+            parent->DetachChild(child, ref);
         }
     }
 

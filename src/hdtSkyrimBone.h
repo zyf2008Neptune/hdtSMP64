@@ -2,6 +2,7 @@
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <RE/N/NiNode.h>
+#include <RE/N/NiSmartPointer.h>
 
 #include "hdtSkinnedMesh/hdtSkinnedMeshBone.h"
 
@@ -18,8 +19,8 @@ namespace hdt
         auto writeTransform() -> void override;
 
         int m_depth;
-        RE::NiNode* m_node;
-        RE::NiNode* m_skeleton;
+        RE::NiPointer<RE::NiNode> m_node;
+        RE::NiPointer<RE::NiNode> m_skeleton;
 
     private:
         int m_forceUpdateType;

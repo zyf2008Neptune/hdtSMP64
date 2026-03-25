@@ -34,6 +34,10 @@
         "VCPKG_OVERLAY_PORTS": {
           "type": "STRING",
           "value": "${sourceDir}/cmake/ports"
+        },
+        "VCPKG_OVERLAY_TRIPLETS": {
+          "type": "STRING",
+          "value": "${sourceDir}/cmake/triplets"
         }
       },
       "hidden": true,
@@ -54,120 +58,158 @@
       "name": "windows"
     },
     {
-     
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": {
+          "type": "STRING",
+          "value": "x64-windows-static-md-avx"
+        }
+      },
+      "hidden": true,
+      "inherits": [
+        "windows"
+      ],
+      "name": "windows-avx"
+    },
+    {
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": {
+          "type": "STRING",
+          "value": "x64-windows-static-md-avx2"
+        }
+      },
+      "hidden": true,
+      "inherits": [
+        "windows"
+      ],
+      "name": "windows-avx2"
+    },
+    {
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": {
+          "type": "STRING",
+          "value": "x64-windows-static-md-avx512"
+        }
+      },
+      "hidden": true,
+      "inherits": [
+        "windows"
+      ],
+      "name": "windows-avx512"
+    },
+    {
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX"
       },
-      
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows"
       ],
       "name": "windows-nocuda"
-      
+
     },
     {
-      
+
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /arch:AVX"
       },
-      
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
-        "windows"
+        "windows-avx"
       ],
       "name": "windows-nocuda-avx"
-      
+
     },
     {
-      
+
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /arch:AVX2"
       },
-     
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
-        "windows"
+        "windows-avx2"
       ],
       "name": "windows-nocuda-avx2"
-      
+
     },
     {
-      
+
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /arch:AVX512"
       },
-      
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
-        "windows"
+        "windows-avx512"
       ],
       "name": "windows-nocuda-avx512"
-      
+
     },
     {
-     
+
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX",
         "ENABLE_CUDA_SUPPORT": "ON"
       },
-      
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows"
       ],
       "name": "windows-cuda"
-     
+
     },
     {
-      
+
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /arch:AVX",
         "ENABLE_CUDA_SUPPORT": "ON"
       },
-      
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
-        "windows"
+        "windows-avx"
       ],
       "name": "windows-cuda-avx"
-      
+
     },
     {
-      
+
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /arch:AVX2",
         "ENABLE_CUDA_SUPPORT": "ON"
       },
-      
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
-        "windows"
+        "windows-avx2"
       ],
       "name": "windows-cuda-avx2"
-      
+
     },
     {
-      
+
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /arch:AVX512",
         "ENABLE_CUDA_SUPPORT": "ON"
       },
-     
+
       "inherits": [
         "cmake-dev",
         "vcpkg",
-        "windows"
+        "windows-avx512"
       ],
       "name": "windows-cuda-avx512"
-      
+
     }
   ],
   "version": 3
