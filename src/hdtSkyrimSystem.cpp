@@ -296,7 +296,7 @@ namespace hdt
         m_mesh = RE::make_smart<SkyrimSystem>(skeleton);
 
         // Store original locale
-        auto save_locale = std::locale();
+        const auto saved_locale = std::locale();
 
         // Set locale to en_US
         std::locale::global(std::locale("en_US"));
@@ -340,32 +340,28 @@ namespace hdt
                     }
                     else if (name == "constraint-group")
                     {
-                        auto constraint = readConstraintGroup();
-                        if (constraint)
+                        if (auto constraint = readConstraintGroup())
                         {
                             m_mesh->m_constraintGroups.push_back(constraint);
                         }
                     }
                     else if (name == "generic-constraint")
                     {
-                        auto constraint = readGenericConstraint();
-                        if (constraint)
+                        if (auto constraint = readGenericConstraint())
                         {
                             m_mesh->m_constraints.emplace_back(constraint);
                         }
                     }
                     else if (name == "stiffspring-constraint")
                     {
-                        auto constraint = readStiffSpringConstraint();
-                        if (constraint)
+                        if (auto constraint = readStiffSpringConstraint())
                         {
                             m_mesh->m_constraints.emplace_back(constraint);
                         }
                     }
                     else if (name == "conetwist-constraint")
                     {
-                        auto constraint = readConeTwistConstraint();
-                        if (constraint)
+                        if (auto constraint = readConeTwistConstraint())
                         {
                             m_mesh->m_constraints.emplace_back(constraint);
                         }
@@ -397,8 +393,7 @@ namespace hdt
                     else if (name == "shape")
                     {
                         auto attrName = m_reader->getAttribute("name");
-                        auto shape = readShape();
-                        if (shape)
+                        if (auto shape = readShape())
                         {
                             m_shapeRefs.push_back(shape);
                             m_shapes.insert(std::make_pair(attrName, shape));
@@ -423,7 +418,7 @@ namespace hdt
         }
 
         // Restore original locale
-        std::locale saved_locale;
+        std::locale::global(saved_locale);
 
         if (m_reader->GetErrorCode() != Xml::ErrorCode::None)
         {
@@ -1119,7 +1114,7 @@ namespace hdt
                     const auto bone = getOrCreateBone(m_reader->readText());
                     if (bone)
                     {
-                        body->m_canCollideWithBones.push_back(bone);
+                        body->m_canCollideWithBones.insert(bone);
                     }
                 }
                 else if (nodeName == "no-collide-with-bone")
@@ -1127,7 +1122,7 @@ namespace hdt
                     const auto bone = getOrCreateBone(m_reader->readText());
                     if (bone)
                     {
-                        body->m_noCollideWithBones.push_back(bone);
+                        body->m_noCollideWithBones.insert(bone);
                     }
                 }
                 else if (nodeName == "weight-threshold")
@@ -1273,7 +1268,7 @@ namespace hdt
                     auto bone = getOrCreateBone(m_reader->readText());
                     if (bone)
                     {
-                        body->m_canCollideWithBones.push_back(bone);
+                        body->m_canCollideWithBones.insert(bone);
                     }
                 }
                 else if (nodeName == "no-collide-with-bone")
@@ -1281,7 +1276,7 @@ namespace hdt
                     auto bone = getOrCreateBone(m_reader->readText());
                     if (bone)
                     {
-                        body->m_noCollideWithBones.push_back(bone);
+                        body->m_noCollideWithBones.insert(bone);
                     }
                 }
                 else if (nodeName == "weight-threshold")
@@ -1379,7 +1374,7 @@ namespace hdt
         return true;
     }
 
-    auto SkyrimSystemCreator::readGenericConstraintTemplate(GenericConstraintTemplate& dest) -> void
+    auto SkyrimSystemCreator::readGenericConstraintTemplate(GenericConstraintTemplate& dest) const -> void
     {
         while (m_reader->Inspect())
         {
@@ -1388,7 +1383,6 @@ namespace hdt
                 const auto& name = m_reader->GetName();
                 if (parseFrameType(name, dest.frameType, dest.frame))
                 {
-                    ;
                 }
                 else if (name == "enableLinearSprings")
                 {
@@ -1596,7 +1590,7 @@ namespace hdt
         const float sinA = axis.length();
         const float cosA = a.dot(b);
         const float angle = btAtan2(cosA, sinA);
-        return btQuaternion(axis, angle);
+        return {axis, angle};
     }
 
     auto SkyrimSystemCreator::calcFrame(FrameType type, const btTransform& frame, const btQsTransform& trA,
@@ -1606,15 +1600,19 @@ namespace hdt
         switch (type)
         {
         case FrameType::FrameInA:
+        {
             frameA = frame;
             frameInWorld = trA * btQsTransform(frame);
             frameB = (trB.inverse() * frameInWorld).asTransform();
             break;
+        }
         case FrameType::FrameInB:
+        {
             frameB = frame;
             frameInWorld = trB * btQsTransform(frameB);
             frameA = (trA.inverse() * frameInWorld).asTransform();
             break;
+        }
         case FrameType::FrameInLerp:
         {
             auto trans = trA.getOrigin().lerp(trB.getOrigin(), frame.getOrigin().x());
@@ -1732,6 +1730,14 @@ namespace hdt
             constraint->setParam(BT_CONSTRAINT_CFM, cinfo.motorCFM, i);
             constraint->setParam(BT_CONSTRAINT_STOP_ERP, cinfo.stopERP, i);
             constraint->setParam(BT_CONSTRAINT_STOP_CFM, cinfo.stopCFM, i);
+
+            if (auto rotMotor = constraint->getRotationalLimitMotor(i))
+            {
+                rotMotor->m_motorERP = cinfo.motorERP;
+                rotMotor->m_motorCFM = cinfo.motorCFM;
+                rotMotor->m_stopERP = cinfo.stopERP;
+                rotMotor->m_stopCFM = cinfo.stopCFM;
+            }
         }
         constraint->getTranslationalLimitMotor()->m_bounce = cinfo.linearBounce;
         constraint->getRotationalLimitMotor(0)->m_bounce = cinfo.angularBounce[0];
@@ -1785,7 +1791,7 @@ namespace hdt
         }
     }
 
-    auto SkyrimSystemCreator::readConeTwistConstraintTemplate(ConeTwistConstraintTemplate& dest) -> void
+    auto SkyrimSystemCreator::readConeTwistConstraintTemplate(ConeTwistConstraintTemplate& dest) const -> void
     {
         while (m_reader->Inspect())
         {
@@ -1794,7 +1800,6 @@ namespace hdt
                 const auto& name = m_reader->GetName();
                 if (parseFrameType(name, dest.frameType, dest.frame))
                 {
-                    ;
                 }
                 else if (name == "swingSpan1" || name == "coneLimit" || name == "limitZ")
                 {
@@ -1882,7 +1887,8 @@ namespace hdt
         const auto bodyBName = getRenamedBone(m_reader->getAttribute("bodyB"));
         const auto clsname = m_reader->getAttribute("template", "");
 
-        SkyrimBone *bodyA, *bodyB;
+        SkyrimBone* bodyA;
+        SkyrimBone* bodyB;
         if (!findBones(bodyAName, bodyBName, bodyA, bodyB))
         {
             return nullptr;
@@ -1907,7 +1913,8 @@ namespace hdt
         const auto bodyBName = getRenamedBone(m_reader->getAttribute("bodyB"));
         const auto clsname = m_reader->getAttribute("template", "");
 
-        SkyrimBone *bodyA = nullptr, *bodyB = nullptr;
+        SkyrimBone* bodyA = nullptr;
+        SkyrimBone* bodyB = nullptr;
         if (!findBones(bodyAName, bodyBName, bodyA, bodyB))
         {
             return nullptr;
@@ -1918,7 +1925,8 @@ namespace hdt
 
         auto cinfo = getConeTwistConstraintTemplate(clsname);
         readConeTwistConstraintTemplate(cinfo);
-        btTransform frameA, frameB;
+        btTransform frameA;
+        btTransform frameB;
         calcFrame(cinfo.frameType, cinfo.frame, trA, trB, frameA, frameB);
 
         RE::BSTSmartPointer<ConeTwistConstraint> constraint =

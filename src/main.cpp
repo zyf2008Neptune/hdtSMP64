@@ -3,10 +3,10 @@
 #include <numeric>
 #include <string>
 
-#include <boost/beast/core/string.hpp>
 #include <RE/B/BSLightingShaderMaterial.h>
 #include <RE/B/BSTextureSet.h>
 #include <RE/N/NiSourceTexture.h>
+#include <boost/beast/core/string.hpp>
 
 #include "ActorManager.h"
 #include "Events.h"
@@ -198,11 +198,9 @@ auto DumpNodeChildren(RE::NiAVObject* node) -> void
                         }
                     }
 
-                    const RE::BSShaderProperty* shaderProperty = netimmerse_cast<RE::BSShaderProperty*>(
-                        geometry->GetGeometryRuntimeData().properties[RE::BSGeometry::States::kEffect].get());
-                    if (shaderProperty)
+                    if (const auto shaderProperty = geometry->GetGeometryRuntimeData().shaderProperty.get())
                     {
-                        const RE::BSLightingShaderProperty* lightingShader =
+                        const auto lightingShader =
                             netimmerse_cast<RE::BSLightingShaderProperty*>(shaderProperty);
                         if (lightingShader)
                         {
@@ -212,7 +210,7 @@ auto DumpNodeChildren(RE::NiAVObject* node) -> void
                             {
                                 const auto textureID = static_cast<RE::BSTextureSet::Textures::Texture>(i);
 
-                                const char* texturePath = material->textureSet->GetTexturePath(textureID);
+                                auto texturePath = material->textureSet->GetTexturePath(textureID);
                                 if (!texturePath)
                                 {
                                     continue;
@@ -333,21 +331,23 @@ auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 
 auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTION::ScriptData* a_scriptData,
                       RE::TESObjectREFR* a_thisObj, RE::TESObjectREFR* a_containingObj, RE::Script* a_scriptObj,
-                      RE::ScriptLocals* a_locals, double& a_result, uint32_t& a_opcodeOffsetPtr) -> bool
+                      RE::ScriptLocals* a_locals, [[maybe_unused]] double& a_result, uint32_t& a_opcodeOffsetPtr)
+    -> bool
 {
-    std::string buffer;
-    buffer.resize(MAX_PATH);
-    std::string buffer2;
-    buffer2.resize(MAX_PATH);
+    std::string_view buffer{{}, MAX_PATH};
+    std::string_view buffer2{{}, MAX_PATH};
 
     if (!RE::Script::ParseParameters(a_paramInfo, a_scriptData, a_opcodeOffsetPtr, a_thisObj, a_containingObj,
-                                     a_scriptObj, a_locals, buffer.c_str(), buffer2.c_str()))
+                                     a_scriptObj, a_locals, buffer.data(), buffer2.data()))
     {
         return false;
     }
 
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("reset")))
+    logger::debug("SMPCommand: {} {}"sv, buffer, buffer2);
+
+    if (boost::beast::iequals(buffer, "reset"))
     {
+        logger::debug("smp reset: reloading config and resetting physics world"sv);
         RE::ConsoleLog::GetSingleton()->Print("running full smp reset");
         hdt::loadConfig();
         hdt::SkyrimPhysicsWorld::get()->resetTransformsToOriginal();
@@ -357,7 +357,7 @@ auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTI
         return true;
     }
 #ifdef CUDA
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("gpu")))
+    if (boost::beast::iequals(buffer, "gpu"))
     {
         CudaInterface::enableCuda = !CudaInterface::enableCuda;
         if (CudaInterface::instance()->hasCuda())
@@ -371,14 +371,14 @@ auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTI
 
         return true;
     }
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("timing")))
+    if (boost::beast::iequals(buffer, "timing"))
     {
         FrameTimer::instance()->reset(200);
         Console_Print("Started frame timing");
         return true;
     }
 #endif
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("dumptree")))
+    if (boost::beast::iequals(buffer, "dumptree"))
     {
         if (a_thisObj)
         {
@@ -393,19 +393,19 @@ auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTI
         return true;
     }
 
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("detail")))
+    if (boost::beast::iequals(buffer, "detail"))
     {
         SMPDebug_PrintDetailed(true);
         return true;
     }
 
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("list")))
+    if (boost::beast::iequals(buffer, "list"))
     {
         SMPDebug_PrintDetailed(false);
         return true;
     }
 
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("on")))
+    if (boost::beast::iequals(buffer, "on"))
     {
         hdt::SkyrimPhysicsWorld::get()->disabled = false;
         {
@@ -414,7 +414,7 @@ auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTI
         return true;
     }
 
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("off")))
+    if (boost::beast::iequals(buffer, "off"))
     {
         hdt::SkyrimPhysicsWorld::get()->disabled = true;
         {
@@ -423,7 +423,7 @@ auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTI
         return true;
     }
 
-    if (!boost::beast::iequals(buffer.substr(0, MAX_PATH), std::string("QueryOverride")))
+    if (boost::beast::iequals(buffer, "QueryOverride"))
     {
         RE::ConsoleLog::GetSingleton()->Print(
             hdt::Override::OverrideManager::GetSingleton()->queryOverrideData().c_str());
@@ -537,7 +537,7 @@ auto MessageHandler(SKSE::MessagingInterface::Message* a_msg) -> void
     case SKSE::MessagingInterface::kPreLoadGame:
     {
         std::string save_name = static_cast<char*>(a_msg->data);
-        save_name = save_name.substr(0, save_name.find_last_of("."));
+        save_name = save_name.substr(0, save_name.find_last_of('.'));
 
         std::ifstream ifs("Data/SKSE/Plugins/hdtOverrideSaves/" + save_name + ".dhdt", std::ios::in);
         if (ifs && ifs.is_open())
@@ -586,9 +586,9 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []()
 
     v.PluginVersion(Plugin::VERSION);
     v.PluginName(Plugin::NAME);
-    v.UsesAddressLibrary(true);
+    v.UsesAddressLibrary();
     v.CompatibleVersions({SKSE::RUNTIME_SSE_LATEST});
-    v.HasNoStructUse(true);
+    v.UsesNoStructs();
 
     return v;
 }();

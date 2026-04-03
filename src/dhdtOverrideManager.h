@@ -1,42 +1,38 @@
 #pragma once
 
 #include "DynamicHDT.h"
-#include <hdtSerialization.h>
+#include "hdtSerialization.h"
 
 extern bool g_hasPapyrusExtension;
 
-namespace hdt 
+namespace hdt::Override
 {
-	namespace Override 
-	{
+    //The formID of the armoraddon in ArmorAttachEvent cannot be acquired, which makes it impossible to check override by the formID upon attaching armoraddon.
+    class OverrideManager : public Serializer<>
+    {
+    public:
+        ~OverrideManager() override = default;
 
-		//The formID of the armoraddon in ArmorAttachEvent cannot be acquired, which makes it impossible to check override by the formID upon attaching armoraddon.
-		class OverrideManager:public Serializer<void>
-		{
-		public:
-			~OverrideManager() {};
+        //Override virtual methods inherited from Serializer
+        auto FormatVersion() -> uint32_t override { return 1; }
 
-			//Override virtual methods inherited from Serializer
-			uint32_t FormatVersion() override { return 1; };
+        auto StorageName() -> uint32_t override { return 'APFW'; }
 
-			uint32_t StorageName() override { return 'APFW'; };
+        auto Serialize() -> std::stringstream override;
 
-			std::stringstream Serialize() override;
+        auto Deserialize(std::stringstream&) -> void override;
+        //Inherit End
 
-			void Deserialize(std::stringstream&) override;
-			//Inherit End
+        static auto GetSingleton() -> OverrideManager*;
 
-			static OverrideManager* GetSingleton();
+        auto queryOverrideData() -> std::string;
 
-			std::string queryOverrideData();
+        auto registerOverride(uint32_t actor_formID, std::string old_file_path, std::string new_file_path) -> bool;
 
-			bool registerOverride(uint32_t actor_formID, std::string old_file_path, std::string new_file_path);
+        auto checkOverride(uint32_t actor_formID, const std::string& old_file_path) -> std::string;
 
-			std::string checkOverride(uint32_t actor_formID, std::string old_file_path);
-
-		protected:
-			OverrideManager() = default;
-			std::unordered_map<uint32_t, std::unordered_map<std::string, std::string>> m_ActorPhysicsFileSwapList;
-		};
-	}
+    protected:
+        OverrideManager() = default;
+        std::unordered_map<uint32_t, std::unordered_map<std::string, std::string>> m_ActorPhysicsFileSwapList;
+    };
 }

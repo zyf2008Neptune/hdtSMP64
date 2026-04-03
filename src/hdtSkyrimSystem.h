@@ -204,9 +204,9 @@ namespace hdt
                               const btQsTransform& trB, btTransform& frameA, btTransform& frameB) -> void;
         auto readFrameLerp(btTransform& tr) const -> void;
         auto readBoneTemplate(BoneTemplate& cinfo) -> void;
-        auto readGenericConstraintTemplate(GenericConstraintTemplate& dest) -> void;
+        auto readGenericConstraintTemplate(GenericConstraintTemplate& dest) const -> void;
         auto readStiffSpringConstraintTemplate(StiffSpringConstraintTemplate& dest) const -> void;
-        auto readConeTwistConstraintTemplate(ConeTwistConstraintTemplate& dest) -> void;
+        auto readConeTwistConstraintTemplate(ConeTwistConstraintTemplate& dest) const -> void;
 
         auto getBoneTemplate(const RE::BSFixedString& name) -> const BoneTemplate&;
         auto getGenericConstraintTemplate(const RE::BSFixedString& name) -> const GenericConstraintTemplate&;

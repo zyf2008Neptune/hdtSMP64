@@ -70,8 +70,7 @@ namespace hdt
     {
         if (a_ref)
         {
-            const auto bipedForm = skyrim_cast<RE::BGSBipedObjectForm*>(a_ref);
-            if (bipedForm)
+            if (const auto bipedForm = skyrim_cast<RE::BGSBipedObjectForm*>(a_ref))
             {
                 return bipedForm->bipedModelData.bipedObjectSlots.any(RE::BIPED_MODEL::BipedObjectSlot::kHair,
                                                                       RE::BIPED_MODEL::BipedObjectSlot::kLongHair);
@@ -172,8 +171,7 @@ namespace hdt
             // Check override data for current armoraddon
             if (e->skeleton->GetUserData())
             {
-                const auto actor_formID = e->skeleton->GetUserData()->formID;
-                if (actor_formID)
+                if (const auto actor_formID = e->skeleton->GetUserData()->formID)
                 {
                     const std::string physics_file_path_override =
                         Override::OverrideManager::GetSingleton()->checkOverride(
@@ -303,8 +301,7 @@ namespace hdt
                 for (const auto& entry : skeleton.head.renameMap)
                 {
                     // This case never happens to a lurker skeleton, thus we don't need to test.
-                    const auto node = findNode(headPartIter->origPartRootNode.get(), entry.second);
-                    if (node)
+                    if (const auto node = findNode(headPartIter->origPartRootNode.get(), entry.second))
                     {
                         logger::debug("Rename node {} -> {}.", entry.second.c_str(), entry.first.c_str());
                         node->name = entry.first;
@@ -548,14 +545,12 @@ namespace hdt
                 const auto wind = getWindDirection();
                 if (world->m_enableWind && wind && !(btFuzzyZero(magnitude(*wind))))
                 {
-                    const auto owner = skyrim_cast<RE::Actor*>(i.skeletonOwner.get());
-                    if (owner)
+                    if (const auto owner = skyrim_cast<RE::Actor*>(i.skeletonOwner.get()))
                     {
                         auto windray = *wind * -1; // reverse wind raycast to find obstruction
                         RE::NiPoint3 hitLocation;
                         // Raycast for object in direction of wind
-                        const auto object = Actor_CalculateLOS(owner, &windray, &hitLocation, 6.28);
-                        if (object)
+                        if (const auto object = Actor_CalculateLOS(owner, &windray, &hitLocation, 6.28))
                         {
                             // object found
                             auto diff = (owner->data.location - hitLocation);
@@ -747,7 +742,7 @@ namespace hdt
         return nullptr;
     }
 
-    auto ActorManager::Skeleton::doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, std::string_view prefix,
+    auto ActorManager::Skeleton::doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, const std::string_view prefix,
                                                  std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map) -> void
     {
         const auto& children = src->GetChildren();
@@ -775,8 +770,7 @@ namespace hdt
             }
 
             // TODO check it's not a lurker skeleton
-            const auto dstChild = findNode(dst, srcChild->name);
-            if (dstChild)
+            if (const auto dstChild = findNode(dst, srcChild->name))
             {
                 doSkeletonMerge(dstChild, srcChild, prefix, map);
             }
@@ -787,7 +781,7 @@ namespace hdt
         }
     }
 
-    auto ActorManager::Skeleton::cloneNodeTree(RE::NiNode* src, std::string_view prefix,
+    auto ActorManager::Skeleton::cloneNodeTree(RE::NiNode* src, const std::string_view prefix,
                                                std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map)
         -> RE::NiNode*
     {
@@ -810,7 +804,7 @@ namespace hdt
         return ret;
     }
 
-    auto ActorManager::Skeleton::renameTree(RE::NiNode* root, std::string_view prefix,
+    auto ActorManager::Skeleton::renameTree(RE::NiNode* root, const std::string_view prefix,
                                             std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map) -> void
     {
         if (!root->name.empty())
@@ -828,15 +822,14 @@ namespace hdt
         auto& children = root->GetChildren();
         for (const auto& i : children)
         {
-            const auto child = castNiNode(i.get());
-            if (child)
+            if (const auto child = castNiNode(i.get()))
             {
                 renameTree(child, prefix, map);
             }
         }
     }
 
-    auto ActorManager::Skeleton::doSkeletonClean(RE::NiNode* dst, std::string_view prefix) -> void
+    auto ActorManager::Skeleton::doSkeletonClean(RE::NiNode* dst, const std::string_view prefix) -> void
     {
         std::vector<std::pair<RE::NiNode*, RE::NiAVObject*>> toDetach;
 
@@ -854,7 +847,7 @@ namespace hdt
                 }
                 auto rawChild = childPtr.get();
 
-                auto cname = rawChild->name.c_str();
+                const auto cname = rawChild->name.c_str();
                 auto childName = (cname && cname[0]) ? std::string_view(cname) : std::string_view{};
 
                 if (childName.size() >= prefix.size() && childName.starts_with(prefix))
@@ -865,8 +858,7 @@ namespace hdt
                 }
                 else
                 {
-                    auto childNode = rawChild->AsNode();
-                    if (childNode)
+                    if (const auto childNode = rawChild->AsNode())
                     {
                         traverse(childNode);
                     }
@@ -888,8 +880,7 @@ namespace hdt
     {
         if (skeleton->GetUserData() && skeleton->GetUserData()->GetObjectReference())
         {
-            const auto bname = skyrim_cast<RE::TESFullName*>(skeleton->GetUserData()->GetObjectReference());
-            if (bname)
+            if (const auto bname = skyrim_cast<RE::TESFullName*>(skeleton->GetUserData()->GetObjectReference()))
             {
                 return bname->GetFullName();
             }
@@ -939,8 +930,8 @@ namespace hdt
             // FIXME we probably could simplify this by using findNode as surely we don't attach Armors to lurkers
             // skeleton?
             auto renameMap = armor.renameMap;
-            auto system = SkyrimSystemCreator().createOrUpdateSystem(getNpcNode(skeleton.get()), attachedNode,
-                                                                     &armor.physicsFile, std::move(renameMap), nullptr);
+            const auto system = SkyrimSystemCreator().createOrUpdateSystem(
+                getNpcNode(skeleton.get()), attachedNode, &armor.physicsFile, std::move(renameMap), nullptr);
             if (system)
             {
                 armor.setPhysics(system, isActive);
@@ -950,8 +941,7 @@ namespace hdt
 
         if (instance()->m_disableSMPHairWhenWigEquipped && skeleton && skeleton->GetUserData())
         {
-            RE::Actor* actor = RE::TESForm::LookupByID<RE::Actor>(skeleton->GetUserData()->formID);
-            if (actor)
+            if (RE::Actor* actor = RE::TESForm::LookupByID<RE::Actor>(skeleton->GetUserData()->formID))
             {
                 setHeadActiveIfNoHairArmor(actor, this);
             }
@@ -1015,12 +1005,10 @@ namespace hdt
                             if (findNode->second <= 0)
                             {
                                 logger::debug("Node no longer in use, cleaning from skeleton.");
-                                const auto removeObj = findObject(npc.get(), renameIt->second);
-                                if (removeObj)
+                                if (const auto removeObj = findObject(npc.get(), renameIt->second))
                                 {
                                     logger::debug("Found node {}, removing.", removeObj->name);
-                                    const auto parent = removeObj->parent;
-                                    if (parent)
+                                    if (const auto parent = removeObj->parent)
                                     {
                                         parent->DetachChild2(removeObj);
                                     }
@@ -1159,8 +1147,7 @@ namespace hdt
         }
 
         // We enable only the skeletons that can see the PC or the camera
-        const auto owner = skyrim_cast<RE::Actor*>(this->skeletonOwner.get());
-        if (owner)
+        if (const auto owner = skyrim_cast<RE::Actor*>(this->skeletonOwner.get()))
         {
             RE::NiPoint3 hitLocation;
             const auto object = Actor_CalculateLOS(owner, &(i->m_cameraPositionDuringFrame), &hitLocation, 6.28);
@@ -1174,8 +1161,7 @@ namespace hdt
         if (npc)
         {
             // This works for lurker skeletons.
-            const auto rootNode = findNode(npc.get(), "NPC Root [Root]");
-            if (rootNode)
+            if (const auto rootNode = findNode(npc.get(), "NPC Root [Root]"))
             {
                 return {rootNode->world.translate};
             }
@@ -1286,8 +1272,7 @@ namespace hdt
 
         if (instance()->m_disableSMPHairWhenWigEquipped && skeleton && skeleton->GetUserData())
         {
-            RE::Actor* actor = RE::TESForm::LookupByID<RE::Actor>(skeleton->GetUserData()->formID);
-            if (actor)
+            if (RE::Actor* actor = RE::TESForm::LookupByID<RE::Actor>(skeleton->GetUserData()->formID))
             {
                 setHeadActiveIfNoHairArmor(actor, this);
             }
@@ -1399,9 +1384,7 @@ namespace hdt
             {
                 if (i)
                 {
-                    const auto geo = i->AsGeometry();
-
-                    if (geo)
+                    if (const auto geo = i->AsGeometry())
                     {
                         origGeom = geo;
                         break;
@@ -1416,8 +1399,7 @@ namespace hdt
             {
                 if (skeleton->GetUserData() && skeleton->GetUserData()->GetObjectReference())
                 {
-                    auto skeletonNpc = skyrim_cast<RE::TESNPC*>(skeleton->GetUserData()->GetObjectReference());
-                    if (skeletonNpc)
+                    if (auto skeletonNpc = skyrim_cast<RE::TESNPC*>(skeleton->GetUserData()->GetObjectReference()))
                     {
                         char filePath[MAX_PATH];
                         if (TESNPC_GetFaceGeomPath(skeletonNpc, filePath))
@@ -1438,8 +1420,7 @@ namespace hdt
                                 niStream->Load1(&binaryStream);
                                 if (niStream->topObjects[0])
                                 {
-                                    const auto rootFadeNode = niStream->topObjects[0]->AsFadeNode();
-                                    if (rootFadeNode)
+                                    if (const auto rootFadeNode = niStream->topObjects[0]->AsFadeNode())
                                     {
                                         logger::debug("NPC facegeometry root fadeNode found.");
                                         head.npcFaceGeomNode = hdt::make_nismart(rootFadeNode);
@@ -1462,18 +1443,15 @@ namespace hdt
             if (head.npcFaceGeomNode)
             {
                 head.headParts.back().physicsFile = DefaultBBP::instance()->scanBBP(head.npcFaceGeomNode.get());
-                const auto obj = findObject(head.npcFaceGeomNode.get(), geometry->name);
-                if (obj)
+                if (const auto obj = findObject(head.npcFaceGeomNode.get(), geometry->name))
                 {
-                    const auto ob = obj->AsGeometry();
-                    if (ob)
+                    if (const auto ob = obj->AsGeometry())
                     {
                         origGeom = ob;
                     }
                     else
                     {
-                        const auto on = obj->AsNiGeometry();
-                        if (on)
+                        if (const auto on = obj->AsNiGeometry())
                         {
                             origNiGeom = on;
                         }
@@ -1534,8 +1512,7 @@ namespace hdt
                     // Facegen data doesn't have any tree structure to the skeleton. We need to make any new
                     // nodes children of the head node, so that they move properly when there's no physics.
                     // This case never happens to a lurker skeleton, thus we don't need to test.
-                    RE::NiNode* npcHeadNode = findNode(head.npcFaceGeomNode.get(), "NPC Head [Head]");
-                    if (npcHeadNode)
+                    if (RE::NiNode* npcHeadNode = findNode(head.npcFaceGeomNode.get(), "NPC Head [Head]"))
                     {
                         RE::NiTransform invTransform = npcHeadNode->local.Invert();
                         auto& children = head.npcFaceGeomNode->GetChildren();

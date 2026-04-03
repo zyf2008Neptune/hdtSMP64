@@ -189,6 +189,75 @@ namespace hdt
         btDiscreteDynamicsWorldMt::performDiscreteCollisionDetection();
     }
 
+    auto SkinnedMeshWorld::calculateSimulationIslands() -> void
+    {
+        BT_PROFILE("calculateSimulationIslands");
+        getSimulationIslandManager()->updateActivationState(getCollisionWorld(), getCollisionWorld()->getDispatcher());
+
+        {
+            for (int i = 0; i < m_predictiveManifolds.size(); i++)
+            {
+                const auto manifold = m_predictiveManifolds[i];
+                const auto colObj0 = manifold->getBody0();
+                const auto colObj1 = manifold->getBody1();
+                if (colObj0 && !colObj0->isStaticOrKinematicObject() &&
+                    colObj1 && !colObj1->isStaticOrKinematicObject())
+                {
+                    getSimulationIslandManager()->getUnionFind().unite(colObj0->getIslandTag(),
+                                                                       colObj1->getIslandTag());
+                }
+            }
+        }
+        {
+            const auto numConstraints = m_constraints.size();
+            for (int i = 0; i < numConstraints; i++)
+            {
+                auto constraint = m_constraints[i];
+                if (constraint->isEnabled())
+                {
+                    const auto colObj0 = &constraint->getRigidBodyA();
+                    const auto colObj1 = &constraint->getRigidBodyB();
+
+                    if (colObj0 && !colObj0->isStaticOrKinematicObject() &&
+                        colObj1 && !colObj1->isStaticOrKinematicObject())
+                    {
+                        getSimulationIslandManager()->getUnionFind().unite(colObj0->getIslandTag(),
+                                                                           colObj1->getIslandTag());
+                    }
+                }
+            }
+        }
+
+        // Force all dynamic bodies within a single HDT system into one simulation island.
+        // Without this, kinematic bones (added with group=0, mask=0) that anchor constraints
+        // between dynamic bones dont merge islands in Bullet's union-find.. This causes
+        // dynamic bones from the same system to end up in separate islands, dispatched to
+        // different solver threads. Since BT_THREADSAFE is off, getOrInitSolverBody's
+        // companionId is not thread-safe, and shared kinematic bodies become a data race one thread writes
+        // a companionId indexing its own solver body pool, another thread reads it and indexes into a
+        // different pool, dereferencing garbage as a btRigidBody*
+        for (const auto& system : m_systems)
+        {
+            int firstDynamicTag = -1;
+            for (const auto& bone : system->m_bones)
+            {
+                if (!bone->m_rig.isStaticOrKinematicObject())
+                {
+                    if (firstDynamicTag == -1)
+                    {
+                        firstDynamicTag = bone->m_rig.getIslandTag();
+                    }
+                    else
+                    {
+                        getSimulationIslandManager()->getUnionFind().unite(firstDynamicTag, bone->m_rig.getIslandTag());
+                    }
+                }
+            }
+        }
+
+        getSimulationIslandManager()->storeIslandActivationState(getCollisionWorld());
+    }
+
     auto SkinnedMeshWorld::applyGravity() -> void
     {
         for (const auto& i : m_systems)

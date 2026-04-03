@@ -23,7 +23,7 @@ namespace hdt
                            btRigidBody::btRigidBodyConstructionInfo& ci) :
         SkinnedMeshBone(name, ci), m_node(node), m_skeleton(skeleton)
     {
-        if (ci.m_mass)
+        if (static_cast<bool>(ci.m_mass))
         {
             m_rig.setCollisionFlags(0);
         }

@@ -4,6 +4,7 @@
 
 #include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
+#include <BulletCollision/CollisionDispatch/btSimulationIslandManager.h>
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 #include <RE/B/BSTSmartPointer.h>
@@ -60,6 +61,7 @@ namespace hdt
         auto predictUnconstraintMotion(btScalar timeStep) -> void override;
         auto integrateTransforms(btScalar timeStep) -> void override;
         auto performDiscreteCollisionDetection() -> void override;
+        auto calculateSimulationIslands() -> void override;
         auto solveConstraints(btContactSolverInfo& solverInfo) -> void override;
 
         std::vector<RE::BSTSmartPointer<SkinnedMeshSystem>> m_systems;

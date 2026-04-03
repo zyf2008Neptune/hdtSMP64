@@ -37,7 +37,7 @@ namespace hdt
 
     public:
         SkinnedMeshBody();
-        ~SkinnedMeshBody();
+        ~SkinnedMeshBody() override;
 
         struct CollisionShape : public btCollisionShape // a shape only used for markout
         {
@@ -114,8 +114,8 @@ namespace hdt
         std::vector<RE::BSFixedString> m_tags;
         std::unordered_set<RE::BSFixedString> m_canCollideWithTags;
         std::unordered_set<RE::BSFixedString> m_noCollideWithTags;
-        std::vector<SkinnedMeshBone*> m_canCollideWithBones;
-        std::vector<SkinnedMeshBone*> m_noCollideWithBones;
+        std::unordered_set<SkinnedMeshBone*> m_canCollideWithBones;
+        std::unordered_set<SkinnedMeshBone*> m_noCollideWithBones;
 
 #ifdef CUDA
         std::shared_ptr<CudaBody> m_cudaObject;
@@ -127,9 +127,9 @@ namespace hdt
         {
             if (!m_canCollideWithBones.empty())
             {
-                return std::ranges::find(m_canCollideWithBones, bone) != m_canCollideWithBones.end();
+                return m_canCollideWithBones.contains(const_cast<SkinnedMeshBone*>(bone));
             }
-            return std::ranges::find(m_noCollideWithBones, bone) == m_noCollideWithBones.end();
+            return !m_noCollideWithBones.contains(const_cast<SkinnedMeshBone*>(bone));
         }
 
         virtual auto canCollideWith(const SkinnedMeshBody* body) const -> bool;

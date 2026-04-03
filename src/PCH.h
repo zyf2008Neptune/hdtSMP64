@@ -111,21 +111,18 @@ namespace hdt
     }
 } // namespace hdt
 
-namespace std
+template <typename CharT>
+struct std::hash<RE::detail::BSFixedString<CharT>>
 {
-    template <typename CharT>
-    struct hash<RE::detail::BSFixedString<CharT>>
+    [[nodiscard]] auto operator()(const RE::detail::BSFixedString<CharT>& a_key) const noexcept -> std::size_t
     {
-        [[nodiscard]] auto operator()(const RE::detail::BSFixedString<CharT>& a_key) const noexcept -> std::size_t
+        if (a_key.empty())
         {
-            if (a_key.empty())
-            {
-                return 0;
-            }
-            return std::hash<std::basic_string_view<CharT>>{}(std::basic_string_view<CharT>{a_key.data()});
+            return 0;
         }
-    };
-} // namespace std
+        return std::hash<const CharT*>{}(a_key.data());
+    }
+}; // namespace std
 
 #define DLLEXPORT __declspec(dllexport)
 

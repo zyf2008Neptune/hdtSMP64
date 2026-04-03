@@ -22,8 +22,8 @@ auto hdt::util::UInt32toString(uint32_t formID) -> std::string { return fmt::for
 auto _deprefix(std::string_view str_with_prefix) -> std::string
 {
     std::string str_no_prefix{str_with_prefix};
-    auto autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;
-    auto str_size = autoRenameSubstr.size();
+    static constexpr auto autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;
+    static constexpr auto str_size = autoRenameSubstr.size();
     if (str_with_prefix.size() >= autoRenameSubstr.size() &&
         boost::beast::iequals(str_with_prefix.substr(0, str_size), autoRenameSubstr))
     {
@@ -45,13 +45,13 @@ auto _match_name(const RE::BSFixedString& a, const RE::BSFixedString& b) -> bool
 
 auto hdt::util::transferCurrentPosesBetweenSystems(hdt::SkyrimSystem* src, hdt::SkyrimSystem* dst) -> void
 {
-    for (auto& b1 : src->getBones())
+    for (const auto& b1 : src->getBones())
     {
         if (!b1)
         {
             continue;
         }
-        for (auto& b2 : dst->getBones())
+        for (const auto& b2 : dst->getBones())
         {
             if (!b2)
             {

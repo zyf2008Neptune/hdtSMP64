@@ -6,19 +6,19 @@
 //
 #include <xbyak/xbyak.h>
 
+#include <utility>
+
 namespace Hooks
 {
-    void BSFaceGenNiNodeHooks::ProcessHeadPart(RE::BSFaceGenNiNode* const a_this, RE::BGSHeadPart* headPart,
-                                               RE::NiNode* a_skeleton, bool a_unk)
+    auto BSFaceGenNiNodeHooks::ProcessHeadPart(RE::BSFaceGenNiNode* const a_this, RE::BGSHeadPart* headPart,
+                                               RE::NiNode* a_skeleton, const bool a_unk) -> void
     {
         //
         if (headPart)
         {
-            RE::NiAVObject* headNode = a_this->GetObjectByName(headPart->formEditorID);
-            if (headNode)
+            if (const auto headNode = a_this->GetObjectByName(headPart->formEditorID))
             {
-                RE::BSGeometry* headGeometry = headNode->AsGeometry();
-                if (headGeometry)
+                if (const auto headGeometry = headNode->AsGeometry())
                 {
                     SkinSingleGeometry__Hook(a_this, a_skeleton, headGeometry, a_unk);
                 }
@@ -32,17 +32,16 @@ namespace Hooks
         }
     }
 
-    void BSFaceGenNiNodeHooks::SkinAllGeometryCalls(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
-                                                    bool a_unk)
+    auto BSFaceGenNiNodeHooks::SkinAllGeometryCalls(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
+                                                    const bool a_unk) -> void
     {
-        bool needRegularCall = true;
+        auto needRegularCall = true;
         if (hdt::ActorManager::instance()->skeletonNeedsParts(a_skeleton))
         {
             RE::TESForm* form = RE::TESForm::LookupByID(a_skeleton->GetUserData()->formID);
-            const RE::Actor* actor = skyrim_cast<RE::Actor*>(form);
-            if (actor)
+            if (const RE::Actor* actor = skyrim_cast<RE::Actor*>(form))
             {
-                RE::TESNPC* actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
+                auto actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
                 uint32_t numHeadParts = 0;
                 RE::BGSHeadPart** Headparts = nullptr;
 
@@ -53,7 +52,7 @@ namespace Hooks
                 }
                 else
                 {
-                    numHeadParts = actorBase->numHeadParts;
+                    numHeadParts = static_cast<std::uint8_t>(actorBase->numHeadParts);
                     Headparts = actorBase->headParts;
                 }
 
@@ -81,24 +80,23 @@ namespace Hooks
         }
     }
 
-    void BSFaceGenNiNodeHooks::SkinSingleGeometry__Hook(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
-                                                        RE::BSGeometry* a_triShape, bool a_unk)
+    auto BSFaceGenNiNodeHooks::SkinSingleGeometry__Hook(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
+                                                        RE::BSGeometry* a_triShape, [[maybe_unused]] bool a_unk) -> void
     {
         //
-        const char* name = "";
+        auto name = "";
         uint32_t formId = 0x0;
 
         //
         if (a_skeleton->GetUserData() && a_skeleton->GetUserData()->GetBaseObject())
         {
-            const auto bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->GetBaseObject());
-            if (bname)
+            if (const auto bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->GetBaseObject()))
             {
                 name = bname->GetFullName();
             }
 
-            const auto bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->GetBaseObject());
-            if (bnpc && bnpc->faceNPC)
+            if (const auto bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->GetBaseObject());
+                bnpc && bnpc->faceNPC)
             {
                 formId = bnpc->faceNPC->formID;
             }
@@ -120,24 +118,23 @@ namespace Hooks
         Events::Sources::SkinSingleHeadGeometryEventSource::GetSingleton()->SendEvent(&e);
     }
 
-    void BSFaceGenNiNodeHooks::SkinAllGeometry__Hook(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
-                                                     bool a_unk)
+    auto BSFaceGenNiNodeHooks::SkinAllGeometry__Hook(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
+                                                     const bool a_unk) -> void
     {
         //
-        const char* name = "";
+        auto name = "";
         uint32_t formId = 0x0;
 
         //
         if (a_skeleton->GetUserData() && a_skeleton->GetUserData()->data.objectReference)
         {
-            const auto bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->data.objectReference);
-            if (bname)
+            if (const auto bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->data.objectReference))
             {
                 name = bname->GetFullName();
             }
 
-            const auto bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->data.objectReference);
-            if (bnpc && bnpc->faceNPC)
+            if (const auto bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->data.objectReference);
+                bnpc && bnpc->faceNPC)
             {
                 formId = bnpc->faceNPC->formID;
             }
@@ -173,19 +170,18 @@ namespace Hooks
         Events::Sources::SkinAllHeadGeometryEventSource::GetSingleton()->SendEvent(&e);
     }
 
-    void BSFaceGenNiNodeHooks::SkinAllGeometry(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton, bool a_unk)
+    auto BSFaceGenNiNodeHooks::SkinAllGeometry(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
+                                               const bool a_unk) -> void
     {
         if (a_skeleton)
         {
-            const auto& children = a_this->GetChildren();
-            if (!children.empty())
+            if (const auto& children = a_this->GetChildren(); !children.empty())
             {
                 for (const auto& child : children)
                 {
                     if (child)
                     {
-                        const auto triShape = child->AsTriShape();
-                        if (triShape)
+                        if (const auto triShape = child->AsTriShape())
                         {
                             SkinSingleGeometry__Hook(a_this, a_skeleton, triShape, a_unk);
                         }
@@ -195,19 +191,18 @@ namespace Hooks
         }
     }
 
-    void BSFaceGenNiNodeHooks::ApplyBoneLimitFix()
+    auto BSFaceGenNiNodeHooks::ApplyBoneLimitFix() -> void
     {
-        const REL::Relocation<uintptr_t> GeometrySkinningBoneFix{REL::VariantID(24330, 24836, 0x37ADD0),
-                                                                 REL::VariantOffset(0x58, 0x75, 0x58)};
+        const REL::Relocation GeometrySkinningBoneFix{REL::VariantID(24330, 24836, 0x37ADD0),
+                                                      REL::VariantOffset(0x58, 0x75, 0x58)};
 
-        struct BoneLimitFix : public Xbyak::CodeGenerator
+        struct BoneLimitFix : Xbyak::CodeGenerator
         {
-            BoneLimitFix(uintptr_t a_returnAddr) :
-                Xbyak::CodeGenerator()
+            BoneLimitFix(const uintptr_t a_returnAddr)
             {
                 Xbyak::Label ret;
 
-                auto clamp_bone_count = [&](Xbyak::Reg32 reg)
+                auto clamp_bone_count = [&](const Xbyak::Reg32 reg)
                 {
                     mov(reg, ptr[rax + 0x58]); // skinData->boneCount
                     cmp(reg, 8); // compare with limit
@@ -236,16 +231,14 @@ namespace Hooks
         localTrampoline.write_branch<5>(GeometrySkinningBoneFix.address(), localTrampoline.allocate(code));
     }
 
-    void MainHooks::Update(RE::Main* const a_this)
+    auto MainHooks::Update(RE::Main* const a_this) -> void
     {
         //
         _Update(a_this);
 
         // why doesn't this class have a GetRuntimeData() helper? the offsets are borked with VR support enabled.
-        const bool quitGame = REL::RelocateMember<bool>(a_this, 0x10, 0x8);
 
-        //
-        if (quitGame)
+        if (const bool quitGame = REL::RelocateMember<bool>(a_this, 0x10, 0x8))
         {
             const Events::ShutdownEvent e;
             Events::Sources::ShutdownEventEventSource::GetSingleton()->SendEvent(&e);
@@ -258,20 +251,20 @@ namespace Hooks
         }
     }
 
-    void MainHooks::Unk_sub(void* a_this)
+    auto MainHooks::Unk_sub(void* a_this) -> void
     {
         _Unk_sub(a_this);
 
         //
-        const Events::FrameSyncEvent framesyncEvent;
+        static constexpr Events::FrameSyncEvent framesyncEvent;
         Events::Sources::FrameSyncEventSource::GetSingleton()->SendEvent(&framesyncEvent);
     }
 
-    bool ActorEquipManagerHooks::func(RE::ActorEquipManager* const a_this, RE::Actor* a_actor,
+    auto ActorEquipManagerHooks::func(RE::ActorEquipManager* const a_this, RE::Actor* a_actor,
                                       RE::TESBoundObject* a_object, RE::ExtraDataList* a_extraData,
-                                      std::uint32_t a_count, const RE::BGSEquipSlot* a_slot, bool a_queueEquip,
-                                      bool a_forceEquip, bool a_playSounds, bool a_applyNow,
-                                      const RE::BGSEquipSlot* a_slotToReplace)
+                                      const std::uint32_t a_count, const RE::BGSEquipSlot* a_slot,
+                                      const bool a_queueEquip, const bool a_forceEquip, const bool a_playSounds,
+                                      const bool a_applyNow, const RE::BGSEquipSlot* a_slotToReplace) -> bool
     {
         Events::ArmorDetachEvent event;
         event.actor = a_actor;
@@ -295,8 +288,8 @@ namespace Hooks
         return ret;
     }
 
-    RE::NiAVObject* BipedAnimHooks::func(RE::BipedAnim* const a_this, RE::NiNode* armor, RE::BSFadeNode* skeleton,
-                                         uint32_t a_unk1, void* a_unk2, void* a_unk3, void* a_unk4)
+    auto BipedAnimHooks::func(RE::BipedAnim* const a_this, RE::NiNode* armor, RE::BSFadeNode* skeleton,
+                              const uint32_t a_unk1, void* a_unk2, void* a_unk3, void* a_unk4) -> RE::NiAVObject*
     {
         Events::ArmorAttachEvent armorAtachEvent;
 
@@ -321,11 +314,10 @@ namespace Hooks
 
                 //
                 RE::NiAVObject* object = armor->GetObjectByName(NodeName);
-                RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr;
-                if (triShape)
+                if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->bones;
-                    for (int idx = 0; idx < size; idx++) // all good here
+                    for (auto idx = 0; std::cmp_less(idx, size); idx++) // all good here
                     {
                         const auto bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
                         result.emplace_back(hdt::make_nismart(bone));
@@ -348,11 +340,10 @@ namespace Hooks
             for (auto& NodeName : BackupNodes)
             {
                 RE::NiAVObject* object = ret->GetObjectByName(NodeName);
-                RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr;
-                if (triShape)
+                if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->bones;
-                    for (int idx = 0; idx < size; idx++)
+                    for (auto idx = 0; std::cmp_less(idx, size); idx++)
                     {
                         auto bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
                         if (bone == nullptr)
@@ -382,8 +373,8 @@ namespace Hooks
         return ret;
     }
 
-    void BSFaceGenNiNodeHooks::SetBoneName_Hook(RE::BSFaceGenModelExtraData* a_fmd, std::uint32_t a_boneIdx,
-                                                RE::BSFixedString* a_boneName)
+    auto BSFaceGenNiNodeHooks::SetBoneName_Hook(RE::BSFaceGenModelExtraData* a_fmd, const std::uint32_t a_boneIdx,
+                                                RE::BSFixedString* a_boneName) -> void
     {
         // FMD.bones[] has exactly 8 slots (indices 0-7); any index >= 8 is out-of-bounds
         if (a_boneIdx < 8)
@@ -392,14 +383,14 @@ namespace Hooks
         }
     }
 
-    void BSFaceGenNiNodeHooks::HookSetBoneName()
+    auto BSFaceGenNiNodeHooks::HookSetBoneName() -> void
     {
-        static REL::Relocation<uintptr_t> addr{REL::RelocationID(26303, 26886)};
+        static REL::Relocation addr{REL::RelocationID(26303, 26886)};
         _SetBoneName = reinterpret_cast<SetBoneName_t*>(addr.address());
         DetourAttach(reinterpret_cast<PVOID*>(std::addressof(_SetBoneName)), reinterpret_cast<PVOID>(SetBoneName_Hook));
     }
 
-    void Install()
+    auto Install() -> void
     {
         logger::trace("Hooking...");
 
