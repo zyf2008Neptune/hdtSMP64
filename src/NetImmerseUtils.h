@@ -78,12 +78,12 @@ namespace hdt
 
     inline auto findObject(RE::NiAVObject* obj, const RE::BSFixedString& name) -> RE::NiAVObject*
     {
-        return obj->GetObjectByName(name);
+        return obj ? obj->GetObjectByName(name) : nullptr;
     }
 
     inline auto findNode(RE::NiNode* obj, const RE::BSFixedString& name) -> RE::NiNode*
     {
-        const auto ret = obj->GetObjectByName(name);
+        const auto ret = dynamic_cast<RE::NiNode*>(findObject(obj, name));
         return ret ? ret->AsNode() : nullptr;
     }
 

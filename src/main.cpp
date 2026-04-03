@@ -18,7 +18,7 @@
 #include "dhdtPapyrusFunctions.h"
 #include "hdtSkyrimPhysicsWorld.h"
 
-auto checkOldPlugins() -> void
+static auto checkOldPlugins() -> void
 {
     const auto framework = GetModuleHandleA("hdtSSEFramework");
     const auto physics = GetModuleHandleA("hdtSSEPhysics");
@@ -42,7 +42,8 @@ auto checkOldPlugins() -> void
     }
 }
 
-auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const std::uint32_t index) -> RE::NiSourceTexturePtr*
+static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material,
+                                const std::uint32_t index) -> RE::NiSourceTexturePtr*
 {
     switch (index)
     {
@@ -158,7 +159,7 @@ auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const std::uint
     return nullptr;
 }
 
-auto DumpNodeChildren(RE::NiAVObject* node) -> void
+static auto DumpNodeChildren(RE::NiAVObject* node) -> void
 {
     logger::info("{} {} [{:.2f}, {:.2f}, {:.2f}]", node->GetRTTI()->name, node->name, node->world.translate.x,
                  node->world.translate.y, node->world.translate.z);
@@ -180,8 +181,7 @@ auto DumpNodeChildren(RE::NiAVObject* node) -> void
             if (object)
             {
                 RE::NiNode* childNode = object->AsNode();
-                RE::BSGeometry* geometry = object->AsGeometry();
-                if (geometry)
+                if (RE::BSGeometry* geometry = object->AsGeometry())
                 {
                     logger::info("{} {} [{:.2f}, {:.2f}, {:.2f}] - Geometry", object->GetRTTI()->name, object->name,
                                  geometry->world.translate.x, geometry->world.translate.y, geometry->world.translate.z);
@@ -244,7 +244,7 @@ auto DumpNodeChildren(RE::NiAVObject* node) -> void
     }
 }
 
-auto SMPDebug_PrintDetailed(const bool includeItems) -> void
+static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 {
     static std::map<hdt::ActorManager::SkeletonState, std::string_view> stateStrings = {
         {hdt::ActorManager::SkeletonState::e_InactiveNotInScene, "Not in scene"sv},
@@ -329,16 +329,18 @@ auto SMPDebug_PrintDetailed(const bool includeItems) -> void
     }
 }
 
-auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTION::ScriptData* a_scriptData,
-                      RE::TESObjectREFR* a_thisObj, RE::TESObjectREFR* a_containingObj, RE::Script* a_scriptObj,
-                      RE::ScriptLocals* a_locals, [[maybe_unused]] double& a_result, uint32_t& a_opcodeOffsetPtr)
+static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTION::ScriptData* a_scriptData,
+                             RE::TESObjectREFR* a_thisObj, RE::TESObjectREFR* a_containingObj, RE::Script* a_scriptObj,
+                             RE::ScriptLocals* a_locals, [[maybe_unused]] double& a_result, uint32_t& a_opcodeOffsetPtr)
     -> bool
 {
-    std::string_view buffer{{}, MAX_PATH};
-    std::string_view buffer2{{}, MAX_PATH};
+    std::string buffer;
+    buffer.resize(MAX_PATH);
+    std::string buffer2;
+    buffer2.resize(MAX_PATH);
 
     if (!RE::Script::ParseParameters(a_paramInfo, a_scriptData, a_opcodeOffsetPtr, a_thisObj, a_containingObj,
-                                     a_scriptObj, a_locals, buffer.data(), buffer2.data()))
+                                     a_scriptObj, a_locals, buffer.c_str(), buffer2.c_str()))
     {
         return false;
     }
@@ -513,7 +515,7 @@ namespace
     }
 } // namespace
 
-auto MessageHandler(SKSE::MessagingInterface::Message* a_msg) -> void
+static auto MessageHandler(SKSE::MessagingInterface::Message* a_msg) -> void
 {
     switch (a_msg->type)
     {

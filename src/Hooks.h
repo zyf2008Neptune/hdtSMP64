@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <detours/detours.h>
 
 namespace Hooks
@@ -92,7 +93,8 @@ namespace Hooks
         }
 
         static auto Update(RE::Main*) -> void;
-        static auto Unk_sub(void*) -> void; // RE::BSBethesdaPlatform*
+
+        static auto Unk_sub(std::any a_this) -> void; // RE::BSBethesdaPlatform*
     public:
         static inline REL::Relocation<decltype(&Unk_sub)> _Unk_sub;
         static inline REL::Relocation<decltype(&Update)> _Update;

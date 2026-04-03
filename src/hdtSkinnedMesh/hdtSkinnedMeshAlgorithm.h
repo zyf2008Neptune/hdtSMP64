@@ -96,12 +96,19 @@ namespace hdt
 
             auto alloc(const int x, const int y) -> void
             {
+                release();
                 mergeStride = y;
                 mergeSize = x * y;
                 buffer = new CollisionMerge[mergeSize];
             }
 
-            auto release() const -> void { delete[] buffer; }
+            auto release() -> void
+            {
+                delete[] buffer;
+                buffer = nullptr;
+                mergeStride = 0;
+                mergeSize = 0;
+            }
 
             [[nodiscard]] auto get(const int x, const int y) const -> CollisionMerge*
             {

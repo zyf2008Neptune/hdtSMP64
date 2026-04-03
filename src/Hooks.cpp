@@ -36,14 +36,15 @@ namespace Hooks
                                                     const bool a_unk) -> void
     {
         auto needRegularCall = true;
-        if (hdt::ActorManager::instance()->skeletonNeedsParts(a_skeleton))
+        const auto userData = a_skeleton->GetUserData();
+        if (hdt::ActorManager::instance()->skeletonNeedsParts(a_skeleton) && userData)
         {
-            RE::TESForm* form = RE::TESForm::LookupByID(a_skeleton->GetUserData()->formID);
+            RE::TESForm* form = RE::TESForm::LookupByID(userData->formID);
             if (const RE::Actor* actor = skyrim_cast<RE::Actor*>(form))
             {
                 auto actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
-                uint32_t numHeadParts = 0;
-                RE::BGSHeadPart** Headparts = nullptr;
+                uint32_t numHeadParts;
+                RE::BGSHeadPart** Headparts;
 
                 if (actorBase->HasOverlays())
                 {
@@ -251,13 +252,13 @@ namespace Hooks
         }
     }
 
-    auto MainHooks::Unk_sub(void* a_this) -> void
+    auto MainHooks::Unk_sub(std::any a_this) -> void
     {
         _Unk_sub(a_this);
 
         //
         static constexpr Events::FrameSyncEvent framesyncEvent;
-        Events::Sources::FrameSyncEventSource::GetSingleton()->SendEvent(&framesyncEvent);
+        Events::Sources::FrameSyncEventSource::GetSingleton()->SendEvent(std::addressof(framesyncEvent));
     }
 
     auto ActorEquipManagerHooks::func(RE::ActorEquipManager* const a_this, RE::Actor* a_actor,
