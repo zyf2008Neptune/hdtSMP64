@@ -10,15 +10,13 @@
 #include <SKSE/Logger.h>
 
 #include "ActorManager.h"
-#include "hdtSkinnedMesh/hdtConstraintGroup.h"
 #include "hdtSkyrimPhysicsWorld.h"
 #include "Hooks.h"
 #include "NetImmerseUtils.h"
-#include "XmlInspector/XmlInspector.hpp"
 #include "XmlReader.h"
-#ifdef CUDA
-#	include "hdtSkinnedMesh/hdtCudaInterface.h"
-#endif
+#include "hdtSkinnedMesh/hdtConstraintGroup.h"
+#include "XmlInspector/XmlInspector.hpp"
+
 
 namespace hdt
 {
@@ -31,18 +29,13 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
+            {
                 if (reader.GetLocalName() == "numIterations")
+
                 {
                     SkyrimPhysicsWorld::get()->getSolverInfo().m_numIterations = btClamped(reader.readInt(), 4, 128);
                 }
-                else if (reader.GetLocalName() == "groupIterations")
-                {
-                    ConstraintGroup::MaxIterations = btClamped(reader.readInt(), 0, 4096);
-                }
-                else if (reader.GetLocalName() == "groupEnableMLCP")
-                {
-                    ConstraintGroup::EnableMLCP = reader.readBool();
-                }
+
                 else if (reader.GetLocalName() == "erp")
                 {
                     SkyrimPhysicsWorld::get()->getSolverInfo().m_erp = btClamped(reader.readFloat(), 0.01f, 1.0f);
@@ -61,9 +54,13 @@ namespace hdt
                     logger::warn("Unknown config : {}", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
+
                 break;
+            }
             case XMLReader::Inspected::EndTag:
+            {
                 return;
+            }
             }
         }
     }
@@ -75,6 +72,7 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
+            {
                 if (reader.GetLocalName() == "windStrength")
                 {
                     SkyrimPhysicsWorld::get()->m_windStrength = btClamped(reader.readFloat(), 0.f, 1000.f);
@@ -96,9 +94,13 @@ namespace hdt
                     logger::warn("Unknown config : ", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
+
                 break;
+            }
             case XMLReader::Inspected::EndTag:
+            {
                 return;
+            }
             }
         }
     }
@@ -110,13 +112,19 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
+            {
                 if (reader.GetLocalName() == "logLevel")
                 {
-                    g_logLevel = reader.readInt();
+                    // Inverted so: 0 = critical, 1 = err, 2 = warn, 3 = info, 4 = debug, 5 = trace.
+                    g_logLevel = 5 - std::clamp(reader.readInt(), 0, 5);
+                    spdlog::set_level(static_cast<spdlog::level::level_enum>(g_logLevel));
+                    spdlog::flush_on(static_cast<spdlog::level::level_enum>(g_logLevel));
                 }
                 else if (reader.GetLocalName() == "backupNodeByName")
                 {
-                    // Parse the string return value from reader.readText(); so we can have single strings instead of the group, example text -> "Virtual Hands, Virtual Body, Virtual Belly"... said text in a array like so -> { "Virtual Hands", "Virtual Body", "Virtual Belly"
+                    // Parse the string return value from reader.readText(); so we can have single strings instead of
+                    // the group, example text -> "Virtual Hands, Virtual Body, Virtual Belly"... said text in a array
+                    // like so -> { "Virtual Hands", "Virtual Body", "Virtual Belly"
 
                     std::stringstream ss(reader.readText());
                     std::string item;
@@ -156,38 +164,14 @@ namespace hdt
                 {
                     SkyrimPhysicsWorld::get()->m_unclampedResetAngle = reader.readFloat();
                 }
-                else if (reader.GetLocalName() == "percentageOfFrameTime")
+                else if (reader.GetLocalName() == "budgetMs")
                 {
-                    SkyrimPhysicsWorld::get()->m_percentageOfFrameTime = std::clamp(reader.readInt() * 10, 1, 1000);
+                    SkyrimPhysicsWorld::get()->m_budgetMs = std::clamp(reader.readFloat(), 0.1f, 20.0f);
                 }
                 else if (reader.GetLocalName() == "useRealTime")
                 {
                     SkyrimPhysicsWorld::get()->m_useRealTime = reader.readBool();
                 }
-#ifdef CUDA
-				else if (reader.GetLocalName() == "enableCuda")
-                {
-                    CudaInterface::enableCuda = reader.readBool();
-                }
-                else if (reader.GetLocalName() == "cudaDevice")
-                {
-                    int device = reader.readInt();
-                    if (device >= 0 && device < CudaInterface::instance()->deviceCount())
-                    {
-                        CudaInterface::currentDevice = device;
-                    }
-                }
-#else
-                else if (reader.GetLocalName() == "enableCuda")
-                {
-                    if (reader.readBool())
-                    {
-                        logger::warn("CUDA isn't built into this version.");
-                    }
-                }
-                else if (reader.GetLocalName() == "cudaDevice") {
-                }
-#endif
                 else if (reader.GetLocalName() == "minCullingDistance")
                 {
                     ActorManager::instance()->m_minCullingDistance = reader.readFloat();
@@ -204,7 +188,6 @@ namespace hdt
                 {
                     SkyrimPhysicsWorld::get()->m_sampleSize = std::max(reader.readInt(), 1);
                 }
-
                 else if (reader.GetLocalName() == "disable1stPersonViewPhysics")
                 {
                     ActorManager::instance()->m_disable1stPersonViewPhysics = reader.readBool();
@@ -214,9 +197,13 @@ namespace hdt
                     logger::warn("Unknown config : {}", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
+
                 break;
+            }
             case XMLReader::Inspected::EndTag:
+            {
                 return;
+            }
             }
         }
     }
@@ -228,6 +215,7 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
+            {
                 if (reader.GetLocalName() == "solver")
                 {
                     solver(reader);
@@ -245,9 +233,13 @@ namespace hdt
                     logger::warn("Unknown config : {}", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
+
                 break;
+            }
             case XMLReader::Inspected::EndTag:
+            {
                 return;
+            }
             }
         }
     }
@@ -261,11 +253,13 @@ namespace hdt
         }
 
         // Store original locale
-
-        const auto saved_locale = std::locale();
+        //const auto saved_locale = std::locale();
+        char saved_locale[32];
+        strcpy_s(saved_locale, std::setlocale(LC_NUMERIC, nullptr));
 
         // Set locale to en_US
-        std::locale::global(std::locale("en_US"));
+        //std::locale::global(std::locale("en_US"));
+        std::setlocale(LC_NUMERIC, "en_US");
 
         XMLReader reader(reinterpret_cast<uint8_t*>(bytes.data()), bytes.size());
 
@@ -286,6 +280,46 @@ namespace hdt
         }
 
         // Restore original locale
-        std::locale::global(saved_locale);
+        //std::locale::global(saved_locale);
+        std::setlocale(LC_NUMERIC, saved_locale);
     }
-}
+
+    auto logConfig() -> void
+    {
+        auto* w = SkyrimPhysicsWorld::get();
+        auto* a = ActorManager::instance();
+
+#define LOG(name, val) logger::debug("config: " name " = {}", val)
+        LOG("solver.numIterations", w->getSolverInfo().m_numIterations);
+        LOG("solver.erp", w->getSolverInfo().m_erp);
+        LOG("solver.min-fps", w->min_fps);
+        LOG("solver.maxSubSteps", w->m_maxSubSteps);
+
+        LOG("wind.windStrength", w->m_windStrength);
+        LOG("wind.enabled", w->m_enableWind);
+        LOG("wind.distanceForNoWind", w->m_distanceForNoWind);
+        LOG("wind.distanceForMaxWind", w->m_distanceForMaxWind);
+
+        LOG("smp.logLevel", 5 - g_logLevel);
+
+        for (auto& item : Hooks::BipedAnimHooks::BackupNodes)
+        {
+            logger::debug("config: smp.backupNodeByName += {}", item);
+        }
+
+        LOG("smp.enableNPCFaceParts", a->m_skinNPCFaceParts);
+        LOG("smp.disableSMPHairWhenWigEquipped", a->m_disableSMPHairWhenWigEquipped);
+        LOG("smp.clampRotations", w->m_clampRotations);
+        LOG("smp.rotationSpeedLimit", w->m_rotationSpeedLimit);
+        LOG("smp.unclampedResets", w->m_unclampedResets);
+        LOG("smp.unclampedResetAngle", w->m_unclampedResetAngle);
+        LOG("smp.budgetMS", w->m_budgetMs);
+        LOG("smp.useRealTime", w->m_useRealTime);
+        LOG("smp.minCullingDistance", a->m_minCullingDistance);
+        LOG("smp.maximumActiveSkeletons", a->m_maxActiveSkeletons);
+        LOG("smp.autoAdjustMaxSkeletons", a->m_autoAdjustMaxSkeletons);
+        LOG("smp.sampleSize", w->m_sampleSize);
+        LOG("smp.disable1stPersonViewPhysics", a->m_disable1stPersonViewPhysics);
+#undef LOG
+    }
+} // namespace hdt

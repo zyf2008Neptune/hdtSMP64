@@ -2,14 +2,13 @@
 
 #include <vector>
 
+#include <BulletCollision/CollisionDispatch/btSimulationIslandManager.h>
 #include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
-#include <BulletCollision/CollisionDispatch/btSimulationIslandManager.h>
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 #include <RE/B/BSTSmartPointer.h>
 
-#include "hdtGroupConstraintSolver.h"
 #include "hdtSkinnedMeshBody.h"
 #include "hdtSkinnedMeshSystem.h"
 
@@ -25,12 +24,15 @@ namespace hdt
         virtual auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
 
         auto stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
-                            btScalar fixedTimeStep = btScalar(1.) / btScalar(60.)) -> int override;
+                            btScalar fixedTimeStep = static_cast<btScalar>(1.) / static_cast<btScalar>(60.)) ->
+            int override;
 
         auto getWind() -> btVector3& { return m_windSpeed; }
         auto getWind() const -> const btVector3& { return m_windSpeed; }
 
     protected:
+        std::vector<float> m_timeSteps;
+
         virtual auto resetTransformsToOriginal() -> void
         {
             for (const auto& m_system : m_systems)
@@ -39,12 +41,35 @@ namespace hdt
             }
         }
 
+
         auto readTransform(float timeStep) const -> void
         {
             for (const auto& m_system : m_systems)
             {
                 m_system->readTransform(timeStep);
             }
+        }
+
+        auto readTransform(float timeStep) -> void
+        {
+            const size_t n = m_systems.size();
+            if (n == 0)
+            {
+                return;
+            }
+
+            m_timeSteps.resize(n);
+
+            // processSkeletonRoot must be ran synchronously to avoid race issues
+            for (size_t i = 0; i < n; ++i)
+            {
+                m_timeSteps[i] = m_systems[i]->prepareForRead(timeStep);
+            }
+
+            concurrency::parallel_for(size_t{0}, n, [this](size_t i)
+            {
+                m_systems[i]->readTransform(m_timeSteps[i]);
+            });
         }
 
         auto writeTransform() const -> void
@@ -71,7 +96,5 @@ namespace hdt
     private:
         std::vector<SkinnedMeshBody*> _bodies;
         std::vector<SkinnedMeshShape*> _shapes;
-        btConstraintSolverPoolMt* m_solverPool;
-        GroupConstraintSolver m_constraintSolver;
     };
 }

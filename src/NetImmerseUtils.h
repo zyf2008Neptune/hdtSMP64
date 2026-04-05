@@ -143,16 +143,20 @@ namespace hdt
         //
         obj->UpdateWorldData(&ctx);
 
-        //
-        if (RE::NiNode* node = castNiNode(obj))
-        {
-            for (auto& child : node->GetChildren())
-            {
-                if (child)
-                {
-                    updateTransformUpDown(child.get(), dirty);
-                }
-            }
-        }
-    }
+		//
+		RE::NiNode* node = castNiNode(obj);
+		if (node) {
+			for (auto& child : node->GetChildren()) {
+				if (child) {
+					updateTransformUpDown(child.get(), dirty);
+				}
+			}
+		}
+	}
+
+	static inline RE::NiPoint3 rotate(const RE::NiPoint3& v, const RE::NiPoint3& axis, float theta)
+	{
+		const float cosTheta = std::cos(theta);
+		return (v * cosTheta) + (axis.Cross(v) * std::sin(theta)) + (axis * axis.Dot(v)) * (1.0f - cosTheta);
+	}
 }

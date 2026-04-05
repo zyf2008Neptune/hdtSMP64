@@ -14,13 +14,15 @@
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btTransform.h>
 #include <LinearMath/btVector3.h>
-#include <RE/B/BSTSmartPointer.h>
 #include <RE/B/BSFixedString.h>
+#include <RE/B/BSTSmartPointer.h>
 #include <RE/N/NiAVObject.h>
 #include <RE/N/NiNode.h>
 #include <RE/N/NiSmartPointer.h>
 
 #include "hdtDefaultBBP.h"
+#include "hdtSkyrimBody.h"
+#include "hdtSkyrimBone.h"
 #include "hdtSkinnedMesh/hdtBulletHelper.h"
 #include "hdtSkinnedMesh/hdtConeTwistConstraint.h"
 #include "hdtSkinnedMesh/hdtConstraintGroup.h"
@@ -29,11 +31,11 @@
 #include "hdtSkinnedMesh/hdtSkinnedMeshBone.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
 #include "hdtSkinnedMesh/hdtStiffSpringConstraint.h"
-#include "hdtSkyrimBody.h"
-#include "hdtSkyrimBone.h"
 
 namespace hdt
 {
+    class PerVertexShape;
+
     class SkyrimSystem : public SkinnedMeshSystem
     {
         friend class SkyrimSystemCreator;
@@ -45,15 +47,14 @@ namespace hdt
             uint8_t boneIndices[4];
         };
 
-        SkyrimSystem(RE::NiNode* skeleton);
+        explicit SkyrimSystem(RE::NiNode* skeleton);
         ~SkyrimSystem() override = default;
 
         auto findBone(const RE::BSFixedString& name) const -> SkinnedMeshBone*;
         auto findBody(const RE::BSFixedString& name) const -> SkinnedMeshBody*;
         auto findBoneIdx(const RE::BSFixedString& name) const -> int;
 
-        auto readTransform(float timeStep) -> void override;
-        auto writeTransform() -> void override;
+        auto prepareForRead(float timeStep) -> float override;
 
         auto meshes() const -> const std::vector<RE::BSTSmartPointer<SkinnedMeshBody>>& { return m_meshes; }
 
@@ -76,11 +77,34 @@ namespace hdt
 
         auto createOrUpdateSystem(RE::NiNode* skeleton, RE::NiAVObject* model, DefaultBBP::PhysicsFile_t* file,
                                   std::unordered_map<RE::BSFixedString, RE::BSFixedString>&& renameMap,
-                                  SkyrimSystem* old_system)
-            -> RE::BSTSmartPointer<SkyrimSystem>;
+                                  SkyrimSystem* old_system) -> RE::BSTSmartPointer<SkyrimSystem>;
 
     protected:
-        struct BoneTemplate : public btRigidBody::btRigidBodyConstructionInfo
+        // O(1) bone lookup index. These are just to speed up the hashmap more since BSStrings are pooled
+        struct PooledStringHash
+        {
+            auto operator()(const char* p) const noexcept -> size_t { return reinterpret_cast<size_t>(p); }
+        };
+
+        struct PooledStringEqual
+        {
+            auto operator()(const char* a, const char* b) const noexcept -> bool { return a == b; }
+        };
+
+        std::unordered_map<const char*, SkyrimBone*, PooledStringHash, PooledStringEqual> m_boneIndex;
+
+        auto indexBone(SkyrimBone* bone) -> void;
+        auto findBoneFromIndex(const RE::BSFixedString& name) const -> SkyrimBone*;
+
+        struct DeferredBuild
+        {
+            SkinnedMeshBody* body;
+            PerVertexShape* vertexShape;
+        };
+
+        std::vector<DeferredBuild> m_deferredBuilds;
+
+        struct BoneTemplate : btRigidBody::btRigidBodyConstructionInfo
         {
             static btEmptyShape emptyShape[1];
 

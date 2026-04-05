@@ -1,7 +1,7 @@
 #pragma once
 
-#include "XmlInspector/XmlInspector.hpp"
 #include "XmlInspector/CharactersReader.hpp"
+#include "XmlInspector/XmlInspector.hpp"
 
 #include "hdtSkinnedMesh/hdtBulletHelper.h"
 

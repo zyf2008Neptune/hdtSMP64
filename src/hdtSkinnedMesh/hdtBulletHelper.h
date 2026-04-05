@@ -84,10 +84,8 @@ namespace hdt
 
     inline auto cross(const __m128 a, const __m128 b) -> __m128
     {
-        __m128 T, V;
-
-        T = pshufd<_MM_SHUFFLE(3, 0, 2, 1)>(a);
-        V = pshufd<_MM_SHUFFLE(3, 0, 2, 1)>(b);
+        __m128 T = pshufd<_MM_SHUFFLE(3, 0, 2, 1)>(a);
+        __m128 V = pshufd<_MM_SHUFFLE(3, 0, 2, 1)>(b);
 
         V = _mm_mul_ps(V, a);
         T = _mm_mul_ps(T, b);
@@ -128,13 +126,13 @@ namespace hdt
     }
 
     template <class T>
-    auto min(const T& a, const T& b) restrict(cpu, amp) -> T
+    auto min(const T& a, const T& b) -> T
     {
         return a < b ? a : b;
     }
 
     template <class T>
-    auto max(const T& a, const T& b) restrict(cpu, amp) -> T
+    auto max(const T& a, const T& b) -> T
     {
         return a < b ? b : a;
     }
@@ -155,38 +153,52 @@ namespace hdt
         btVector4 m_originScale;
 
     public:
-        BT_DECLARE_ALIGNED_ALLOCATOR();
+        BT_DECLARE_ALIGNED_ALLOCATOR()
 
         btQsTransform() :
             m_basis(btQuaternion::getIdentity()), m_originScale(0, 0, 0, 1) {}
 
         btQsTransform(const btQuaternion& r, const btVector3& t, const float s = 1.0f) :
-            m_basis(r), m_originScale(t.get128())
+            m_basis(r)
         {
-            setScale(s);
+#ifdef BT_ALLOW_SSE4
+            // 0x30 inserts the 0th element of _mm_set_ss into the 3rd (W) element of t
+            m_originScale.mVec128 = _mm_insert_ps(t.get128(), _mm_set_ss(s), 0x30);
+#else
+            m_originScale = t;
+            m_originScale[3] = s;
+#endif
         }
 
-        explicit btQsTransform(const btTransform& t, const float s = 1.0f)
+        explicit btQsTransform(const btTransform& t, const float s = 1.0f) :
+            m_basis(t.getRotation())
         {
-            m_basis = t.getRotation();
+#ifdef BT_ALLOW_SSE4
+            m_originScale.mVec128 = _mm_insert_ps(t.getOrigin().get128(), _mm_set_ss(s), 0x30);
+#else
             m_originScale = t.getOrigin();
-            setScale(s);
+            m_originScale[3] = s;
+#endif
         }
 
-        btQsTransform(const btQsTransform& rhs) :
-            m_basis(rhs.m_basis), m_originScale(rhs.m_originScale.get128())
-        {
-            assert(getScale() > 0);
-        }
+        btQsTransform(const btQsTransform&) = default;
+        btQsTransform(btQsTransform&&) = default;
+        auto operator=(const btQsTransform&) -> btQsTransform& = default;
+        auto operator=(btQsTransform&&) -> btQsTransform& = default;
 
-        auto getBasis() const -> btQuaternion { return m_basis; }
+        [[nodiscard]] auto isValid() const -> bool { return getScale() > 0; }
+
+        [[nodiscard]] auto getBasis() const -> btQuaternion { return m_basis; }
         auto getBasis() -> btQuaternion& { return m_basis; }
+
         auto setBasis(const btQuaternion& q) -> void { m_basis = q; }
         auto setBasis(const btMatrix3x3& m) -> void { m.getRotation(m_basis); }
 
-        auto getScale() const -> float { return m_originScale[3]; }
+        [[nodiscard]] auto getScale() const -> float { return m_originScale[3]; }
         auto getScale() -> float& { return m_originScale[3]; }
-        auto getScaleReg() const -> float { return _mm_cvtss_f32(setAll3(m_originScale.get128())); }
+
+        // Deprecated: just use getScale(), the compiler will automatically optimize register extraction..
+        [[nodiscard]] auto getScaleReg() const -> float { return getScale(); }
 
         auto setScale(const float s) -> void
         {
@@ -194,13 +206,17 @@ namespace hdt
             m_originScale[3] = s;
         }
 
-        auto getOrigin() const -> btVector3 { return m_originScale; }
+        [[nodiscard]] auto getOrigin() const -> btVector3 { return m_originScale; }
 
         auto setOrigin(const btVector3& vec) -> void
         {
-            const float s = getScale();
-            m_originScale = vec.mVec128;
-            setScale(s);
+#ifdef BT_ALLOW_SSE4
+            m_originScale.mVec128 = _mm_blend_ps(vec.get128(), m_originScale.get128(), 0b1000);
+#else
+            float s = getScale();
+            m_originScale = vec;
+            m_originScale[3] = s;
+#endif
         }
 
         auto setOrigin(const float x, const float y, const float z) -> void
@@ -210,20 +226,13 @@ namespace hdt
             m_originScale[2] = z;
         }
 
-        auto operator=(const btQsTransform& rhs) -> btQsTransform&
+        [[nodiscard]] auto operator*(const btQsTransform& rhs) const -> btQsTransform
         {
-            m_basis = rhs.m_basis;
-            m_originScale = rhs.m_originScale;
-            assert(getScale() > 0);
-            return *this;
+            return {m_basis * rhs.m_basis, getOrigin() + quatRotate(m_basis, rhs.getOrigin() * getScale()),
+                    getScale() * rhs.getScale()};
         }
 
-        auto operator*(const btQsTransform& rhs) const -> btQsTransform
-        {
-            return btQsTransform(m_basis * rhs.m_basis, *this * rhs.getOrigin(), getScale() * rhs.getScale());
-        }
-
-        auto operator*(const btVector3& rhs) const -> btVector3
+        [[nodiscard]] auto operator*(const btVector3& rhs) const -> btVector3
         {
             return getOrigin() + quatRotate(m_basis, rhs * getScale());
         }
@@ -231,19 +240,31 @@ namespace hdt
         auto operator*=(const btQsTransform& rhs) -> void
         {
             const float s = getScale();
-            setOrigin(getOrigin() + quatRotate(m_basis, rhs.getOrigin() * s));
+            const float newScale = s * rhs.getScale();
+            const btVector3 newOrigin = getOrigin() + quatRotate(m_basis, rhs.getOrigin() * s);
             m_basis *= rhs.m_basis;
-            setScale(s * rhs.getScale());
+
+#ifdef BT_ALLOW_SSE4
+            m_originScale.mVec128 = _mm_insert_ps(newOrigin.get128(), _mm_set_ss(newScale), 0x30);
+#else
+            m_originScale = newOrigin;
+            m_originScale[3] = newScale;
+#endif
         }
 
-        auto inverse() const -> btQsTransform
+        [[nodiscard]] auto inverse() const -> btQsTransform
         {
-            const auto r = m_basis.inverse();
-            const auto s = 1.0f / getScale();
-            return btQsTransform(r, quatRotate(r, -getOrigin() * s), s);
+            const btQuaternion r = m_basis.inverse();
+            const float s = 1.0f / getScale();
+            return {r, quatRotate(r, -getOrigin() * s), s};
         }
 
-        auto asTransform() const -> btTransform { return btTransform(m_basis, m_originScale); }
+        [[nodiscard]] auto asTransform() const -> btTransform { return btTransform(m_basis, m_originScale); }
+
+        [[nodiscard]] static auto getIdentity() -> btQsTransform
+        {
+            return {}; // Returns value utilizing XMM registers directly, skipping threadsafe static guards
+        }
     };
 
     ATTRIBUTE_ALIGNED16(class) btMatrix4x3 : public btMatrix3x3
@@ -251,7 +272,7 @@ namespace hdt
     public:
         btMatrix4x3() = default;
 
-        btMatrix4x3(const btQsTransform& t)
+        explicit btMatrix4x3(const btQsTransform& t)
         {
             this->setRotation(t.getBasis());
             const __m128 scale = pshufd<0xFF>(t.getOrigin().get128());
@@ -262,13 +283,6 @@ namespace hdt
             m_row[1].m128_f32[3] = t.getOrigin()[1];
             m_row[2].m128_f32[3] = t.getOrigin()[2];
         }
-
-        /*btMatrix4x3(const btMatrix4x3& rhs)
-        {
-        _mm_store_ps(m_row[0].m128_f32, rhs.m_row[0]);
-        _mm_store_ps(m_row[1].m128_f32, rhs.m_row[1]);
-        _mm_store_ps(m_row[2].m128_f32, rhs.m_row[2]);
-        }*/
 
         auto operator*(const btVector3& rhs) const -> btVector3
         {
@@ -294,7 +308,7 @@ namespace hdt
             return xmm0;
         }
 
-        auto mulPack(const btVector3& rhs, float packW) const -> __m128
+        [[nodiscard]] auto mulPack(const btVector3& rhs, const float packW) const -> __m128
         {
 #ifdef BT_ALLOW_SSE4
             const auto v = _mm_blend_ps(rhs.get128(), _mm_set_ps1(1), 0x8);
@@ -320,14 +334,6 @@ namespace hdt
             return xmm0;
         }
 
-        /*inline btMatrix4x3& operator =(const btMatrix4x3& rhs)
-        {
-        _mm_store_ps(m_row[0].m128_f32, rhs.m_row[0]);
-        _mm_store_ps(m_row[1].m128_f32, rhs.m_row[1]);
-        _mm_store_ps(m_row[2].m128_f32, rhs.m_row[2]);
-        return *this;
-        }*/
-
         __m128 m_row[3];
     };
 
@@ -336,7 +342,7 @@ namespace hdt
     public:
         btMatrix4x3T() = default;
 
-        btMatrix4x3T(const btQsTransform& t)
+        explicit btMatrix4x3T(const btQsTransform& t)
         {
             btMatrix3x3 rot;
             rot.setRotation(t.getBasis());
@@ -363,17 +369,44 @@ namespace hdt
             return ret;
         }
 
-        auto basis() const -> btMatrix3x3 { return this->transpose(); }
-        auto toTransform() const -> btTransform { return btTransform(this->transpose(), m_col[3]); }
-        /*inline btMatrix4x3& operator =(const btMatrix4x3& rhs)
-        {
-        _mm_store_ps(m_row[0].m128_f32, rhs.m_row[0]);
-        _mm_store_ps(m_row[1].m128_f32, rhs.m_row[1]);
-        _mm_store_ps(m_row[2].m128_f32, rhs.m_row[2]);
-        return *this;
-        }*/
+        [[nodiscard]] auto basis() const -> btMatrix3x3 { return this->transpose(); }
+
+        [[nodiscard]] auto toTransform() const -> btTransform { return btTransform(this->transpose(), m_col[3]); }
 
         btVector3 m_col[4];
+    };
+
+    // Ref counted base for objects that need RE::BSTSmartPointer compatibility but cannot inherit
+    // RE::BSIntrusiveRefCounted due to conflicts
+    class RefObject
+    {
+    public:
+        RefObject() :
+            m_refCount(0) {}
+
+        virtual ~RefObject() = default;
+
+        auto IncRef() const -> std::uint32_t { return ++m_refCount; }
+
+        // RE::BSTSmartPointer calls this, and will handle deletion for us
+        auto DecRef() const -> std::uint32_t
+        {
+            assert(m_refCount > 0);
+            return --m_refCount;
+        }
+
+        auto release() const -> void
+        {
+            if (DecRef() == 0)
+            {
+                delete this;
+            }
+        }
+
+        auto getRefCount() const -> long { return m_refCount; }
+
+    private:
+        mutable std::atomic<std::uint32_t> m_refCount;
     };
 
     template <>
@@ -387,22 +420,23 @@ namespace hdt
 
     class SpinLock
     {
+        std::atomic<bool> m_flag{false};
+
     public:
-        auto lock() -> void
+        auto lock() noexcept -> void
         {
-            long count = 0;
-            while (m_flag.test_and_set(std::memory_order_acquire))
+            while (m_flag.exchange(true, std::memory_order_acquire))
             {
-                if (++count > 10000)
+                // spin on cache-local read until it looks free
+                while (m_flag.load(std::memory_order_relaxed))
                 {
-                    SwitchToThread();
+                    _mm_pause();
                 }
             }
         }
 
-        auto unlock() -> void { m_flag.clear(std::memory_order_release); }
+        auto unlock() noexcept -> void { m_flag.store(false, std::memory_order_release); }
 
-    protected:
-        std::atomic_flag m_flag = ATOMIC_FLAG_INIT;
+        auto try_lock() noexcept -> bool { return !m_flag.exchange(true, std::memory_order_acquire); }
     };
 } // namespace hdt

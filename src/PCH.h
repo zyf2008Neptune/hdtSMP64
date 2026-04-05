@@ -12,17 +12,10 @@
 #endif
 #pragma warning(pop)
 
-//
 #include <algorithm>
 #include <atomic>
 #include <cinttypes>
 #include <clocale>
-#include <d3d11.h>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <mutex>
-#include <optional>
 #include <ppl.h>
 #include <random>
 #include <set>
@@ -33,26 +26,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#if defined(__has_include)
-#if __has_include(<amp.h>) && __has_include(<amp_graphics.h>) \
-     && __has_include(<amp_math.h>) && __has_include(<amp_short_vectors.h>)
-#include <amp.h>
-#include <amp_graphics.h>
-#include <amp_math.h>
-#include <amp_short_vectors.h>
-#else
-#pragma message("C++ AMP headers not found — building without C++ AMP support")
-// Minimal stubs for types you actually use from AMP can go here.
-// Keep this small — add only the declarations your project needs.
-
-#endif
-#else
-#include <amp.h>
-#include <amp_graphics.h>
-#include <amp_math.h>
-#include <amp_short_vectors.h>
-#endif
 
 using namespace std::literals;
 

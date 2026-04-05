@@ -1,27 +1,27 @@
 #pragma once
 
-#include <RE/B/BSIntrusiveRefCounted.h>
 #include <BulletDynamics/ConstraintSolver/btTypedConstraint.h>
 
+#include "hdtBulletHelper.h"
 #include "hdtSkinnedMeshBone.h"
 
 namespace hdt
 {
-	class BoneScaleConstraint : 
-		public RE::BSIntrusiveRefCounted
-	{
-	public:
-		BoneScaleConstraint(SkinnedMeshBone* a, SkinnedMeshBone* b, btTypedConstraint* constraint);
-		virtual ~BoneScaleConstraint();
+    class alignas(16) BoneScaleConstraint : public RefObject
+    {
+    public:
+        BoneScaleConstraint(SkinnedMeshBone* a, SkinnedMeshBone* b, btTypedConstraint* constraint);
+        ~BoneScaleConstraint() override = default;
 
-		virtual void scaleConstraint() = 0;
+        virtual auto scaleConstraint() -> void = 0;
 
-		btTypedConstraint* getConstraint() const { return m_constraint; }
+        auto getConstraint() const -> btTypedConstraint* { return m_constraint; }
 
-		float m_scaleA, m_scaleB;
+        float m_scaleA;
+        float m_scaleB;
 
-		SkinnedMeshBone* m_boneA;
-		SkinnedMeshBone* m_boneB;
-		btTypedConstraint* m_constraint;
-	};
+        SkinnedMeshBone* m_boneA;
+        SkinnedMeshBone* m_boneB;
+        btTypedConstraint* m_constraint;
+    };
 }

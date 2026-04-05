@@ -39,12 +39,14 @@
 #include <RE/V/VertexDesc.h>
 #include <SKSE/Logger.h>
 
-#include "NetImmerseUtils.h"
-#include "PCH.h"
-#include "XmlInspector/XmlInspector.hpp"
-#include "XmlReader.h"
+#include "HavokUtils.h"
 #include "hdtConvertNi.h"
 #include "hdtDefaultBBP.h"
+#include "hdtSkyrimBone.h"
+#include "hdtSkyrimPhysicsWorld.h"
+#include "NetImmerseUtils.h"
+#include "PCH.h"
+#include "XmlReader.h"
 #include "hdtSkinnedMesh/hdtAABB.h"
 #include "hdtSkinnedMesh/hdtBulletHelper.h"
 #include "hdtSkinnedMesh/hdtConeTwistConstraint.h"
@@ -54,37 +56,41 @@
 #include "hdtSkinnedMesh/hdtSkinnedMeshBone.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshShape.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
-#include "hdtSkyrimBone.h"
-#include "hdtSkyrimPhysicsWorld.h"
+#include "XmlInspector/XmlInspector.hpp"
+
+// F16C isn't supported on super old processors. AVX2+ (AVX processors can have it, but not guaranteed)
+#if defined(__AVX2__) || defined(__AVX512F__)
+#include <immintrin.h>
+#else
+// float32
+// Martin Kallman
+//
+// Fast half-precision to single-precision floating point conversion
+//  - Supports signed zero and denormals-as-zero (DAZ)
+//  - Does not support infinities or NaN
+//  - Few, partially pipelinable, non-branching instructions,
+//  - Core operations ~6 clock cycles on modern x86-64
+static auto __float32(float* __restrict out, const uint16_t in) -> void
+{
+    uint32_t t1 = in & 0x7fff; // Non-sign bits
+    uint32_t t2 = in & 0x8000; // Sign bit
+    const uint32_t t3 = in & 0x7c00; // Exponent
+
+    t1 <<= 13; // Align mantissa on MSB
+    t2 <<= 16; // Shift sign bit into position
+
+    t1 += 0x38000000; // Adjust bias
+
+    t1 = t3 == 0 ? 0 : t1; // Denormals-as-zero
+
+    t1 |= t2; // Re-insert sign bit
+
+    *out = std::bit_cast<float>(t1);
+};
+#endif
 
 namespace hdt
 {
-    // float32
-    // Martin Kallman
-    //
-    // Fast half-precision to single-precision floating point conversion
-    //  - Supports signed zero and denormals-as-zero (DAZ)
-    //  - Does not support infinities or NaN
-    //  - Few, partially pipelinable, non-branching instructions,
-    //  - Core opreations ~6 clock cycles on modern x86-64
-    static auto float32(float* __restrict out, const uint16_t in) -> void
-    {
-        uint32_t t1 = in & 0x7fff; // Non-sign bits
-        uint32_t t2 = in & 0x8000; // Sign bit
-        const uint32_t t3 = in & 0x7c00; // Exponent
-
-        t1 <<= 13; // Align mantissa on MSB
-        t2 <<= 16; // Shift sign bit into position
-
-        t1 += 0x38000000; // Adjust bias
-
-        t1 = t3 == 0 ? 0 : t1; // Denormals-as-zero
-
-        t1 |= t2; // Re-insert sign bit
-
-        *out = std::bit_cast<float>(t1);
-    };
-
     static constexpr auto PI = std::numbers::pi_v<float>;
 
     btEmptyShape SkyrimSystemCreator::BoneTemplate::emptyShape[1];
@@ -134,7 +140,7 @@ namespace hdt
         m_oldRoot = m_skeleton;
     }
 
-    auto SkyrimSystem::readTransform(float timeStep) -> void
+    auto SkyrimSystem::prepareForRead(float timeStep) -> float
     {
         auto newRoot = m_skeleton.get();
         while (newRoot->parent)
@@ -199,8 +205,7 @@ namespace hdt
                         const auto& children = m_skeleton->GetChildren();
                         for (const auto& i : children)
                         {
-                            const auto node = castNiNode(i.get());
-                            if (node)
+                            if (const auto node = castNiNode(i.get()))
                             {
                                 updateTransformUpDown(node, true);
                             }
@@ -221,11 +226,17 @@ namespace hdt
             }
         }
 
-        SkinnedMeshSystem::readTransform(timeStep);
         m_oldRoot = hdt::make_nismart(newRoot);
+        return timeStep;
     }
 
-    auto SkyrimSystem::writeTransform() -> void { SkinnedMeshSystem::writeTransform(); }
+    auto SkyrimSystemCreator::indexBone(SkyrimBone* bone) -> void { m_boneIndex.emplace(bone->m_name.data(), bone); }
+
+    auto SkyrimSystemCreator::findBoneFromIndex(const RE::BSFixedString& name) const -> SkyrimBone*
+    {
+        const auto it = m_boneIndex.find(name.data());
+        return it != m_boneIndex.end() ? it->second : nullptr;
+    }
 
     auto SkyrimSystemCreator::findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*
     {
@@ -235,13 +246,13 @@ namespace hdt
 
     auto SkyrimSystemCreator::getOrCreateBone(const RE::BSFixedString& name) -> SkyrimBone*
     {
-        const auto bone = dynamic_cast<SkyrimBone*>(m_mesh->findBone(getRenamedBone(name)));
-        if (bone)
+        if (const auto bone = findBoneFromIndex(getRenamedBone(name)))
         {
             return bone;
         }
 
-        logger::warn("Bone {} used before being created, trying to create it with current default values", name);
+        logger::warn("Bone {} used before being created, trying to create it with current default values",
+                     name.c_str());
         return createBoneFromNodeName(name);
     }
 
@@ -294,12 +305,57 @@ namespace hdt
         auto& meshNameMap = file->second;
 
         m_mesh = RE::make_smart<SkyrimSystem>(skeleton);
+        m_boneIndex.clear();
 
         // Store original locale
-        const auto saved_locale = std::locale();
+        // const auto saved_locale = std::locale();
+        char saved_locale[32];
+        strcpy_s(saved_locale, std::setlocale(LC_NUMERIC, nullptr));
 
         // Set locale to en_US
-        std::locale::global(std::locale("en_US"));
+        // std::locale::global(std::locale("en_US"));
+        std::setlocale(LC_NUMERIC, "en_US");
+
+        // This forces the skeleton into a neutral reference pose, which avoids building invalid shape data
+        // We pull the references directly from havok for the exact same reference data the engine uses
+        std::vector<std::pair<RE::NiAVObject*, RE::NiTransform>> savedPoses;
+
+        if (auto* userData = skeleton->GetUserData())
+        {
+            if (auto* actor = userData->As<RE::Actor>())
+            {
+                if (auto havokSkel = havok::getAnimationSkeleton(actor))
+                {
+                    savedPoses.reserve(havokSkel->bones.size());
+
+                    for (int32_t i = 0; i < static_cast<int32_t>(havokSkel->bones.size()); ++i)
+                    {
+                        if (auto boneNode =
+                            skeleton->GetObjectByName(RE::BSFixedString(havokSkel->bones[i].name.data())))
+                        {
+                            savedPoses.emplace_back(boneNode, boneNode->local);
+
+                            RE::hkQsTransform refPose;
+                            if (havok::getReferencePoseByIndex(havokSkel, i, refPose))
+                            {
+                                boneNode->local = havok::hKQsTransformToNiTransform(refPose);
+                            }
+                        }
+                    }
+
+                    if (!savedPoses.empty())
+                    {
+                        RE::NiUpdateData updateData;
+                        skeleton->Update(updateData);
+                    }
+                }
+            }
+        }
+
+        if (!old_system)
+        {
+            updateTransformUpDown(m_skeleton, true);
+        }
 
         try
         {
@@ -307,15 +363,15 @@ namespace hdt
             {
                 if (m_reader->GetInspected() == XMLReader::Inspected::StartTag)
                 {
-                    const auto& name = m_reader->GetName();
+                    const auto name = m_reader->GetName();
                     if (name == "bone")
                     {
                         readOrUpdateBone(old_system);
                     }
                     else if (name == "bone-default")
                     {
-                        const auto& clsname = m_reader->getAttribute("name", "");
-                        const auto& extends = m_reader->getAttribute("extends", "");
+                        auto clsname = m_reader->getAttribute("name", "");
+                        auto extends = m_reader->getAttribute("extends", "");
                         auto defaultBoneInfo = getBoneTemplate(extends);
                         readBoneTemplate(defaultBoneInfo);
                         m_boneTemplates[clsname] = defaultBoneInfo;
@@ -331,7 +387,7 @@ namespace hdt
                     }
                     else if (name == "per-triangle-shape")
                     {
-                        auto shape = readPerTriangleShape(std::addressof(meshNameMap));
+                        auto shape = readPerTriangleShape(&meshNameMap);
                         if (shape && !shape->m_vertices.empty())
                         {
                             m_mesh->m_meshes.emplace_back(shape);
@@ -417,8 +473,35 @@ namespace hdt
             return nullptr;
         }
 
+        if (m_deferredBuilds.size() > 2)
+        {
+            concurrency::parallel_for_each(m_deferredBuilds.begin(), m_deferredBuilds.end(),
+                                           [](const DeferredBuild& db)
+                                           {
+                                               if (db.vertexShape)
+                                               {
+                                                   db.vertexShape->autoGen();
+                                               }
+                                               db.body->finishBuild();
+                                           });
+        }
+        else if (!m_deferredBuilds.empty())
+        {
+            for (const auto& db : m_deferredBuilds)
+            {
+                if (db.vertexShape)
+                {
+                    db.vertexShape->autoGen();
+                }
+                db.body->finishBuild();
+            }
+        }
+
+        m_deferredBuilds.clear();
+
         // Restore original locale
-        std::locale::global(saved_locale);
+        // std::locale::global(saved_locale);
+        std::setlocale(LC_NUMERIC, saved_locale);
 
         if (m_reader->GetErrorCode() != Xml::ErrorCode::None)
         {
@@ -428,11 +511,23 @@ namespace hdt
 
         m_mesh->m_skeleton = hdt::make_nismart(m_skeleton);
         m_mesh->m_shapeRefs.swap(m_shapeRefs);
-        std::ranges::sort(m_mesh->m_bones, [](const auto& a, const auto& b)
+        std::ranges::sort(
+            m_mesh->m_bones, [](const auto& a, const auto& b)
+            {
+                return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->m_depth;
+            });
+
+        // Restore the original pose to avoid a visual 1 Havok tick T-pose (only for visual reasons, it won't break
+        // anything otherwise)
+        for (auto& [node, transform] : savedPoses)
         {
-            return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->
-                m_depth;
-        });
+            node->local = transform;
+        }
+        if (!savedPoses.empty())
+        {
+            RE::NiUpdateData updateData;
+            skeleton->Update(updateData);
+        }
 
         return m_mesh->valid() ? m_mesh : nullptr;
     }
@@ -449,24 +544,21 @@ namespace hdt
 
                 if (name == "generic-constraint")
                 {
-                    auto constraint = readGenericConstraint();
-                    if (constraint)
+                    if (auto constraint = readGenericConstraint())
                     {
                         ret->m_constraints.emplace_back(constraint);
                     }
                 }
                 else if (name == "stiffspring-constraint")
                 {
-                    auto constraint = readStiffSpringConstraint();
-                    if (constraint)
+                    if (auto constraint = readStiffSpringConstraint())
                     {
                         ret->m_constraints.emplace_back(constraint);
                     }
                 }
                 else if (name == "conetwist-constraint")
                 {
-                    auto constraint = readConeTwistConstraint();
-                    if (constraint)
+                    if (auto constraint = readConeTwistConstraint())
                     {
                         ret->m_constraints.emplace_back(constraint);
                     }
@@ -609,12 +701,12 @@ namespace hdt
 
     auto SkyrimSystemCreator::readShape() -> std::shared_ptr<btCollisionShape>
     {
-        const auto typeStr = m_reader->getAttribute("type");
+        auto typeStr = m_reader->getAttribute("type");
         if (typeStr == "ref")
         {
-            const auto shapeName = m_reader->getAttribute("name");
+            auto shapeName = m_reader->getAttribute("name");
             m_reader->skipCurrentElement();
-            const auto iter = m_shapes.find(shapeName);
+            auto iter = m_shapes.find(shapeName);
             if (iter != m_shapes.end())
             {
                 return iter->second;
@@ -630,7 +722,7 @@ namespace hdt
             {
                 if (m_reader->GetInspected() == XMLReader::Inspected::StartTag)
                 {
-                    const auto& name = m_reader->GetName();
+                    auto name = m_reader->GetName();
                     if (name == "halfExtend")
                     {
                         halfExtend = m_reader->readVector3();
@@ -661,7 +753,7 @@ namespace hdt
             {
                 if (m_reader->GetInspected() == XMLReader::Inspected::StartTag)
                 {
-                    const auto& name = m_reader->GetName();
+                    auto name = m_reader->GetName();
                     if (name == "radius")
                     {
                         radius = m_reader->readFloat();
@@ -687,7 +779,7 @@ namespace hdt
             {
                 if (m_reader->GetInspected() == XMLReader::Inspected::StartTag)
                 {
-                    const auto& name = m_reader->GetName();
+                    auto name = m_reader->GetName();
                     if (name == "radius")
                     {
                         radius = m_reader->readFloat();
@@ -711,19 +803,20 @@ namespace hdt
         }
         if (typeStr == "hull")
         {
+            [[maybe_unused]] float margin = 0;
             auto ret = std::make_shared<btConvexHullShape>();
             while (m_reader->Inspect())
             {
                 if (m_reader->GetInspected() == XMLReader::Inspected::StartTag)
                 {
-                    const auto& name = m_reader->GetName();
+                    auto name = m_reader->GetName();
                     if (name == "point")
                     {
                         ret->addPoint(m_reader->readVector3(), false);
                     }
                     else if (name == "margin")
                     {
-                        float margin = m_reader->readFloat();
+                        margin = m_reader->readFloat();
                     }
                     else
                     {
@@ -748,7 +841,7 @@ namespace hdt
             {
                 if (m_reader->GetInspected() == XMLReader::Inspected::StartTag)
                 {
-                    const auto& name = m_reader->GetName();
+                    auto name = m_reader->GetName();
                     if (name == "height")
                     {
                         height = m_reader->readFloat();
@@ -837,8 +930,8 @@ namespace hdt
 
     auto SkyrimSystemCreator::readOrUpdateBone(const SkyrimSystem* old_system) -> void
     {
-        const auto name = getRenamedBone(m_reader->getAttribute("name"));
-        if (m_mesh->findBone(name))
+        const RE::BSFixedString name = getRenamedBone(m_reader->getAttribute("name"));
+        if (findBoneFromIndex(name))
         {
             logger::warn("Bone {} already exists, skipped", name.c_str());
             return;
@@ -855,8 +948,7 @@ namespace hdt
                                                      const RE::BSFixedString& templateName, const bool readTemplate,
                                                      const SkyrimSystem* old_system) -> SkyrimBone*
     {
-        const auto node = findObjectByName(bodyName);
-        if (node)
+        if (const auto node = findObjectByName(bodyName))
         {
             logger::info("Found node named {}, creating bone", bodyName.c_str());
             auto boneTemplate = getBoneTemplate(templateName);
@@ -872,8 +964,7 @@ namespace hdt
 
             if (old_system)
             {
-                const auto old_b = old_system->findBone(bodyName);
-                if (old_b)
+                if (const auto old_b = old_system->findBone(bodyName))
                 {
                     bone->m_currentTransform = convertNi(bone->m_skeleton->world) * old_b->m_origToSkeletonTransform;
                     const auto dest = bone->m_currentTransform.asTransform() * bone->m_localToRig;
@@ -898,6 +989,7 @@ namespace hdt
             }
 
             m_mesh->m_bones.emplace_back(hdt::make_smart(bone));
+            indexBone(bone);
             return bone;
         }
         logger::warn("Node named {} doesn't exist, skipped, no bone created", bodyName.c_str());
@@ -938,13 +1030,15 @@ namespace hdt
                 const auto node = skinInstance->bones[boneIdx];
                 const auto boneData = &skinData->boneData[boneIdx];
                 auto boundingSphere = BoundingSphere(convertNi(boneData->bound.center), boneData->bound.radius);
-                const auto& boneName = node->name;
-                auto bone = m_mesh->findBone(boneName);
+                const RE::BSFixedString& boneName = node->name;
+                auto bone = static_cast<SkinnedMeshBone*>(findBoneFromIndex(boneName));
                 if (!bone)
                 {
                     auto defaultBoneInfo = getBoneTemplate("");
-                    bone = new SkyrimBone(boneName, node->AsNode(), this->m_skeleton, defaultBoneInfo);
-                    m_mesh->m_bones.push_back(hdt::make_smart(bone));
+                    const auto newBone = new SkyrimBone(boneName, node->AsNode(), this->m_skeleton, defaultBoneInfo);
+                    m_mesh->m_bones.emplace_back(hdt::make_smart(newBone));
+                    indexBone(newBone);
+                    bone = newBone;
                     logger::info("Created bone {} added to body {}, created without default values", boneName.c_str(),
                                  name);
                 }
@@ -1016,12 +1110,27 @@ namespace hdt
 
                 const auto boneData = reinterpret_cast<SkyrimSystem::BoneData*>(&vertexBlock[j * vSize + boneOffset]);
 
-                for (auto k = 0; std::cmp_less(k, partition->bonesPerVertex) && k < 4; ++k)
+#if defined(__AVX2__) || defined(__AVX512F__)
+                // batch convert all 4 bone weights FP16 to FP32 through F16C hardware instruction
+                __m128i halfWeights = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(boneData->boneWeights));
+                _mm_storeu_ps(body->m_vertices[j + vertexStart].m_weight, _mm_cvtph_ps(halfWeights));
+                // cleanse garbage NIF data for unused bones
+                for (int k = partition->bonesPerVertex; k < 4; ++k)
+                {
+                    body->m_vertices[j + vertexStart].m_weight[k] = 0.0f;
+                }
+#else
+                for (int k = 0; k < partition->bonesPerVertex && k < 4; ++k)
+                {
+                    __float32(&body->m_vertices[j + vertexStart].m_weight[k], boneData->boneWeights[k]);
+                }
+#endif
+
+                for (int k = 0; k < partition->bonesPerVertex && k < 4; ++k)
                 {
                     const auto localBoneIndex = boneData->boneIndices[k];
                     assert(localBoneIndex < body->m_skinnedBones.size());
                     body->m_vertices[j + vertexStart].m_boneIdx[k] = localBoneIndex + boneStart;
-                    float32(&body->m_vertices[j + vertexStart].m_weight[k], boneData->boneWeights[k]);
                 }
             }
 
@@ -1111,16 +1220,14 @@ namespace hdt
                 }
                 else if (nodeName == "can-collide-with-bone")
                 {
-                    const auto bone = getOrCreateBone(m_reader->readText());
-                    if (bone)
+                    if (const auto bone = getOrCreateBone(m_reader->readText()))
                     {
                         body->m_canCollideWithBones.insert(bone);
                     }
                 }
                 else if (nodeName == "no-collide-with-bone")
                 {
-                    const auto bone = getOrCreateBone(m_reader->readText());
-                    if (bone)
+                    if (const auto bone = getOrCreateBone(m_reader->readText()))
                     {
                         body->m_noCollideWithBones.insert(bone);
                     }
@@ -1162,8 +1269,7 @@ namespace hdt
             }
         }
 
-        shape->autoGen();
-        body->finishBuild();
+        m_deferredBuilds.emplace_back(body.get(), shape.get());
 
         return body;
     }
@@ -1265,16 +1371,14 @@ namespace hdt
                 }
                 else if (nodeName == "can-collide-with-bone")
                 {
-                    auto bone = getOrCreateBone(m_reader->readText());
-                    if (bone)
+                    if (auto bone = getOrCreateBone(m_reader->readText()))
                     {
                         body->m_canCollideWithBones.insert(bone);
                     }
                 }
                 else if (nodeName == "no-collide-with-bone")
                 {
-                    auto bone = getOrCreateBone(m_reader->readText());
-                    if (bone)
+                    if (auto bone = getOrCreateBone(m_reader->readText()))
                     {
                         body->m_noCollideWithBones.insert(bone);
                     }
@@ -1315,7 +1419,7 @@ namespace hdt
             }
         }
 
-        body->finishBuild();
+        m_deferredBuilds.push_back({.body = body.get(), .vertexShape = nullptr});
 
         return body;
     }
@@ -1349,8 +1453,8 @@ namespace hdt
         }
     }
 
-    auto SkyrimSystemCreator::parseFrameType(const std::string& name, FrameType& frameType,
-                                             btTransform& frame) const -> bool
+    auto SkyrimSystemCreator::parseFrameType(const std::string& name, FrameType& frameType, btTransform& frame) const
+        -> bool
     {
         if (name == "frameInA")
         {
@@ -1536,8 +1640,8 @@ namespace hdt
     auto SkyrimSystemCreator::findBones(const RE::BSFixedString& bodyAName, const RE::BSFixedString& bodyBName,
                                         SkyrimBone*& bodyA, SkyrimBone*& bodyB) -> bool
     {
-        bodyA = dynamic_cast<SkyrimBone*>(m_mesh->findBone(bodyAName));
-        bodyB = dynamic_cast<SkyrimBone*>(m_mesh->findBone(bodyBName));
+        bodyA = findBoneFromIndex(bodyAName);
+        bodyB = findBoneFromIndex(bodyBName);
 
         if (!bodyA)
         {
@@ -1667,7 +1771,8 @@ namespace hdt
         const auto bodyBName = getRenamedBone(m_reader->getAttribute("bodyB"));
         const auto clsname = m_reader->getAttribute("template", "");
 
-        SkyrimBone *bodyA, *bodyB;
+        SkyrimBone* bodyA;
+        SkyrimBone* bodyB;
         if (!findBones(bodyAName, bodyBName, bodyA, bodyB))
         {
             return nullptr;
@@ -1678,7 +1783,8 @@ namespace hdt
 
         auto cinfo = getGenericConstraintTemplate(clsname);
         readGenericConstraintTemplate(cinfo);
-        btTransform frameA, frameB;
+        btTransform frameA;
+        btTransform frameB;
         calcFrame(cinfo.frameType, cinfo.frame, trA, trB, frameA, frameB);
 
         RE::BSTSmartPointer<Generic6DofConstraint> constraint;
@@ -1705,10 +1811,10 @@ namespace hdt
             constraint->setEquilibriumPoint(i, cinfo.linearEquilibrium[i]);
             constraint->setEquilibriumPoint(i + 3, cinfo.angularEquilibrium[i]);
 
-            // constraint->setNonHookeanDamping(i, cinfo.linearNonHookeanDamping[i]);
-            // constraint->setNonHookeanDamping(i + 3, cinfo.angularNonHookeanDamping[i]);
-            // constraint->setNonHookeanStiffness(i, cinfo.linearNonHookeanStiffness[i]);
-            // constraint->setNonHookeanStiffness(i + 3, cinfo.angularNonHookeanStiffness[i]);
+            constraint->setNonHookeanDamping(i, cinfo.linearNonHookeanDamping[i]);
+            constraint->setNonHookeanDamping(i + 3, cinfo.angularNonHookeanDamping[i]);
+            constraint->setNonHookeanStiffness(i, cinfo.linearNonHookeanStiffness[i]);
+            constraint->setNonHookeanStiffness(i + 3, cinfo.angularNonHookeanStiffness[i]);
 
             constraint->enableSpring(i, cinfo.enableLinearSprings);
             constraint->enableSpring(i + 3, cinfo.enableAngularSprings);
@@ -1731,7 +1837,7 @@ namespace hdt
             constraint->setParam(BT_CONSTRAINT_STOP_ERP, cinfo.stopERP, i);
             constraint->setParam(BT_CONSTRAINT_STOP_CFM, cinfo.stopCFM, i);
 
-            if (auto rotMotor = constraint->getRotationalLimitMotor(i))
+            if (const auto rotMotor = constraint->getRotationalLimitMotor(i))
             {
                 rotMotor->m_motorERP = cinfo.motorERP;
                 rotMotor->m_motorCFM = cinfo.motorCFM;

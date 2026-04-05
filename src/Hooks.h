@@ -26,7 +26,8 @@ namespace Hooks
 
             //
             REL::Relocation BSFaceGenNiNode__vtbl{RE::VTABLE_BSFaceGenNiNode[0]};
-            BSFaceGenNiNode__vtbl.write_vfunc(0x3E, SkinAllGeometry__Hook);
+            // VR adds SKYRIM_REL_VR_VIRTUAL FixSkinInstances at slot 0x3E, pushing SkinAllGeometry to 0x3F
+            BSFaceGenNiNode__vtbl.write_vfunc(REL::Module::IsVR() ? 0x3F : 0x3E, SkinAllGeometry__Hook);
 
             //
             _SkinSingleGeometry = trampoline.write_call<5>(SkinSingleGeometryCode1.address(), SkinSingleGeometry__Hook);
@@ -34,6 +35,32 @@ namespace Hooks
 
             //
             ApplyBoneLimitFix();
+
+            // Todo: Get the VR offset(s)/ID
+            if (!REL::Module::IsVR())
+            {
+                // Skyrim patch: This fixes facial morphs from getting broken by some SMP meshes (Commonly hairs, but
+                // also bodies) [BSFaceGenNiNode::sub, the producer that enqueues faces for morph updates] children[0]
+                // validation bails if the first child isn't a valid facegen BSDynamicTriShape Patch: redirect the
+                // failure JZ to skip the child dependent section and fall through to node checks instead of early
+                // bailing
+                //
+                // 1404332c0: 0F 84 8F 00 00 00  JZ 0x8F  140433355 (early bail)
+                // to: 0F 84 22 00 00 00  JZ 0x22   1404332e8 (actual node checks)
+
+                REL::Relocation func{RELOCATION_ID(26417, 26998)};
+
+                logger::debug("Applying FaceMorphProducer patch!");
+
+                if (REL::Module::IsAE())
+                {
+                    REL::safe_write(func.address() + 0x202, std::uint8_t{0x22});
+                }
+                else
+                {
+                    REL::safe_write(func.address() + 0x201, std::uint8_t{0x09});
+                }
+            }
 
             //
             logger::debug("...success");
@@ -94,7 +121,7 @@ namespace Hooks
 
         static auto Update(RE::Main*) -> void;
 
-        static auto Unk_sub(std::any a_this) -> void; // RE::BSBethesdaPlatform*
+        static auto Unk_sub(void* a_this) -> void; // RE::BSBethesdaPlatform*
     public:
         static inline REL::Relocation<decltype(&Unk_sub)> _Unk_sub;
         static inline REL::Relocation<decltype(&Update)> _Update;
@@ -115,17 +142,16 @@ namespace Hooks
             logger::debug("...success");
         }
 
-        static auto func(RE::ActorEquipManager*, RE::Actor*, RE::TESBoundObject*, RE::ExtraDataList*,
-                         std::uint32_t, const RE::BGSEquipSlot*, bool, bool, bool, bool,
-                         const RE::BGSEquipSlot*) -> bool;
+        static auto func(RE::ActorEquipManager*, RE::Actor*, RE::TESBoundObject*, RE::ExtraDataList*, std::uint32_t,
+                         const RE::BGSEquipSlot*, bool, bool, bool, bool, const RE::BGSEquipSlot*) -> bool;
 
     protected:
         using func_t = decltype(func);
 
     private:
-        static inline func_t* _func{
-            reinterpret_cast<func_t*>(REL::VariantID(37945, 38901, 0x06411A0)
-                .address())}; // 0x0638190, 0x0670210, 0x06411A0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
+        static inline func_t* _func{reinterpret_cast<func_t*>(
+            REL::VariantID(37945, 38901, 0x06411A0)
+            .address())}; // 0x0638190, 0x0670210, 0x06411A0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
     };
 
     class BipedAnimHooks
@@ -139,22 +165,22 @@ namespace Hooks
             logger::debug("Applying BipedAnimHooks hooks!");
 
             //
-            DetourAttach(reinterpret_cast<PVOID*>(&_func), (PVOID)func);
+            DetourAttach(reinterpret_cast<PVOID*>(&_func), reinterpret_cast<PVOID>(func));
 
             //
             logger::debug("...success");
         }
 
-        static auto func(RE::BipedAnim*, RE::NiNode*, RE::BSFadeNode*, uint32_t, void*, void*,
-                         void*) -> RE::NiAVObject*;
+        static auto func(RE::BipedAnim*, RE::NiNode*, RE::BSFadeNode*, uint32_t, void*, void*, void*)
+            -> RE::NiAVObject*;
 
     protected:
         using func_t = decltype(func);
 
     private:
-        static inline func_t* _func{
-            (func_t*)REL::VariantID(15535, 15712, 0x01DB9E0)
-            .address()}; // 0x01CAFB0, 0x01D83B0, 0x01DB9E0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
+        static inline func_t* _func{reinterpret_cast<func_t*>(
+            REL::VariantID(15535, 15712, 0x01DB9E0)
+            .address())}; // 0x01CAFB0, 0x01D83B0, 0x01DB9E0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
     };
 
     auto Install() -> void;

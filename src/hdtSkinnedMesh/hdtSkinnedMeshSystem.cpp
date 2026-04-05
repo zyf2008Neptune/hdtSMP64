@@ -1,80 +1,81 @@
 #include "hdtSkinnedMeshSystem.h"
 
+#include "hdtBoneScaleConstraint.h"
 #include "hdtSkinnedMeshBody.h"
 #include "hdtSkinnedMeshShape.h"
-#include "hdtBoneScaleConstraint.h"
 
 namespace hdt
 {
-	void SkinnedMeshSystem::resetTransformsToOriginal()
-	{
-		for (int i = 0; i < m_bones.size(); ++i)
-			m_bones[i]->resetTransformToOriginal();
-	}
+    auto SkinnedMeshSystem::resetTransformsToOriginal() -> void
+    {
+        for (const auto& m_bone : m_bones)
+        {
+            m_bone->resetTransformToOriginal();
+        }
+    }
 
-	void SkinnedMeshSystem::readTransform(float timeStep)
-	{
-		if (this->block_resetting)
-			return;
+    auto SkinnedMeshSystem::readTransform(float timeStep) -> void
+    {
+        if (this->block_resetting)
+        {
+            return;
+        }
 
-		concurrency::parallel_for_each(m_bones.begin(), m_bones.end(), [=](const auto& bone) 
-		{
-			bone->readTransform(timeStep);
-		});
+        for (const auto& bone : m_bones)
+        {
+            bone->readTransform(timeStep);
+        }
 
-		for (auto i : m_constraints)
-		{
-			i->scaleConstraint();
-		}
+        for (auto i : m_constraints)
+        {
+            i->scaleConstraint();
+        }
 
-		for (auto i : m_constraintGroups)
-		{
-			i->scaleConstraint();
-		}
-	}
+        for (auto i : m_constraintGroups)
+        {
+            i->scaleConstraint();
+        }
+    }
 
-	void SkinnedMeshSystem::writeTransform()
-	{
-		for (int i = 0; i < m_bones.size(); ++i)
-		{
-			if (m_bones[i]->m_rig.isKinematicObject()) 
-			{
-				continue;
-			}
+    auto SkinnedMeshSystem::writeTransform() -> void
+    {
+        for (const auto& m_bone : m_bones)
+        {
+            if (m_bone->m_rig.isKinematicObject())
+            {
+                continue;
+            }
 
-			m_bones[i]->writeTransform();
-		}
-	}
+            m_bone->writeTransform();
+        }
+    }
 
-	void SkinnedMeshSystem::internalUpdate()
-	{
-		for (auto& i : m_bones)
-			i->internalUpdate();
+    auto SkinnedMeshSystem::internalUpdate() const -> void
+    {
+        for (auto& i : m_bones)
+        {
+            i->internalUpdate();
+        }
 
-		for (auto& i : m_meshes)
-			i->updateBoundingSphereAabb();
-	}
+        for (auto& i : m_meshes)
+        {
+            i->updateBoundingSphereAabb();
+        }
+    }
 
-	//void SkinnedMeshSystem::internalUpdateCL()
-	//{
-	//	for (auto& i : m_bones)
-	//		i->internalUpdate();
+    auto SkinnedMeshSystem::gather(std::vector<SkinnedMeshBody*>& bodies,
+                                   std::vector<SkinnedMeshShape*>& shapes) const -> void
+    {
+        for (auto& i : m_meshes)
+        {
+            bodies.push_back(i.get());
+            shapes.push_back(i->m_shape.get());
+            auto triShape = dynamic_cast<PerTriangleShape*>(i->m_shape.get());
 
-	//	//i->internalUpdate();
-	//}
-
-	void SkinnedMeshSystem::gather(std::vector<SkinnedMeshBody*>& bodies, std::vector<SkinnedMeshShape*>& shapes)
-	{
-		for (auto& i : m_meshes)
-		{
-			bodies.push_back(i.get());
-			shapes.push_back(i->m_shape.get());
-			auto triShape = dynamic_cast<PerTriangleShape*>(i->m_shape.get());
-
-			if (triShape)
-			{
-				shapes.push_back(triShape->m_verticesCollision.get());
-			}
-		}
-	}
+            if (triShape)
+            {
+                shapes.push_back(triShape->m_verticesCollision.get());
+            }
+        }
+    }
 }

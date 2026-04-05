@@ -3,20 +3,20 @@
 #include <numeric>
 #include <string>
 
+#include <boost/beast/core/string.hpp>
 #include <RE/B/BSLightingShaderMaterial.h>
 #include <RE/B/BSTextureSet.h>
 #include <RE/N/NiSourceTexture.h>
-#include <boost/beast/core/string.hpp>
 
 #include "ActorManager.h"
-#include "Events.h"
-#include "Hooks.h"
-#include "PluginInterfaceImpl.h"
-#include "WeatherManager.h"
 #include "config.h"
 #include "dhdtOverrideManager.h"
 #include "dhdtPapyrusFunctions.h"
+#include "Events.h"
 #include "hdtSkyrimPhysicsWorld.h"
+#include "Hooks.h"
+#include "PluginInterfaceImpl.h"
+#include "WeatherManager.h"
 
 static auto checkOldPlugins() -> void
 {
@@ -42,8 +42,8 @@ static auto checkOldPlugins() -> void
     }
 }
 
-static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material,
-                                const std::uint32_t index) -> RE::NiSourceTexturePtr*
+static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const std::uint32_t index)
+    -> RE::NiSourceTexturePtr*
 {
     switch (index)
     {
@@ -189,10 +189,11 @@ static auto DumpNodeChildren(RE::NiAVObject* node) -> void
                     if (geometry->GetGeometryRuntimeData().skinInstance &&
                         geometry->GetGeometryRuntimeData().skinInstance->skinData)
                     {
-                        for (auto i = 0; i < geometry->GetGeometryRuntimeData().skinInstance->skinData->bones; i++)
+                        for (uint32_t boneIdx = 0;
+                             boneIdx < geometry->GetGeometryRuntimeData().skinInstance->skinData->bones; boneIdx++)
                         {
-                            const auto bone = geometry->GetGeometryRuntimeData().skinInstance->bones[i];
-                            logger::info("Bone {} - {} {} [{:.2f}, {:.2f}, {:.2f}]", i, bone->GetRTTI()->name,
+                            const auto bone = geometry->GetGeometryRuntimeData().skinInstance->bones[boneIdx];
+                            logger::info("Bone {} - {} {} [{:.2f}, {:.2f}, {:.2f}]", boneIdx, bone->GetRTTI()->name,
                                          bone->name, bone->world.translate.x, bone->world.translate.y,
                                          bone->world.translate.z);
                         }
@@ -200,11 +201,9 @@ static auto DumpNodeChildren(RE::NiAVObject* node) -> void
 
                     if (const auto shaderProperty = geometry->GetGeometryRuntimeData().shaderProperty.get())
                     {
-                        const auto lightingShader =
-                            netimmerse_cast<RE::BSLightingShaderProperty*>(shaderProperty);
-                        if (lightingShader)
+                        if (const auto lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(shaderProperty))
                         {
-                            auto material = dynamic_cast<RE::BSLightingShaderMaterial*>(lightingShader->material);
+                            const auto material = dynamic_cast<RE::BSLightingShaderMaterial*>(lightingShader->material);
 
                             for (auto i = 0; i < RE::BSTextureSet::Textures::kTotal; ++i)
                             {
@@ -246,12 +245,12 @@ static auto DumpNodeChildren(RE::NiAVObject* node) -> void
 
 static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 {
-    static std::map<hdt::ActorManager::SkeletonState, std::string_view> stateStrings = {
-        {hdt::ActorManager::SkeletonState::e_InactiveNotInScene, "Not in scene"sv},
-        {hdt::ActorManager::SkeletonState::e_InactiveUnseenByPlayer, "Unseen by player"sv},
-        {hdt::ActorManager::SkeletonState::e_InactiveTooFar, "Deactivated for performance"sv},
-        {hdt::ActorManager::SkeletonState::e_ActiveIsPlayer, "Is player character"sv},
-        {hdt::ActorManager::SkeletonState::e_ActiveNearPlayer, "Is near player"sv}};
+    static std::map<hdt::ActorManager::SkeletonState, const char*> stateStrings = {
+        {hdt::ActorManager::SkeletonState::e_InactiveNotInScene, "Not in scene"},
+        {hdt::ActorManager::SkeletonState::e_InactiveUnseenByPlayer, "Unseen by player"},
+        {hdt::ActorManager::SkeletonState::e_InactiveTooFar, "Deactivated for performance"},
+        {hdt::ActorManager::SkeletonState::e_ActiveIsPlayer, "Is player character"},
+        {hdt::ActorManager::SkeletonState::e_ActiveNearPlayer, "Is near player"}};
 
     auto skeletons = hdt::ActorManager::instance()->getSkeletons();
     std::vector<int> order(skeletons.size());
@@ -260,7 +259,7 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 
     for (const int i : order)
     {
-        auto& skeleton = skeletons.at(i);
+        auto& skeleton = skeletons[i];
 
         RE::TESObjectREFR* skelOwner = nullptr;
         const RE::TESFullName* ownerName = nullptr;
@@ -279,7 +278,7 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
             skeleton.state > hdt::ActorManager::SkeletonState::e_SkeletonActive ? "active" : "inactive",
             ownerName ? ownerName->GetFullName() : "unk_name", skelOwner ? skelOwner->formID : 0x00000000,
             skelOwner && skelOwner->GetBaseObject() ? skelOwner->GetBaseObject()->formID : 0x00000000,
-            stateStrings[skeleton.state].data());
+            stateStrings[skeleton.state]);
 
         if (includeItems)
         {
@@ -347,7 +346,8 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
 
     logger::debug("SMPCommand: {} {}"sv, buffer, buffer2);
 
-    if (boost::beast::iequals(buffer, "reset"))
+    //if (boost::beast::iequals(buffer, "reset"))
+    if (_strnicmp(buffer.c_str(), "reset", MAX_PATH) == 0)
     {
         logger::debug("smp reset: reloading config and resetting physics world"sv);
         RE::ConsoleLog::GetSingleton()->Print("running full smp reset");
@@ -358,29 +358,9 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
         hdt::SkyrimPhysicsWorld::get()->resetSystems();
         return true;
     }
-#ifdef CUDA
-    if (boost::beast::iequals(buffer, "gpu"))
-    {
-        CudaInterface::enableCuda = !CudaInterface::enableCuda;
-        if (CudaInterface::instance()->hasCuda())
-        {
-            RE::ConsoleLog::GetSingleton()->Print("CUDA collision enabled");
-        }
-        else
-        {
-            RE::ConsoleLog::GetSingleton()->Print("CUDA collision disabled");
-        }
 
-        return true;
-    }
-    if (boost::beast::iequals(buffer, "timing"))
-    {
-        FrameTimer::instance()->reset(200);
-        Console_Print("Started frame timing");
-        return true;
-    }
-#endif
-    if (boost::beast::iequals(buffer, "dumptree"))
+    //if (boost::beast::iequals(buffer, "dumptree"))
+    if (_strnicmp(buffer.c_str(), "dumptree", MAX_PATH) == 0)
     {
         if (a_thisObj)
         {
@@ -395,19 +375,22 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
         return true;
     }
 
-    if (boost::beast::iequals(buffer, "detail"))
+    //if (boost::beast::iequals(buffer, "detail"))
+    if (_strnicmp(buffer.c_str(), "detail", MAX_PATH) == 0)
     {
         SMPDebug_PrintDetailed(true);
         return true;
     }
 
-    if (boost::beast::iequals(buffer, "list"))
+    //if (boost::beast::iequals(buffer, "list"))
+    if (_strnicmp(buffer.c_str(), "list", MAX_PATH) == 0)
     {
         SMPDebug_PrintDetailed(false);
         return true;
     }
 
-    if (boost::beast::iequals(buffer, "on"))
+    //if (boost::beast::iequals(buffer, "on"))
+    if (_strnicmp(buffer.c_str(), "on", MAX_PATH) == 0)
     {
         hdt::SkyrimPhysicsWorld::get()->disabled = false;
         {
@@ -416,7 +399,8 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
         return true;
     }
 
-    if (boost::beast::iequals(buffer, "off"))
+    //if (boost::beast::iequals(buffer, "off"))
+    if (_strnicmp(buffer.c_str(), "off", MAX_PATH) == 0)
     {
         hdt::SkyrimPhysicsWorld::get()->disabled = true;
         {
@@ -425,7 +409,8 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
         return true;
     }
 
-    if (boost::beast::iequals(buffer, "QueryOverride"))
+    //if (boost::beast::iequals(buffer, "QueryOverride"))
+    if (_strnicmp(buffer.c_str(), "QueryOverride", MAX_PATH) == 0)
     {
         RE::ConsoleLog::GetSingleton()->Print(
             hdt::Override::OverrideManager::GetSingleton()->queryOverrideData().c_str());
@@ -511,7 +496,7 @@ namespace
         log->flush_on(level);
 
         spdlog::set_default_logger(std::move(log));
-        spdlog::set_pattern("%g(%#): [%^%l%$] %v"s);
+        spdlog::set_pattern("[%H:%M:%S.%e] [%L] %v"s);
     }
 } // namespace
 
@@ -589,7 +574,8 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []()
     v.PluginVersion(Plugin::VERSION);
     v.PluginName(Plugin::NAME);
     v.UsesAddressLibrary();
-    v.CompatibleVersions({SKSE::RUNTIME_SSE_LATEST});
+    v.CompatibleVersions(
+        {SKSE::RUNTIME_SSE_LATEST_SE, SKSE::RUNTIME_SSE_LATEST, SKSE::RUNTIME_1_6_1179, SKSE::RUNTIME_LATEST_VR});
     v.UsesNoStructs();
 
     return v;
@@ -612,14 +598,23 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
     }
 #endif
 
-    //
+    SKSE::Init(a_skse);
+
     hdt::loadConfig();
 
-    //
     InitializeLog();
-    logger::info("{} v{}"sv, Plugin::NAME, Plugin::VERSION.string());
 
-    SKSE::Init(a_skse);
+    if constexpr (Plugin::BUILD_INFO.empty())
+    {
+        logger::critical("{} v{} ({})"sv, Plugin::NAME, Plugin::VERSION.string(), Plugin::AVX_VARIANT);
+    }
+    else
+    {
+        logger::critical("{} v{}-{} ({})"sv, Plugin::NAME, Plugin::VERSION.string(), Plugin::BUILD_INFO,
+                         Plugin::AVX_VARIANT);
+    }
+
+    hdt::logConfig();
 
     const auto messaging = SKSE::GetMessagingInterface();
     if (!messaging->RegisterListener("SKSE", MessageHandler))
@@ -677,13 +672,6 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
     //
     hdt::papyrus::RegisterAllFunctions(SKSE::GetPapyrusInterface());
-
-    if (hdt::SkyrimPhysicsWorld::get()->m_enableWind)
-    {
-        logger::info("Wind enabled");
-        std::thread t(hdt::WeatherCheck);
-        t.detach();
-    }
 
     return true;
 }

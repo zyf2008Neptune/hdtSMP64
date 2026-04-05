@@ -3,6 +3,7 @@
 #include <RE/B/BSFixedString.h>
 
 #include "hdtSkinnedMesh/hdtSkinnedMeshBody.h"
+#include "hdtSkyrimBone.h"
 
 namespace hdt
 {

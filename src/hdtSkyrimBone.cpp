@@ -6,16 +6,16 @@
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <LinearMath/btScalar.h>
+#include <LinearMath/btTransformUtil.h>
 #include <LinearMath/btVector3.h>
 #include <RE/N/NiNode.h>
-#include <LinearMath/btTransformUtil.h>
 
-#include "NetImmerseUtils.h"
 #include "hdtConvertNi.h"
 #include "hdtForceUpdateList.h"
+#include "hdtSkyrimPhysicsWorld.h"
+#include "NetImmerseUtils.h"
 #include "hdtSkinnedMesh/hdtBulletHelper.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshBone.h"
-#include "hdtSkyrimPhysicsWorld.h"
 
 namespace hdt
 {
@@ -50,55 +50,54 @@ namespace hdt
 
     auto SkyrimBone::readTransform(float timeStep) -> void
     {
-        auto oldScale = m_currentTransform.getScale();
+        const auto oldScale = m_currentTransform.getScale();
+
         m_currentTransform = convertNi(m_node->world);
-        auto newScale = m_currentTransform.getScale();
 
-        auto& current = m_rig.getWorldTransform();
+        const auto newScale = m_currentTransform.getScale();
+        const auto current = m_rig.getWorldTransform();
+        const auto isStaticOrKinematic = m_rig.isStaticOrKinematicObject();
 
-        auto factor = oldScale / newScale;
-        if (!m_rig.isStaticOrKinematicObject() && !btFuzzyZero(factor - 1))
+        if ([[maybe_unused]] const auto scaleChanged = !btFuzzyZero(newScale - oldScale))
         {
-            auto factor2 = factor * factor;
-            auto factor3 = factor2 * factor;
-            auto factor5 = factor3 * factor2;
-            auto& inertia = m_rig.getInvInertiaDiagLocal();
-            m_rig.setMassProps(1.0f / (m_rig.getInvMass() * factor3), btVector3(1, 1, 1));
-            m_rig.setInvInertiaDiagLocal(inertia * factor5);
-            m_rig.updateInertiaTensor();
+            const auto factor = oldScale / newScale;
+            if (!isStaticOrKinematic)
+            {
+                const auto factor2 = factor * factor;
+                const auto factor3 = factor2 * factor;
+                const auto factor5 = factor3 * factor2;
+                const auto inertia = m_rig.getInvInertiaDiagLocal();
+                m_rig.setMassProps(1.0f / (m_rig.getInvMass() * factor3), btVector3(1, 1, 1));
+                m_rig.setInvInertiaDiagLocal(inertia * factor5);
+                m_rig.updateInertiaTensor();
+            }
+            const auto invFactor = 1.0f / factor;
+            m_localToRig.getOrigin() *= invFactor;
+            m_rigToLocal.getOrigin() *= invFactor;
+            m_rig.getCollisionShape()->setLocalScaling(setAll(newScale));
         }
 
-        factor = newScale / oldScale;
-        if (!btFuzzyZero(factor - 1))
-        {
-            m_localToRig.getOrigin() *= factor;
-            m_rigToLocal.getOrigin() *= factor;
-        }
-        m_rig.getCollisionShape()->setLocalScaling(setAll(newScale));
-
-        auto dest = m_currentTransform.asTransform() * m_localToRig;
-
+        const auto dest = m_currentTransform.asTransform() * m_localToRig;
         if (timeStep <= RESET_PHYSICS)
         {
-            m_origToSkeletonTransform = convertNi(m_skeleton->world).inverse() * convertNi(m_node->world);
+            static const btVector3 zero(0, 0, 0);
+            m_origToSkeletonTransform = convertNi(m_skeleton->world).inverse() * m_currentTransform;
             m_origTransform = convertNi(m_node->local);
             m_rig.setWorldTransform(dest);
             m_rig.setInterpolationWorldTransform(dest);
-            m_rig.setLinearVelocity(btVector3(0, 0, 0));
-            m_rig.setAngularVelocity(btVector3(0, 0, 0));
-            m_rig.setInterpolationLinearVelocity(btVector3(0, 0, 0));
-            m_rig.setInterpolationAngularVelocity(btVector3(0, 0, 0));
+            m_rig.setLinearVelocity(zero);
+            m_rig.setAngularVelocity(zero);
+            m_rig.setInterpolationLinearVelocity(zero);
+            m_rig.setInterpolationAngularVelocity(zero);
             m_rig.updateInertiaTensor();
-
             //auto det = dest.getBasis().determinant();
             //if (det < FLT_EPSILON || isnan(det) || isinf(det))
             //	_WARNING("Invalid rotation matrix!!");
-
             //det = m_rig.getInvInertiaTensorWorld().determinant();
             //if (isnan(det) || isinf(det))
             //	_WARNING("Invalid inertia tensor matrix!!");
         }
-        else if (m_rig.isStaticOrKinematicObject())
+        else if (isStaticOrKinematic)
         {
             btVector3 linVel, angVel;
             btTransformUtil::calculateVelocity(current, dest, timeStep, linVel, angVel);

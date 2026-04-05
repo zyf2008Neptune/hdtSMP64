@@ -5,211 +5,194 @@
 
 namespace hdt
 {
-#ifdef ENABLE_CL
-
-    static std::string sourceCode = R"__KERNEL(
-typedef struct Matrix4x3
-{
-	float4 r[3];
-} Matrix4x3;
-
-float4 mul(Matrix4x3 a, float4 b)
-{
-	float4 ret = {dot(a.r[0], b), dot(a.r[1], b), dot(a.r[2], b), 1};
-	return ret;
-}
-
-typedef struct Vertex
-{
-	float4 skinPos;
-	float weight[4];
-	uint boneIdx[4];
-} Vertex;
-
-typedef struct Bone
-{
-	Matrix4x3	t;
-	float		margin;
-	float		reserved[3];
-}Bone;
-
-__kernel void updateVertices(
-	__global Bone* bones,
-	__global Vertex* vertices,
-	__global float4* out)
-{
-	int idx = get_global_id(0);
-	Vertex v = vertices[idx];
-	float4 pos = 0;
-	for(int i=0; i<4; ++i)
-	{
-		if(v.weight[i] > FLT_EPSILON)
-		{
-			float4 p = {v.skinPos.x, v.skinPos.y, v.skinPos.z, 1};
-			p = mul(bones[v.boneIdx[i]].t, p);
-			p.w = bones[v.boneIdx[i]].margin;
-			p *= v.weight[i];
-			pos += p;
-		}
-	}
-	out[idx] = pos;
-}
-	)__KERNEL";
-
-    hdtCLKernel SkinnedMeshBody::m_kernel;
-
-    void SkinnedMeshBody::internalUpdateCL()
-    {
-        for (int i = 0; i < m_skinnedBones.size(); ++i)
-        {
-            auto boneT = m_skinnedBones[i]->m_currentTransform;
-            m_bones[i].m_vertexToWorld = boneT * m_vertexToBone[i];
-            m_bones[i].m_maginMultipler = m_skinnedBones[i]->m_marginMultipler * boneT.getScale();
-        }
-
-        auto cl = hdtCL::instance();
-        if (cl && !m_bonesCL())
-        {
-            m_bonesCL =
-                cl->createBuffer(sizeof(Bone) * m_bones.size(), CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, nullptr);
-            m_verticesCL = cl->createBuffer(sizeof(Vertex) * m_vertices.size(),
-                                            CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, nullptr);
-            m_vposCL =
-                cl->createBuffer(sizeof(VertexPos) * m_vpos.size(), CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY, nullptr);
-            cl->writeBuffer(m_verticesCL, m_vertices.data(), sizeof(Vertex) * m_vertices.size(), true);
-        }
-
-        auto e0 = cl->writeBufferE(m_bonesCL, m_bones.data(), m_bones.size() * sizeof(Bone));
-        m_kernel.setArg(0, m_bonesCL);
-        m_kernel.setArg(1, m_verticesCL);
-        m_kernel.setArg(2, m_vposCL);
-        auto e1 = m_kernel.runE({m_vertices.size()}, {e0});
-        m_eDoneCL = cl->readBufferE(m_vpos.data(), m_vposCL, m_vpos.size() * sizeof(VertexPos), {e1});
-    }
-
-#endif
-
     SkinnedMeshBody::SkinnedMeshBody()
     {
-#ifdef ENABLE_CL
-        auto cl = hdtCL::instance();
-        if (cl)
-        {
-            if (!m_kernel())
-            {
-                m_kernel.lock();
-                if (!m_kernel()) m_kernel = hdtCLKernel(cl->compile(sourceCode), "updateVertices");
-                m_kernel.unlock();
-            }
-        }
-#endif
-        m_collisionShape = std::addressof(m_bulletShape);
+        m_collisionShape = &m_bulletShape;
     }
 
-    SkinnedMeshBody::~SkinnedMeshBody()
+    SkinnedMeshBody::~SkinnedMeshBody() // use =default ?
     {
-        // m_bonesGPU.discard_data();
-        // m_verticesGPU.discard_data();
+        //m_bonesGPU.discard_data();
+        //m_verticesGPU.discard_data();
     }
 
-    __forceinline auto calcVertexState(__m128 skinPos, const Bone& bone, __m128 w) -> __m128
+    __forceinline auto calcVertexState(const __m128 skinPos, const Bone& bone, const __m128 w) -> __m128
     {
         auto p = bone.m_vertexToWorld * skinPos;
-#ifdef CUDA
-        p = _mm_blend_ps(p.get128(), bone.m_vertexToWorld.m_col[3].get128(), 0x8);
-#else
         p = _mm_blend_ps(p.get128(), _mm_load_ps(bone.m_reserved), 0x8);
-#endif
         return _mm_mul_ps(w, p.get128());
     }
 
-#ifdef CUDA
-    void SkinnedMeshBody::updateBones()
+#ifdef __AVX2__
+    __forceinline __m128 calcVertexStateFMA(__m128 skinPos, const Bone& bone, __m128 w)
     {
-        for (size_t i = 0; i < m_skinnedBones.size(); ++i)
-        {
-            auto& v = m_skinnedBones[i];
-            auto boneT = v.ptr->m_currentTransform;
-            m_bones[i].m_vertexToWorld = btMatrix4x3T(boneT) * v.vertexToBone;
-
-            // Element [3][3] of the matrix is otherwise unused, so we put the margin multiplier there. On
-            // GPU we use homogeneous coordinates with w=1, so this gets applied properly as normal matrix
-            // multiplication. On CPU we have w=0, so have to do it explicitly.
-            m_bones[i].m_vertexToWorld.m_col[3][3] *= v.ptr->m_marginMultipler;
-        }
-    }
-
-    void SkinnedMeshBody::internalUpdate()
-    {
-        updateBones();
-
-        int size = m_vertices.size();
-
-        for (int idx = 0; idx < size; ++idx)
-        {
-            auto& v = m_vertices[idx];
-            auto p = v.m_skinPos.get128();
-            auto w = _mm_load_ps(v.m_weight);
-            auto flg = _mm_movemask_ps(_mm_cmplt_ps(_mm_set_ps1(FLT_EPSILON), w));
-            auto posMargin = calcVertexState(p, m_bones[v.getBoneIdx(0)], setAll0(w));
-            if (flg & 0b0010) posMargin += calcVertexState(p, m_bones[v.getBoneIdx(1)], setAll1(w));
-            if (flg & 0b0100) posMargin += calcVertexState(p, m_bones[v.getBoneIdx(2)], setAll2(w));
-            if (flg & 0b1000) posMargin += calcVertexState(p, m_bones[v.getBoneIdx(3)], setAll3(w));
-            m_vpos[idx].set(posMargin);
-        }
-    }
-#else
-    auto SkinnedMeshBody::internalUpdate() -> void
-    {
-        for (size_t i = 0; i < m_skinnedBones.size(); ++i)
-        {
-            auto& v = m_skinnedBones[i];
-            auto boneT = v.ptr->m_currentTransform;
-            m_bones[i].m_vertexToWorld = btMatrix4x3T(boneT) * v.vertexToBone;
-            m_bones[i].m_maginMultipler = v.ptr->m_marginMultipler * boneT.getScale();
-        }
-
-        const auto size = static_cast<int>(m_vpos.size());
-
-        for (auto idx = 0; idx < size; ++idx)
-        {
-            auto& v = m_vertices[idx];
-            auto p = v.m_skinPos.get128();
-            auto w = _mm_load_ps(v.m_weight);
-            auto flg = _mm_movemask_ps(_mm_cmplt_ps(_mm_set_ps1(FLT_EPSILON), w));
-            auto posMargin = calcVertexState(p, m_bones[v.getBoneIdx(0)], setAll0(w));
-            if (flg & 0b0010)
-            {
-                posMargin += calcVertexState(p, m_bones[v.getBoneIdx(1)], setAll1(w));
-            }
-            if (flg & 0b0100)
-            {
-                posMargin += calcVertexState(p, m_bones[v.getBoneIdx(2)], setAll2(w));
-            }
-            if (flg & 0b1000)
-            {
-                posMargin += calcVertexState(p, m_bones[v.getBoneIdx(3)], setAll3(w));
-            }
-            m_vpos[idx].set(posMargin);
-        }
-
-        // FIXME PROFILING Lots of times is spent here.
-        m_shape->internalUpdate();
-
-        m_bulletShape.m_aabb = m_shape->m_tree.aabbAll;
+        __m128 px = pshufd<0x00>(skinPos);
+        __m128 py = pshufd<0x55>(skinPos);
+        __m128 pz = pshufd<0xAA>(skinPos);
+        __m128 r = _mm_fmadd_ps(bone.m_vertexToWorld.m_col[2].get128(), pz, bone.m_vertexToWorld.m_col[3].get128());
+        r = _mm_fmadd_ps(bone.m_vertexToWorld.m_col[1].get128(), py, r);
+        r = _mm_fmadd_ps(bone.m_vertexToWorld.m_col[0].get128(), px, r);
+        r = _mm_blend_ps(r, _mm_load_ps(bone.m_reserved), 0x8);
+        return _mm_mul_ps(w, r);
     }
 #endif
 
+    auto SkinnedMeshBody::internalUpdate() -> void
+    {
+        const size_t numBones = m_skinnedBones.size();
+        const auto* __restrict skinnedBones = m_skinnedBones.data();
+        auto* __restrict bonesDst = m_bones.data();
+
+        for (size_t i = 0; i < numBones; ++i)
+        {
+            if (i + 8 < numBones)
+            {
+                _mm_prefetch(reinterpret_cast<const char*>(&skinnedBones[i + 8]), _MM_HINT_T1);
+            }
+            if (i + 4 < numBones)
+            {
+                _mm_prefetch(reinterpret_cast<const char*>(skinnedBones[i + 4].ptr), _MM_HINT_T0);
+            }
+            auto& v = skinnedBones[i];
+            auto boneT = v.ptr->m_currentTransform;
+            bonesDst[i].m_vertexToWorld = btMatrix4x3T(boneT) * v.vertexToBone;
+            bonesDst[i].m_maginMultipler = v.ptr->m_marginMultipler * boneT.getScale();
+        }
+
+        const auto size = static_cast<int>(m_vpos.size());
+        const auto* __restrict verts = m_vertices.data();
+        auto* __restrict vpos = m_vpos.data();
+        const auto* __restrict bones = bonesDst;
+
+        // We can use AVX2 here due to sequential memory reads..
+#ifdef __AVX2__
+
+        static constexpr int PF = 6;
+        int idx = 0;
+        for (; idx + 1 < size; idx += 2)
+        {
+            if (idx + PF < size)
+            {
+                _mm_prefetch(reinterpret_cast<const char*>(&verts[idx + PF]), _MM_HINT_T0);
+                _mm_prefetch(reinterpret_cast<const char*>(&verts[idx + PF + 1]), _MM_HINT_T0);
+            }
+
+            {
+                auto& v = verts[idx];
+                auto p = v.m_skinPos.get128();
+                auto w = _mm_load_ps(v.m_weight);
+                auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
+                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w));
+                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w));
+                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w));
+                vpos[idx].set(pm);
+            }
+            {
+                auto& v = verts[idx + 1];
+                auto p = v.m_skinPos.get128();
+                auto w = _mm_load_ps(v.m_weight);
+                auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
+                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w));
+                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w));
+                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w));
+                vpos[idx + 1].set(pm);
+            }
+        }
+        for (; idx < size; ++idx)
+        {
+            auto& v = verts[idx];
+            auto p = v.m_skinPos.get128();
+            auto w = _mm_load_ps(v.m_weight);
+            auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
+            pm += calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w));
+            pm += calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w));
+            pm += calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w));
+            vpos[idx].set(pm);
+        }
+
+#else
+
+        static constexpr int PF = 8;
+        int idx = 0;
+        for (; idx + 3 < size; idx += 4)
+        {
+            if (idx + PF + 3 < size)
+            {
+                _mm_prefetch(reinterpret_cast<const char*>(&verts[idx + PF]), _MM_HINT_T0);
+                _mm_prefetch(reinterpret_cast<const char*>(&verts[idx + PF + 1]), _MM_HINT_T0);
+                _mm_prefetch(reinterpret_cast<const char*>(&verts[idx + PF + 2]), _MM_HINT_T0);
+                _mm_prefetch(reinterpret_cast<const char*>(&verts[idx + PF + 3]), _MM_HINT_T0);
+            }
+
+            {
+                auto& v = verts[idx];
+                auto p = v.m_skinPos.get128();
+                auto w = _mm_load_ps(v.m_weight);
+                auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                vpos[idx].set(pm);
+            }
+            {
+                auto& v = verts[idx + 1];
+                auto p = v.m_skinPos.get128();
+                auto w = _mm_load_ps(v.m_weight);
+                auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                vpos[idx + 1].set(pm);
+            }
+            {
+                auto& v = verts[idx + 2];
+                auto p = v.m_skinPos.get128();
+                auto w = _mm_load_ps(v.m_weight);
+                auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                vpos[idx + 2].set(pm);
+            }
+            {
+                auto& v = verts[idx + 3];
+                auto p = v.m_skinPos.get128();
+                auto w = _mm_load_ps(v.m_weight);
+                auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
+                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                vpos[idx + 3].set(pm);
+            }
+        }
+        for (; idx < size; ++idx)
+        {
+            auto& v = verts[idx];
+            auto p = v.m_skinPos.get128();
+            auto w = _mm_load_ps(v.m_weight);
+            auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
+            pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
+            pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
+            pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+            vpos[idx].set(pm);
+        }
+
+#endif
+
+        m_shape->internalUpdate();
+        m_bulletShape.m_aabb = m_shape->m_tree.aabbAll;
+    }
+
     auto SkinnedMeshBody::flexible(const Vertex& v) const -> float
     {
-        auto ret = 0.f;
-        for (auto i = 0; i < 4; ++i)
+        float ret = 0.f;
+        for (int i = 0; i < 4; ++i)
         {
             if (v.m_weight[i] < FLT_EPSILON)
             {
                 break;
             }
-            int boneIdx = v.getBoneIdx(i);
+            auto boneIdx = v.getBoneIdx(i);
             if (!m_skinnedBones[boneIdx].isKinematic)
             {
                 ret += v.m_weight[i];
@@ -221,26 +204,20 @@ __kernel void updateVertices(
     auto SkinnedMeshBody::addBone(SkinnedMeshBone* bone, const btQsTransform& verticesToBone,
                                   const BoundingSphere& boundingSphere) -> int
     {
-        SkinnedBone v;
+        m_skinnedBones.emplace_back();
+        auto& v = m_skinnedBones.back();
         v.ptr = bone;
-        v.vertexToBone = verticesToBone;
+        v.vertexToBone = btMatrix4x3T(verticesToBone);
         v.localBoundingSphere = boundingSphere;
         v.isKinematic = bone->m_rig.isStaticOrKinematicObject();
-        m_skinnedBones.emplace_back(v);
         return static_cast<int>(m_skinnedBones.size() - 1);
     }
 
     auto SkinnedMeshBody::finishBuild() -> void
     {
-#ifdef CUDA
-        m_bones.reset(new Bone[m_skinnedBones.size()]);
-#else
         m_bones.resize(m_skinnedBones.size());
-#endif
         m_shape->clipColliders();
-#ifndef CUDA
         m_vpos.resize(m_vertices.size());
-#endif
 
         m_isKinematic = true;
         for (auto& i : m_skinnedBones)
@@ -254,31 +231,25 @@ __kernel void updateVertices(
 
         m_shape->finishBuild();
 
-        auto flags = new bool[m_vertices.size()];
-        ZeroMemory(flags, m_vertices.size());
+        auto flags = std::vector<bool>(m_vertices.size());
+
         m_shape->markUsedVertices(flags);
 
         UINT numUsed = 0;
         std::vector<UINT> map(m_vertices.size());
-        for (auto i = 0; i < m_vertices.size(); ++i)
+        for (int i = 0; i < m_vertices.size(); ++i)
         {
             if (flags[i])
             {
                 m_vertices[numUsed] = m_vertices[i];
-#ifndef CUDA
                 m_vpos[numUsed] = m_vpos[i];
-#endif
                 map[i] = numUsed++;
             }
         }
-        delete[] flags;
+
         m_shape->remapVertices(map.data());
         m_vertices.resize(numUsed);
-#ifdef CUDA
-        m_vpos.reset(new VertexPos[numUsed]);
-#else
         m_vpos.resize(numUsed);
-#endif
 
         m_useBoundingSphere = m_shape->m_colliders.size() > 10;
     }
@@ -313,25 +284,6 @@ __kernel void updateVertices(
 
     auto SkinnedMeshBody::updateBoundingSphereAabb() -> void
     {
-#ifdef CUDA
-        if (m_useBoundingSphere)
-        {
-            m_bulletShape.m_aabb.invalidate();
-            for (auto& i : m_skinnedBones)
-            {
-                auto sp = i.localBoundingSphere;
-                auto tr = i.ptr->m_currentTransform;
-                i.worldBoundingSphere = BoundingSphere(tr * sp.center(), tr.getScale() * sp.radius());
-                m_bulletShape.m_aabb.merge(i.worldBoundingSphere.getAabb());
-            }
-        }
-        else
-        {
-            internalUpdate();
-            m_shape->internalUpdate();
-            m_bulletShape.m_aabb = m_shape->m_tree.aabbAll;
-        }
-#else
         m_bulletShape.m_aabb.invalidate();
         for (auto& i : m_skinnedBones)
         {
@@ -345,7 +297,6 @@ __kernel void updateVertices(
         {
             internalUpdate();
         }
-#endif
     }
 
     auto SkinnedMeshBody::isBoundingSphereCollided(const SkinnedMeshBody* rhs) const -> bool
@@ -353,37 +304,7 @@ __kernel void updateVertices(
         if (canCollideWith(rhs) && rhs->canCollideWith(this))
         {
             return true;
-            // if (m_useBoundingSphere && rhs->m_useBoundingSphere)
-            //{
-            //	for (auto& i : m_skinnedBones)
-            //	{
-            //		for (auto& j : rhs->m_skinnedBones)
-            //		{
-            //			if (i.isKinematic && j.isKinematic)
-            //				continue;
-            //			if (i.worldBoundingSphere.isCollide(j.worldBoundingSphere))
-            //				return true;
-            //		}
-            //	}
-            // }
-            // else if (m_useBoundingSphere)
-            //{
-            //	for (auto& i : m_skinnedBones)
-            //	{
-            //		if (rhs->m_bulletShape.m_aabb.collideWithSphere(i.worldBoundingSphere.center(),
-            //i.worldBoundingSphere.radius())) 			return true;
-            //	}
-            // }
-            // else if (rhs->m_useBoundingSphere)
-            //{
-            //	for (auto& i : rhs->m_skinnedBones)
-            //	{
-            //		if (m_bulletShape.m_aabb.collideWithSphere(i.worldBoundingSphere.center(),
-            //i.worldBoundingSphere.radius())) 			return true;
-            //	}
-            // }
-            // else return true;
         }
         return false;
     }
-} // namespace hdt
+}

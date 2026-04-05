@@ -1,12 +1,14 @@
 #include "ActorManager.h"
 
-#include "Events.h"
 #include "Hooks.h"
+#include "Events.h"
 
 //
 #include <xbyak/xbyak.h>
 
 #include <utility>
+
+#include "hdtSkyrimPhysicsWorld.h"
 
 namespace Hooks
 {
@@ -33,18 +35,18 @@ namespace Hooks
     }
 
     auto BSFaceGenNiNodeHooks::SkinAllGeometryCalls(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
-                                                    const bool a_unk) -> void
+                                                    bool a_unk) -> void
     {
-        auto needRegularCall = true;
-        const auto userData = a_skeleton->GetUserData();
-        if (hdt::ActorManager::instance()->skeletonNeedsParts(a_skeleton) && userData)
+        bool needRegularCall = true;
+        if (hdt::ActorManager::instance()->skeletonNeedsParts(a_skeleton))
         {
-            RE::TESForm* form = RE::TESForm::LookupByID(userData->formID);
-            if (const RE::Actor* actor = skyrim_cast<RE::Actor*>(form))
+            RE::TESForm* form = RE::TESForm::LookupByID(a_skeleton->GetUserData()->formID);
+            RE::Actor* actor = skyrim_cast<RE::Actor*>(form);
+            if (actor)
             {
-                auto actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
-                uint32_t numHeadParts;
-                RE::BGSHeadPart** Headparts;
+                RE::TESNPC* actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
+                uint32_t numHeadParts = 0;
+                RE::BGSHeadPart** Headparts = nullptr;
 
                 if (actorBase->HasOverlays())
                 {
@@ -53,7 +55,7 @@ namespace Hooks
                 }
                 else
                 {
-                    numHeadParts = static_cast<std::uint8_t>(actorBase->numHeadParts);
+                    numHeadParts = actorBase->numHeadParts;
                     Headparts = actorBase->headParts;
                 }
 
@@ -199,7 +201,7 @@ namespace Hooks
 
         struct BoneLimitFix : Xbyak::CodeGenerator
         {
-            BoneLimitFix(const uintptr_t a_returnAddr)
+            BoneLimitFix(uintptr_t a_returnAddr)
             {
                 Xbyak::Label ret;
 
@@ -234,25 +236,31 @@ namespace Hooks
 
     auto MainHooks::Update(RE::Main* const a_this) -> void
     {
-        //
+        // Wait for the background physics task from the previous frame to complete
+        // before Skyrim begins mutating geometry. Without this, doUpdate2ndStep() can
+        // race with BSTriShape/NiSkinPartition destruction inside _Update(), because
+        // the FrameSyncEvent wait (via Unk_sub) only fires at Main::Update+0x611,
+        // well after the geometry-destroying code at +0x4FC.
+        hdt::SkyrimPhysicsWorld::get()->m_tasks.wait();
+
         _Update(a_this);
 
         // why doesn't this class have a GetRuntimeData() helper? the offsets are borked with VR support enabled.
 
         if (const bool quitGame = REL::RelocateMember<bool>(a_this, 0x10, 0x8))
         {
-            const Events::ShutdownEvent e;
+            static constexpr Events::ShutdownEvent e;
             Events::Sources::ShutdownEventEventSource::GetSingleton()->SendEvent(&e);
         }
         else
         {
             Events::FrameEvent e;
-            e.gamePaused = a_this->freezeTime;
+            e.gamePaused = REL::RelocateMember<bool>(a_this, 0x16, 0x0E);
             Events::Sources::FrameEventSource::GetSingleton()->SendEvent(&e);
         }
     }
 
-    auto MainHooks::Unk_sub(std::any a_this) -> void
+    auto MainHooks::Unk_sub(void* a_this) -> void
     {
         _Unk_sub(a_this);
 

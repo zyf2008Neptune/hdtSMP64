@@ -12,8 +12,8 @@
 
 #include <Windows.h>
 
-#include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
+#include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 #include <RE/B/BSTEvent.h>
@@ -29,23 +29,54 @@
 #include "ActorManager.h"
 #include "Events.h"
 #include "hdtConvertNi.h"
-#include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
-#include "hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
 #include "hdtSkyrimBody.h"
 #include "hdtSkyrimSystem.h"
 #include "PCH.h"
 #include "PluginInterfaceImpl.h"
+#include "WeatherManager.h"
+#include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
+#include "hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
 
 namespace hdt
 {
-    static const auto timeStamp = reinterpret_cast<float*>(0x12E355C);
+    [[maybe_unused]] static const auto timeStamp = reinterpret_cast<float*>(0x12E355C);
 
     SkyrimPhysicsWorld::SkyrimPhysicsWorld()
     {
         gDisableDeactivation = true;
-        setGravity(btVector3(0, 0, -9.8f * scaleSkyrim));
+        btDiscreteDynamicsWorld::setGravity(btVector3(0, 0, -9.8f * scaleSkyrim));
+
+        // https://github.com/bulletphysics/bullet3/blob/master/src/BulletDynamics/ConstraintSolver/btContactSolverInfo.h
 
         getSolverInfo().m_friction = 0;
+
+        // This should be enabled by default, but just for clarity I put it here too
+        getSolverInfo().m_splitImpulse = true;
+
+        // Set a very low threshold so even micro-penetrations use Split Impulse
+        // Too low might cause weird visuals - default is -0.04f
+        getSolverInfo().m_splitImpulsePenetrationThreshold = -0.01f;
+
+        // Default ERP2 is 0.2
+        // From Bullet: error reduction for non-contact constraints
+        getSolverInfo().m_erp2 = 0.15f;
+
+        // constraint force mixing for contacts and non-contacts
+        // Adds "sponginess" to collisions to absorb the constant recalculations
+        // Default is 0
+        getSolverInfo().m_globalCfm = 0.001f;
+
+        // Ignore Bounciness (Restitution) on slow micro-collisions
+        // If objects are moving slower than this, they will not bounce at all.
+        // The default is 0.2f, but putting this here since it's very noteworthy!
+        getSolverInfo().m_restitutionVelocityThreshold = 0.2f;
+
+        // Default is = SOLVER_USE_WARMSTARTING | SOLVER_SIMD;
+        // But we don't even use warm starts since we delete the manifolds every frame
+        // SOLVER_SIMD nets a small performance uplift
+        // SOLVER_RANDMIZE_ORDER is also possible, but I clocked a pretty heavy performance hit. Maybe make it a config option
+        getSolverInfo().m_solverMode = SOLVER_SIMD;
+
         m_averageInterval = m_timeTick;
         m_accumulatedInterval = 0;
     }
@@ -93,7 +124,7 @@ namespace hdt
         m_averageInterval += (interval - m_averageInterval) * .125f;
 
         // No need to calculate physics if there is no active skeleton.
-        if (!disabled && hdt::ActorManager::instance()->activeSkeletons)
+        if (!disabled && ActorManager::instance()->activeSkeletons)
         {
             // The tick is the given time for each computation substep. We set it to the average fps
             // to have one average computation each frame when everything is usual.
@@ -115,6 +146,8 @@ namespace hdt
                 const auto remainingTimeStep = std::min(m_accumulatedInterval, tick * m_maxSubSteps);
 
                 readTransform(remainingTimeStep);
+
+                m_resetPc -= m_resetPc > 0;
 
                 m_tasks.run([this, interval, tick, remainingTimeStep]
                 {
@@ -143,17 +176,16 @@ namespace hdt
             startTime = ticks.QuadPart;
         }
 
-        g_pluginInterface.onPreStep({getCollisionObjectArray(), remainingTimeStep});
+        g_pluginInterface.onPreStep({.objects = getCollisionObjectArray(), .timeStep = remainingTimeStep});
 
         updateActiveState();
         const auto offset = applyTranslationOffset();
         stepSimulation(remainingTimeStep, 0, tick);
         restoreTranslationOffset(offset);
         m_accumulatedInterval = 0;
+        m_pendingTransformUpdate = true;
 
-        g_pluginInterface.onPostStep({getCollisionObjectArray(), remainingTimeStep});
-
-        writeTransform();
+        g_pluginInterface.onPostStep({.objects = getCollisionObjectArray(), .timeStep = remainingTimeStep});
 
         if (m_doMetrics)
         {
@@ -180,8 +212,7 @@ namespace hdt
         auto count = 0;
         for (auto i = 0; i < m_collisionObjects.size(); ++i)
         {
-            const auto rig = btRigidBody::upcast(m_collisionObjects[i]);
-            if (rig)
+            if (const auto rig = btRigidBody::upcast(m_collisionObjects[i]))
             {
                 center += rig->getWorldTransform().getOrigin();
                 ++count;
@@ -193,8 +224,7 @@ namespace hdt
             center /= static_cast<btScalar>(count);
             for (auto i = 0; i < m_collisionObjects.size(); ++i)
             {
-                const auto rig = btRigidBody::upcast(m_collisionObjects[i]);
-                if (rig)
+                if (const auto rig = btRigidBody::upcast(m_collisionObjects[i]))
                 {
                     rig->getWorldTransform().getOrigin() -= center;
                 }
@@ -207,15 +237,15 @@ namespace hdt
     {
         for (auto i = 0; i < m_collisionObjects.size(); ++i)
         {
-            const auto rig = btRigidBody::upcast(m_collisionObjects[i]);
-            if (rig)
+            if (const auto rig = btRigidBody::upcast(m_collisionObjects[i]))
             {
                 rig->getWorldTransform().getOrigin() += offset;
             }
         }
     }
 
-    auto SkyrimPhysicsWorld::setWind(const RE::NiPoint3& a_point, float a_scale, uint32_t a_smoothingSamples) -> void
+    auto SkyrimPhysicsWorld::setWind(const RE::NiPoint3& a_point, const float a_scale,
+                                     uint32_t a_smoothingSamples) -> void
     {
         if (a_smoothingSamples == 0)
         {
@@ -252,47 +282,46 @@ namespace hdt
 
         std::unordered_map<RE::NiNode*, Group> maps;
 
-        const RE::BSFixedString invalidString;
         for (auto& i : m_systems)
         {
-            const auto system = static_cast<SkyrimSystem*>(i.get());
-            auto& map = maps[system->m_skeleton.get()];
+            const auto system = dynamic_cast<SkyrimSystem*>(i.get());
+            auto& [tags, list] = maps[system->m_skeleton.get()];
             for (auto& j : system->meshes())
             {
-                auto shape = static_cast<SkyrimBody*>(j.get());
+                auto shape = dynamic_cast<SkyrimBody*>(j.get());
                 if (!shape)
                 {
                     continue;
                 }
 
-                if (shape->m_disableTag == invalidString)
+                if (const RE::BSFixedString invalidString; shape->m_disableTag == invalidString)
                 {
                     for (auto& k : shape->m_tags)
                     {
-                        map.tags.insert(k);
+                        tags.insert(k);
                     }
                 }
                 else
                 {
-                    map.list[shape->m_disableTag].push_back(shape);
+                    list[shape->m_disableTag].emplace_back(shape);
                 }
             }
         }
 
-        for (auto& i : maps)
+        for (auto& [tags, list] : maps | std::views::values)
         {
-            for (auto& j : i.second.list)
+            for (auto& [fst, snd] : list)
             {
-                if (i.second.tags.find(j.first) != i.second.tags.end())
+                if (tags.contains(fst))
                 {
-                    for (const auto& k : j.second)
+                    for (const auto& k : snd)
                     {
                         k->m_disabled = true;
                     }
                 }
-                else if (j.second.size())
+                else if (!snd.empty())
                 {
-                    std::sort(j.second.begin(), j.second.end(), [](SkyrimBody* a, SkyrimBody* b)
+                    std::ranges::sort(snd, [](const SkyrimBody* a, const SkyrimBody* b)
                     {
                         if (a->m_disablePriority != b->m_disablePriority)
                         {
@@ -301,11 +330,11 @@ namespace hdt
                         return a < b;
                     });
 
-                    for (const auto& k : j.second)
+                    for (const auto& k : snd)
                     {
                         k->m_disabled = true;
                     }
-                    j.second[0]->m_disabled = false;
+                    snd[0]->m_disabled = false;
                 }
             }
         }
@@ -379,9 +408,13 @@ namespace hdt
             resume();
         }
 
+        if (m_enableWind)
+        {
+            WeatherManager::runWeatherTick(RE::GetSecondsSinceLastFrame());
+        }
+
         LARGE_INTEGER ticks;
         int64_t startTime = 0;
-        int64_t endTime = 0;
         if (m_doMetrics)
         {
             QueryPerformanceCounter(&ticks);
@@ -406,7 +439,7 @@ namespace hdt
         if (m_doMetrics)
         {
             QueryPerformanceCounter(&ticks);
-            endTime = ticks.QuadPart;
+            const auto endTime = ticks.QuadPart;
             QueryPerformanceFrequency(&ticks);
             // float ticks_per_ms = static_cast<float>(ticks.QuadPart) * 1e-3;
             m_SMPProcessingTimeInMainLoop = (endTime - startTime) / static_cast<float>(ticks.QuadPart) * 1e3f;
@@ -421,29 +454,70 @@ namespace hdt
         if (m_doMetrics)
         {
             LARGE_INTEGER ticks;
+            LARGE_INTEGER freq;
             QueryPerformanceCounter(&ticks);
-            const int64_t startTime = ticks.QuadPart;
+            const int64_t t0 = ticks.QuadPart;
 
             m_tasks.wait();
 
             QueryPerformanceCounter(&ticks);
-            const int64_t endTime = ticks.QuadPart;
-            QueryPerformanceFrequency(&ticks);
-            // float ticks_per_ms = static_cast<float>(ticks.QuadPart) * 1e-3;
-            m_SMPProcessingTimeInMainLoop += (endTime - startTime) / static_cast<float>(ticks.QuadPart) * 1e3f;
+            const int64_t t1 = ticks.QuadPart;
+            if (m_pendingTransformUpdate)
+            {
+                std::scoped_lock l(m_lock);
+                writeTransform();
+                m_pendingTransformUpdate = false;
+            }
+
+            QueryPerformanceCounter(&ticks);
+            const int64_t t2 = ticks.QuadPart;
+            QueryPerformanceFrequency(&freq);
+            const auto f = static_cast<float>(freq.QuadPart);
+
+            const float instWaitTime = (t1 - t0) / f * 1000.0f;
+            const float instWriteTime = (t2 - t1) / f * 1000.0f;
+            const float instSetupTime = m_SMPProcessingTimeInMainLoop;
+
+            const float instFpsImpact = instSetupTime + instWaitTime + instWriteTime;
+
             m_averageSMPProcessingTimeInMainLoop = (m_averageSMPProcessingTimeInMainLoop * (m_sampleSize - 1) +
-                m_SMPProcessingTimeInMainLoop) / m_sampleSize;
-            const float totalSMPTime = m_averageSMPProcessingTimeInMainLoop + m_2ndStepAverageProcessingTime;
-            logger::info
-                (
-                    "smp cost in main loop (msecs): {:.2f}, cost outside main loop: {:.2f}, percentage outside vs total: {:.2f}",
-                    m_averageSMPProcessingTimeInMainLoop, m_2ndStepAverageProcessingTime,
-                    100. * m_2ndStepAverageProcessingTime / totalSMPTime
-                    );
+                instFpsImpact) / m_sampleSize;
+
+            // Smooth the individual components for logging so the math adds up perfectly visually
+            static auto avgSetupTime = 0.0f;
+            static auto avgWaitTime = 0.0f;
+            static auto avgWriteTime = 0.0f;
+
+            avgSetupTime = (avgSetupTime * (m_sampleSize - 1) + instSetupTime) / m_sampleSize;
+            avgWaitTime = (avgWaitTime * (m_sampleSize - 1) + instWaitTime) / m_sampleSize;
+            avgWriteTime = (avgWriteTime * (m_sampleSize - 1) + instWriteTime) / m_sampleSize;
+
+            // The background thread's math time (this is already smoothed in doUpdate2ndStep)
+            const float avgBackgroundCalcTime = m_2ndStepAverageProcessingTime;
+
+            // How much of that background math was successfully hidden?
+            float avgHiddenTime = std::max(0.0f, avgBackgroundCalcTime - avgWaitTime);
+
+            float avgTotalCpuWork = avgSetupTime + avgBackgroundCalcTime + avgWriteTime;
+
+            logger::info(
+                "[SMP Metrics] Avg Frame-time Impact: {:.2f}ms (Setup: {:.2f}, Wait: {:.2f}, Apply: {:.2f}) | Avg Hidden Time: {:.2f}ms | Avg Total CPU Work: {:.2f}ms",
+                m_averageSMPProcessingTimeInMainLoop, // This will exactly equal Setup + Wait + Apply
+                avgSetupTime,
+                avgWaitTime,
+                avgWriteTime,
+                avgHiddenTime,
+                avgTotalCpuWork);
         }
         else
         {
             m_tasks.wait();
+            if (m_pendingTransformUpdate)
+            {
+                std::scoped_lock l(m_lock);
+                writeTransform();
+                m_pendingTransformUpdate = false;
+            }
         }
 
         return RE::BSEventNotifyControl::kContinue;
@@ -452,7 +526,7 @@ namespace hdt
     auto SkyrimPhysicsWorld::ProcessEvent(const Events::ShutdownEvent*,
                                           RE::BSTEventSource<Events::ShutdownEvent>*) -> RE::BSEventNotifyControl
     {
-        while (m_systems.size())
+        while (!m_systems.empty())
         {
             SkinnedMeshWorld::removeSkinnedMeshSystem(m_systems.back().get());
         }

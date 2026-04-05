@@ -1,265 +1,438 @@
 #include "hdtCollider.h"
+
 #include <algorithm>
 
 namespace hdt
 {
-	static const _CRT_ALIGN(16) U8 interleaveBits[16] = {0, 1, 8, 9, 64, 65, 72, 73};
+    auto ColliderTree::insertCollider(const U32* keys, size_t keyCount, const Collider& c) -> void
+    {
+        auto p = this;
+        for (size_t i = 0; i < keyCount && i < 4; ++i)
+        {
+            auto f = std::ranges::find_if(p->children, [=](const ColliderTree& n) { return n.key == keys[i]; });
+            if (f == p->children.end())
+            {
+                p->children.emplace_back(keys[i]);
+                p = &p->children.back();
+            }
+            else
+            {
+                p = &*f;
+            }
+        }
+        p->colliders.push_back(c);
+    }
 
-	void ColliderTree::insertCollider(const std::vector<U32>& keys, const Collider& c)
-	{
-		ColliderTree* p = this;
-		for (int i = 0; i < keys.size() && i < 4; ++i)
-		{
-			auto f = std::find_if(p->children.begin(), p->children.end(), [=](const ColliderTree& n) { return n.key == keys[i]; });
-			if (f == p->children.end())
-			{
-				p->children.push_back(ColliderTree(keys[i]));
-				p = &p->children.back();
-			}
-			else p = &*f;
-		}
-		p->colliders.push_back(c);
-	}
+    // finds overlapping pairs between two collider trees
+    auto ColliderTree::checkCollisionL(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret)
+        -> void
+    {
+        enum struct Mode : uint8_t
+        {
+            L, // still splitting a, b is along for the ride
+            R // a is a leaf, now drilling into b's subtree
+        };
+        struct Entry
+        {
+            ColliderTree* a;
+            ColliderTree* b;
+            Mode mode;
+        };
+        // thread_local so we don't re-alloc every call. This gets hammered
+        thread_local std::vector<Entry> stack;
+        stack.clear();
+        stack.emplace_back(this, r, Mode::L);
+        while (!stack.empty())
+        {
+            auto [a, b, mode] = stack.back();
+            stack.pop_back();
 
-	void ColliderTree::checkCollisionL(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret)
-	{
-		if (isKinematic && r->isKinematic)
-			return;
+            if (a->isKinematic && b->isKinematic)
+            {
+                continue;
+            }
 
-		if (!aabbAll.collideWith(r->aabbAll))
-			return;
+            if (mode == Mode::L)
+            {
+                if (!a->aabbAll.collideWith(b->aabbAll))
+                {
+                    continue;
+                }
 
-		if (numCollider && aabbMe.collideWith(r->aabbAll))
-		{
-			if (aabbMe.collideWith(r->aabbMe))
-				ret.push_back(std::make_pair(this, r));
+                // a is a leaf — switch to R-mode and walk down b
+                if (a->numCollider && a->aabbMe.collideWith(b->aabbAll))
+                {
+                    if (a->aabbMe.collideWith(b->aabbMe))
+                    {
+                        ret.emplace_back(a, b);
+                    }
 
-			auto begin = r->children.data();
-			auto end = begin + (isKinematic ? r->dynChild : r->children.size());
-			for (auto i = begin; i < end; ++i)
-				checkCollisionR(i, ret);
-		}
+                    const auto begin = b->children.data();
+                    // skip b's kinematic children if a is kinematic (would get culled above anyway)
+                    const auto end = begin + (a->isKinematic ? b->dynChild : b->children.size());
+                    for (auto i = begin; i < end; ++i)
+                    {
+                        stack.emplace_back(a, i, Mode::R);
+                    }
+                }
 
-		auto begin = children.data();
-		auto end = begin + (r->isKinematic ? dynChild : children.size());
-		for (auto i = begin; i < end; ++i)
-			i->checkCollisionL(r, ret);
-	}
+                // keep splitting a — same kinematic shortcut
+                const auto begin = a->children.data();
+                const auto end = begin + (b->isKinematic ? a->dynChild : a->children.size());
+                for (auto i = begin; i < end; ++i)
+                {
+                    stack.emplace_back(i, b, Mode::L);
+                }
+            }
+            else
+            {
+                // a is always a leaf here (L only pushes R when numCollider is set)
+                // numCollider check is technically redundant but whatever, it's cheap
+                if (!a->numCollider)
+                {
+                    continue;
+                }
+                if (!a->aabbMe.collideWith(b->aabbAll))
+                {
+                    continue;
+                }
+                if (a->aabbMe.collideWith(b->aabbMe))
+                {
+                    ret.emplace_back(a, b);
+                }
 
-	void ColliderTree::checkCollisionR(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret)
-	{
-		if (isKinematic && r->isKinematic)
-			return;
+                const auto begin = b->children.data();
+                const auto end = begin + (a->isKinematic ? b->dynChild : b->children.size());
+                for (auto i = begin; i < end; ++i)
+                {
+                    stack.emplace_back(a, i, Mode::R);
+                }
+            }
+        }
+    }
 
-		if (numCollider)
-		{
-			if (!aabbMe.collideWith(r->aabbAll))
-				return;
+    // dead code. checkCollisionL inlines R logic now. kept for API
+    auto ColliderTree::checkCollisionR(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret)
+        -> void
+    {
+        if (isKinematic && r->isKinematic)
+        {
+            return;
+        }
 
-			if (aabbMe.collideWith(r->aabbMe))
-				ret.push_back(std::make_pair(this, r));
+        if (numCollider)
+        {
+            if (!aabbMe.collideWith(r->aabbAll))
+            {
+                return;
+            }
 
-			auto begin = r->children.data();
-			auto end = begin + (isKinematic ? r->dynChild : r->children.size());
-			for (auto i = begin; i < end; ++i)
-				checkCollisionR(i, ret);
-		}
-	}
+            if (aabbMe.collideWith(r->aabbMe))
+            {
+                ret.emplace_back(this, r);
+            }
 
-	void ColliderTree::clipCollider(const std::function<bool(const Collider&)>& func)
-	{
-		for (auto& i : children)
-			i.clipCollider(func);
+            const auto begin = r->children.data();
+            const auto end = begin + (isKinematic ? r->dynChild : r->children.size());
+            for (auto i = begin; i < end; ++i)
+            {
+                checkCollisionR(i, ret);
+            }
+        }
+    }
 
-		colliders.erase(std::remove_if(colliders.begin(), colliders.end(), func), colliders.end());
-		children.erase(std::remove_if(children.begin(), children.end(),
-		                              [](const ColliderTree& n)-> bool { return n.empty(); }), children.end());
-	}
+    auto ColliderTree::clipCollider(const std::function<bool(const Collider&)>& func) -> void
+    {
+        for (auto& i : children)
+        {
+            i.clipCollider(func);
+        }
 
-	void ColliderTree::updateKinematic(const std::function<float(const Collider*)>& func)
-	{
-		U32 k = true;
-		for (auto& i : colliders)
-		{
-			i.flexible = func(&i);
-			k &= i.flexible < FLT_EPSILON;
-		}
+        std::erase_if(colliders, func);
+        std::erase_if(children, [](const ColliderTree& n) -> bool { return n.empty(); });
+    }
 
-		for (auto& i : children)
-		{
-			i.updateKinematic(func);
-			k &= i.isKinematic;
-		}
+    auto ColliderTree::updateKinematic(const std::function<float(const Collider*)>& func) -> void
+    {
+        U32 k = true;
+        for (auto& i : colliders)
+        {
+            i.flexible = func(&i);
+            k &= i.flexible < FLT_EPSILON;
+        }
 
-		std::sort(colliders.begin(), colliders.end(), [](const Collider& a, const Collider& b)
-		{
-			return a.flexible > b.flexible;
-		});
-		std::sort(children.begin(), children.end(), [](const ColliderTree& a, const ColliderTree& b)
-		{
-			return a.isKinematic < b.isKinematic;
-		});
+        for (auto& i : children)
+        {
+            i.updateKinematic(func);
+            k &= i.isKinematic;
+        }
 
-		isKinematic = k;
+        std::ranges::sort(colliders, [](const Collider& a, const Collider& b) { return a.flexible > b.flexible; });
+        std::ranges::sort(children,
+                          [](const ColliderTree& a, const ColliderTree& b) { return a.isKinematic < b.isKinematic; });
 
-		if (k)
-		{
-			dynChild = dynCollider = 0;
-		}
-		else
-		{
-			for (dynChild = 0; dynChild < children.size(); ++dynChild)
-				if (children[dynChild].isKinematic)
-					break;
+        isKinematic = k;
 
-			for (dynCollider = 0; dynCollider < colliders.size(); ++dynCollider)
-				if (colliders[dynCollider].flexible < FLT_EPSILON)
-					break;
-		}
-	}
+        if (k)
+        {
+            dynChild = dynCollider = 0;
+        }
+        else
+        {
+            for (dynChild = 0; dynChild < children.size(); ++dynChild)
+            {
+                if (children[dynChild].isKinematic)
+                {
+                    break;
+                }
+            }
 
-	void ColliderTree::updateAabb()
-	{
-		if (numCollider)
-		{
-			auto aabbEnd = this->aabb + numCollider;
-			for (auto i = this->aabb + 1; i < aabbEnd; ++i)
-				this->aabb->merge(*i);
-			aabbMe = *this->aabb;
-		}
-#ifdef CUDA
-		else
-		{
-			aabbMe.invalidate();
-		}
-#endif
+            for (dynCollider = 0; dynCollider < colliders.size(); ++dynCollider)
+            {
+                if (colliders[dynCollider].flexible < FLT_EPSILON)
+                {
+                    break;
+                }
+            }
+        }
+    }
 
-		aabbAll = aabbMe;
-		for (auto& i : children)
-		{
-			// FIXME PROFILING Lots of time is used here, because this is called a lot.
-			i.updateAabb();
+    auto ColliderTree::updateAabb() -> void
+    {
+        struct Frame
+        {
+            ColliderTree* node;
+            size_t childIdx;
+        };
+        thread_local std::vector<Frame> stack;
+        stack.clear();
+        stack.emplace_back(this, 0);
 
-			aabbAll.merge(i.aabbAll);
-		}
-	}
+        while (!stack.empty())
+        {
+            auto& f = stack.back();
+            if (f.childIdx < f.node->children.size())
+            {
+                auto* child = &f.node->children[f.childIdx++];
+                stack.emplace_back(child, 0);
+                continue;
+            }
 
-	void ColliderTree::visitColliders(const std::function<void(Collider*)>& func)
-	{
-		for (auto& i : colliders)
-			func(&i);
+            auto* node = f.node;
+            stack.pop_back();
 
-		for (auto& i : children)
-			i.visitColliders(func);
-	}
+            // old code merged into aabb[0] directly which nuked collider 0's actual bbox,
+            // making it always pass narrow-phase checks. accumulate in registers instead
+            if (node->numCollider)
+            {
+                __m128 mn = node->aabb[0].m_min;
+                __m128 mx = node->aabb[0].m_max;
+                const auto* aabbPtr = node->aabb + 1;
+                const auto* aabbEnd = node->aabb + node->numCollider;
+                for (; aabbPtr < aabbEnd; ++aabbPtr)
+                {
+                    mn = _mm_min_ps(mn, aabbPtr->m_min);
+                    mx = _mm_max_ps(mx, aabbPtr->m_max);
+                }
+                node->aabbMe.m_min = mn;
+                node->aabbMe.m_max = mx;
+            }
 
-	void ColliderTree::optimize()
-	{
-		for (auto& i : children)
-			i.optimize();
+            __m128 allMin = node->aabbMe.m_min;
+            __m128 allMax = node->aabbMe.m_max;
+            for (const auto& child : node->children)
+            {
+                allMin = _mm_min_ps(allMin, child.aabbAll.m_min);
+                allMax = _mm_max_ps(allMax, child.aabbAll.m_max);
+            }
+            node->aabbAll.m_min = allMin;
+            node->aabbAll.m_max = allMax;
+        }
+    }
 
-		children.erase(
-			std::remove_if(children.begin(), children.end(), [](const ColliderTree& n) { return n.empty(); }),
-			children.end());
+    auto ColliderTree::visitColliders(const std::function<void(Collider*)>& func) -> void
+    {
+        for (auto& i : colliders)
+        {
+            func(&i);
+        }
 
-		while (children.size() == 1 && children[0].colliders.empty())
-		{
-			vectorA16<ColliderTree> temp;
-			temp.swap(children.front().children);
-			children.swap(temp);
-		}
+        for (auto& i : children)
+        {
+            i.visitColliders(func);
+        }
+    }
 
-		if (children.size() == 1 && colliders.empty())
-		{
-			colliders = children[0].colliders;
+    auto ColliderTree::optimize() -> void
+    {
+        for (auto& i : children)
+        {
+            i.optimize();
+        }
 
-			vectorA16<ColliderTree> temp;
-			temp.swap(children[0].children);
-			children.swap(temp);
-		}
-	}
+        std::erase_if(children, [](const ColliderTree& n) { return n.empty(); });
 
-	bool ColliderTree::collapseCollideL(ColliderTree* r)
-	{
-		if (isKinematic && r->isKinematic)
-			return false;
+        while (children.size() == 1 && children[0].colliders.empty())
+        {
+            vectorA16<ColliderTree> temp;
+            temp.swap(children.front().children);
+            children.swap(temp);
+        }
 
-		if (!aabbAll.collideWith(r->aabbAll))
-			return false;
+        if (children.size() == 1 && colliders.empty())
+        {
+            colliders = children[0].colliders;
 
-		if (numCollider && aabbMe.collideWith(r->aabbAll))
-		{
-			if (aabbMe.collideWith(r->aabbMe))
-				return true;
+            vectorA16<ColliderTree> temp;
+            temp.swap(children[0].children);
+            children.swap(temp);
+        }
+    }
 
-			auto begin = r->children.data();
-			auto end = begin + (isKinematic ? r->dynChild : r->children.size());
-			for (auto i = begin; i < end; ++i)
-				if (collapseCollideR(i))
-					return true;
-		}
+    // same deal as checkCollisionL - iterative, early return still works since we just bail out of the loop
+    auto ColliderTree::collapseCollideL(ColliderTree* r) -> bool
+    {
+        enum struct Mode : uint8_t
+        {
+            L,
+            R
+        };
+        struct Entry
+        {
+            ColliderTree* a;
+            ColliderTree* b;
+            Mode mode;
+        };
+        thread_local std::vector<Entry> stack;
+        stack.clear();
+        stack.emplace_back(this, r, Mode::L);
 
-		auto begin = children.data();
-		auto end = begin + (r->isKinematic ? dynChild : children.size());
-		for (auto i = begin; i < end; ++i)
-			if (i->collapseCollideL(r))
-				return true;
-		return false;
-	}
+        while (!stack.empty())
+        {
+            const auto [a, b, mode] = stack.back();
+            stack.pop_back();
 
-	bool ColliderTree::collapseCollideR(ColliderTree* r)
-	{
-		if (isKinematic && r->isKinematic)
-			return false;
+            if (a->isKinematic && b->isKinematic)
+            {
+                continue;
+            }
 
-		if (numCollider)
-		{
-			if (!aabbMe.collideWith(r->aabbAll))
-				return false;
+            if (mode == Mode::L)
+            {
+                if (!a->aabbAll.collideWith(b->aabbAll))
+                {
+                    continue;
+                }
 
-			if (aabbMe.collideWith(r->aabbMe))
-				return true;
+                if (a->numCollider && a->aabbMe.collideWith(b->aabbAll))
+                {
+                    if (a->aabbMe.collideWith(b->aabbMe))
+                    {
+                        return true;
+                    }
 
-			auto begin = r->children.data();
-			auto end = begin + (isKinematic ? r->dynChild : r->children.size());
-			for (auto i = begin; i < end; ++i)
-				if (collapseCollideR(i))
-					return true;
-		}
+                    const auto begin = b->children.data();
+                    const auto end = begin + (a->isKinematic ? b->dynChild : b->children.size());
+                    for (auto i = begin; i < end; ++i)
+                    {
+                        stack.emplace_back(a, i, Mode::R);
+                    }
+                }
 
-		return false;
-	}
+                const auto begin = a->children.data();
+                const auto end = begin + (b->isKinematic ? a->dynChild : a->children.size());
+                for (auto i = begin; i < end; ++i)
+                {
+                    stack.emplace_back(i, b, Mode::L);
+                }
+            }
+            else
+            {
+                if (!a->numCollider)
+                {
+                    continue;
+                }
+                if (!a->aabbMe.collideWith(b->aabbAll))
+                {
+                    continue;
+                }
 
-	void ColliderTree::exportColliders(vectorA16<Collider>& exportTo)
-	{
-		numCollider = static_cast<hdt::U32>(colliders.size());
-		cbuf = (Collider*)exportTo.size();
-		for (auto& i : colliders)
-		{
-			exportTo.push_back(i);
-		}
+                if (a->aabbMe.collideWith(b->aabbMe))
+                {
+                    return true;
+                }
 
-		for (auto& i : children)
-			i.exportColliders(exportTo);
-	}
+                const auto begin = b->children.data();
+                const auto end = begin + (a->isKinematic ? b->dynChild : b->children.size());
+                for (auto i = begin; i < end; ++i)
+                {
+                    stack.emplace_back(a, i, Mode::R);
+                }
+            }
+        }
+        return false;
+    }
 
-	void ColliderTree::remapColliders(Collider* start, Aabb* startAabb)
-	{
-		vectorA16<Collider> tmp;
-		colliders.swap(tmp);
-		auto offset = (size_t)cbuf;
-		cbuf = start + offset;
-		aabb = startAabb + offset;
+    // dead code.. collapseCollideL inlines R logic now. kept for API
+    auto ColliderTree::collapseCollideR(ColliderTree* r) -> bool
+    {
+        if (isKinematic && r->isKinematic)
+        {
+            return false;
+        }
 
-		for (auto& i : children)
-			i.remapColliders(start, startAabb);
-	}
-#ifdef CUDA
-	void ColliderTree::relocateAabb(Aabb* newAabb)
-	{
-		for (auto& i : children)
-			i.relocateAabb(newAabb + (i.aabb - aabb));
-		aabb = newAabb;
-	}
-#endif
-}
+        if (numCollider)
+        {
+            if (!aabbMe.collideWith(r->aabbAll))
+            {
+                return false;
+            }
+
+            if (aabbMe.collideWith(r->aabbMe))
+            {
+                return true;
+            }
+
+            const auto begin = r->children.data();
+            const auto end = begin + (isKinematic ? r->dynChild : r->children.size());
+            for (auto i = begin; i < end; ++i)
+            {
+                if (collapseCollideR(i))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    auto ColliderTree::exportColliders(vectorA16<Collider>& exportTo) -> void
+    {
+        numCollider = static_cast<U32>(colliders.size());
+        cbuf = reinterpret_cast<Collider*>(exportTo.size());
+        for (auto& i : colliders)
+        {
+            exportTo.emplace_back(i);
+        }
+
+        for (auto& i : children)
+        {
+            i.exportColliders(exportTo);
+        }
+    }
+
+    auto ColliderTree::remapColliders(Collider* start, Aabb* startAabb) -> void
+    {
+        vectorA16<Collider> tmp;
+        colliders.swap(tmp);
+        const auto offset = reinterpret_cast<size_t>(cbuf);
+        cbuf = start + offset;
+        aabb = startAabb + offset;
+
+        for (auto& i : children)
+        {
+            i.remapColliders(start, startAabb);
+        }
+    }
+} // namespace hdt

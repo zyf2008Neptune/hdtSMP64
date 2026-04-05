@@ -84,8 +84,9 @@ namespace hdt
             // a_windFactor is a percentage [0,1] with 0 being no wind efect to 1 being full wind effect.
             auto setWindFactor(float a_windFactor) const -> void;
 
-            RE::BSTSmartPointer<SkyrimSystem> m_physics;
-        };
+			RE::BSTSmartPointer<SkyrimSystem> m_physics;
+			bool m_hasDynamicPhysics = false;
+		};
 
         struct Head
         {
@@ -96,16 +97,17 @@ namespace hdt
                 std::unordered_set<RE::BSFixedString> renamedBonesInUse;
             };
 
-            IDType id;
-            std::string prefix;
-            RE::NiPointer<RE::BSFaceGenNiNode> headNode;
-            RE::NiPointer<RE::BSFadeNode> npcFaceGeomNode;
-            std::vector<HeadPart> headParts;
-            std::unordered_map<RE::BSFixedString, RE::BSFixedString> renameMap;
-            std::unordered_map<RE::BSFixedString, uint8_t> nodeUseCount;
-            bool isFullSkinning;
-            bool isActive = true; // false when hidden by a wig
-        };
+			IDType id;
+			std::string prefix;
+			RE::NiPointer<RE::BSFaceGenNiNode> headNode;
+			RE::NiPointer<RE::BSFadeNode> npcFaceGeomNode;
+			bool npcFaceGeomNodeBroken = false;  // true if isolated NiStream load produced broken VR bone refs
+			std::vector<HeadPart> headParts;
+			std::unordered_map<RE::BSFixedString, RE::BSFixedString> renameMap;
+			std::unordered_map<RE::BSFixedString, uint8_t> nodeUseCount;
+			bool isFullSkinning;
+			bool isActive = true;  // false when hidden by a wig
+		};
 
         struct Armor : PhysicsItem
         {
@@ -184,9 +186,10 @@ namespace hdt
             // @brief This is |camera2SkeletonVector|*cos(angle between that vector and the camera direction).
             float m_cosAngleFromCameraDirectionTimesSkeletonDistance = -1.;
 
-        private:
-            auto isActiveInScene() const -> bool;
-            auto checkPhysics() -> bool;
+		private:
+			bool isActiveInScene() const;
+			bool checkPhysics();
+			static void doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, std::string_view prefix, std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map, RE::NiNode* dstRoot);
 
             bool isActive = false;
             float currentWindFactor = 0.f;

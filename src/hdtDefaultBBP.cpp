@@ -2,8 +2,8 @@
 
 #include <ranges>
 
-#include "XmlReader.h"
 #include "NetImmerseUtils.h"
+#include "XmlReader.h"
 
 namespace hdt
 {
@@ -27,10 +27,7 @@ namespace hdt
         return scanDefaultBBP(scan);
     }
 
-    DefaultBBP::DefaultBBP()
-    {
-        loadDefaultBBPs();
-    }
+    DefaultBBP::DefaultBBP() { loadDefaultBBPs(); }
 
     auto DefaultBBP::loadDefaultBBPs() -> void
     {
@@ -42,98 +39,98 @@ namespace hdt
             return;
         }
 
-        const auto saved_locale = std::locale();
-        std::locale::global(std::locale("en_US"));
+        // Store original locale
+        // const auto saved_locale = std::locale();
+        char saved_locale[32];
+        strcpy_s(saved_locale, std::setlocale(LC_NUMERIC, nullptr));
 
-        try
+        // Set locale to en_US
+        // std::locale::global(std::locale("en_US"));
+        std::setlocale(LC_NUMERIC, "en_US");
+
+        XMLReader reader(reinterpret_cast<uint8_t*>(loaded.data()), loaded.size());
+
+        reader.nextStartElement();
+        if (reader.GetName() != "default-bbps")
         {
-            XMLReader reader(reinterpret_cast<uint8_t*>(loaded.data()), loaded.size());
-
-            reader.nextStartElement();
-            if (reader.GetName() != "default-bbps")
-            {
-                std::locale::global(saved_locale);
-                return;
-            }
-
-            while (reader.Inspect())
-            {
-                if (reader.GetInspected() == Xml::Inspected::StartTag)
-                {
-                    if (reader.GetName() == "map")
-                    {
-                        try
-                        {
-                            auto shape = reader.getAttribute("shape");
-                            auto file = reader.getAttribute("file");
-                            bbpFileList.insert(std::make_pair(shape, file));
-                        }
-                        catch (...)
-                        {
-                            logger::warn("defaultBBP({},{}) : invalid map", reader.GetRow(), reader.GetColumn());
-                        }
-                        reader.skipCurrentElement();
-                    }
-                    else if (reader.GetName() == "remap")
-                    {
-                        const auto target = reader.getAttribute("target");
-                        Remap remap = {.name = target, .entries = {}, .required = {}};
-                        while (reader.Inspect())
-                        {
-                            if (reader.GetInspected() == Xml::Inspected::StartTag)
-                            {
-                                if (reader.GetName() == "source")
-                                {
-                                    auto priority = 0;
-                                    try
-                                    {
-                                        priority = reader.getAttributeAsInt("priority");
-                                    }
-                                    catch (...)
-                                    {
-                                        throw;
-                                    }
-                                    auto source = reader.readText();
-                                    remap.entries.insert({priority, source});
-                                }
-                                else if (reader.GetName() == "requires")
-                                {
-                                    auto req = reader.readText();
-                                    remap.required.insert(req);
-                                }
-                                else
-                                {
-                                    logger::warn("defaultBBP({},{}) : unknown element", reader.GetRow(),
-                                                 reader.GetColumn());
-                                    reader.skipCurrentElement();
-                                }
-                            }
-                            else if (reader.GetInspected() == Xml::Inspected::EndTag)
-                            {
-                                break;
-                            }
-                        }
-                        remaps.emplace_back(remap);
-                    }
-                    else
-                    {
-                        logger::warn("defaultBBP({},{}) : unknown element", reader.GetRow(), reader.GetColumn());
-                        reader.skipCurrentElement();
-                    }
-                }
-                else if (reader.GetInspected() == Xml::Inspected::EndTag)
-                {
-                    break;
-                }
-            }
-        }
-        catch (...)
-        {
-            std::locale::global(saved_locale);
-            throw;
+            return;
         }
 
-        std::locale::global(saved_locale);
+        while (reader.Inspect())
+        {
+            if (reader.GetInspected() == Xml::Inspected::StartTag)
+            {
+                if (reader.GetName() == "map")
+                {
+                    try
+                    {
+                        auto shape = reader.getAttribute("shape");
+                        auto file = reader.getAttribute("file");
+                        bbpFileList.insert(std::make_pair(shape, file));
+                    }
+                    catch (...)
+                    {
+                        logger::warn("defaultBBP({},{}) : invalid map", reader.GetRow(), reader.GetColumn());
+                    }
+                    reader.skipCurrentElement();
+                }
+                else if (reader.GetName() == "remap")
+                {
+                    const auto target = reader.getAttribute("target");
+                    Remap remap = {.name = target, .entries = {}, .required = {}};
+                    while (reader.Inspect())
+                    {
+                        if (reader.GetInspected() == Xml::Inspected::StartTag)
+                        {
+                            if (reader.GetName() == "source")
+                            {
+                                auto priority = 0;
+                                try
+                                {
+                                    priority = reader.getAttributeAsInt("priority");
+                                }
+                                catch (...)
+                                {
+                                    throw;
+                                }
+                                auto source = reader.readText();
+                                remap.entries.insert({priority, source});
+                            }
+                            else if (reader.GetName() == "requires")
+                            {
+                                auto req = reader.readText();
+                                remap.required.insert(req);
+                            }
+                            else
+                            {
+                                logger::warn("defaultBBP({},{}) : unknown element", reader.GetRow(),
+                                             reader.GetColumn());
+                                reader.skipCurrentElement();
+                            }
+                        }
+                        else if (reader.GetInspected() == Xml::Inspected::EndTag)
+                        {
+                            break;
+                        }
+                    }
+                    remaps.emplace_back(remap);
+                }
+                else
+                {
+                    logger::warn("defaultBBP({},{}) : unknown element", reader.GetRow(), reader.GetColumn());
+                    reader.skipCurrentElement();
+                }
+            }
+            else if (reader.GetInspected() == Xml::Inspected::EndTag)
+            {
+                break;
+            }
+        }
+
+
+        // Restore original locale
+        //std::locale::global(saved_locale);
+        std::setlocale(LC_NUMERIC, saved_locale);
     }
 
     auto DefaultBBP::scanDefaultBBP(RE::NiNode* armor) -> PhysicsFile_t
@@ -148,11 +145,8 @@ namespace hdt
 
         auto remappedNames = instance()->getNameMap(armor);
 
-        const auto it = std::ranges::find_if(bbpFileList,
-                                             [&](const std::pair<std::string, std::string>& e)
-                                             {
-                                                 return remappedNames.contains(e.first);
-                                             });
+        const auto it = std::ranges::find_if(
+            bbpFileList, [&](const std::pair<std::string, std::string>& e) { return remappedNames.contains(e.first); });
         return {it == bbpFileList.end() ? "" : it->second, remappedNames};
     }
 
@@ -173,28 +167,23 @@ namespace hdt
 
             if (doRemap)
             {
-                auto start = std::ranges::find_if(std::views::reverse(remap.entries), [&](const auto& e)
-                {
-                    return nameMap.contains(e.second);
-                });
-                const auto end = std::find_if(start, remap.entries.rend(), [&](const auto& e)
-                {
-                    return e.first != start->first;
-                });
+                auto start = std::ranges::find_if(std::views::reverse(remap.entries),
+                                                  [&](const auto& e) { return nameMap.contains(e.second); });
+                const auto end =
+                    std::find_if(start, remap.entries.rend(), [&](const auto& e) { return e.first != start->first; });
                 if (start != remap.entries.rend())
                 {
                     auto&& s = nameMap.insert({remap.name, {}}).first;
-                    std::for_each(start, end, [&](const auto& e)
-                    {
-                        auto it = nameMap.find(e.second);
-                        if (it != nameMap.end())
-                        {
-                            std::for_each(it->second.begin(), it->second.end(), [&](const std::string& name)
-                            {
-                                s->second.insert(name);
-                            });
-                        }
-                    });
+                    std::for_each(start, end,
+                                  [&](const auto& e)
+                                  {
+                                      auto it = nameMap.find(e.second);
+                                      if (it != nameMap.end())
+                                      {
+                                          std::for_each(it->second.begin(), it->second.end(),
+                                                        [&](const std::string& name) { s->second.insert(name); });
+                                      }
+                                  });
                 }
             }
         }
@@ -246,4 +235,4 @@ namespace hdt
 
         return nameMap;
     }
-}
+} // namespace hdt

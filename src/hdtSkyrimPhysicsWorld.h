@@ -4,13 +4,13 @@
 #include <functional>
 #include <mutex>
 
+#include <ppl.h>
 #include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <LinearMath/btVector3.h>
 #include <RE/B/BSTEvent.h>
 #include <RE/N/NiPoint3.h>
 #include <SKSE/Events.h>
-#include <ppl.h>
 
 #include "Events.h"
 #include "hdtConvertNi.h"
@@ -31,8 +31,8 @@ namespace hdt
     public:
         static auto get() -> SkyrimPhysicsWorld*;
 
-        auto doUpdate(float delta) -> void;
-        auto doUpdate2ndStep(float delta, const float tick, const float remainingTimeStep) -> void;
+        auto doUpdate(float interval) -> void;
+        auto doUpdate2ndStep(float delta, float tick, float remainingTimeStep) -> void;
         auto updateActiveState() const -> void;
 
         auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
@@ -86,10 +86,10 @@ namespace hdt
 
         concurrency::task_group m_tasks;
 
+        bool m_pendingTransformUpdate = false;
         bool m_useRealTime = false;
         int min_fps = 60;
-        int m_percentageOfFrameTime = 300;
-        // percentage of time per frame doing hdt. Profiler shows 30% is reasonable. Out of 1000.
+        float m_budgetMs = 3.5f;
         float m_timeTick = 1 / 60.f;
         int m_maxSubSteps = 4;
         bool m_clampRotations = true;
