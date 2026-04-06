@@ -20,7 +20,7 @@ namespace hdt
 
         auto doUpdate(float delta) -> void;
         auto doUpdate2ndStep(float delta, const float tick, const float remainingTimeStep) -> void;
-        auto updateActiveState() -> void;
+        auto updateActiveState() const -> void;
 
         auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
         auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
@@ -72,7 +72,7 @@ namespace hdt
         auto setWind(const RE::NiPoint3& a_direction, float a_scale = scaleSkyrim, uint32_t a_smoothingSamples = 8)
             -> void;
 
-        bool m_pendingTransformUpdate = false;
+        // bool m_pendingTransformUpdate = false;
         concurrency::task_group m_tasks;
 
         bool m_useRealTime = false;
@@ -101,7 +101,7 @@ namespace hdt
 
     private:
         SkyrimPhysicsWorld();
-        ~SkyrimPhysicsWorld() override;
+        ~SkyrimPhysicsWorld() override = default;
 
         std::mutex m_lock;
 

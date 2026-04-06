@@ -27,9 +27,9 @@ namespace hdt
         SkyrimSystem(RE::NiNode* skeleton);
         ~SkyrimSystem() override = default;
 
-        auto findBone(const RE::BSFixedString& name) -> SkinnedMeshBone*;
-        auto findBody(const RE::BSFixedString& name) -> SkinnedMeshBody*;
-        auto findBoneIdx(const RE::BSFixedString& name) -> int;
+        auto findBone(const RE::BSFixedString& name) const -> SkinnedMeshBone*;
+        auto findBody(const RE::BSFixedString& name) const -> SkinnedMeshBody*;
+        auto findBoneIdx(const RE::BSFixedString& name) const -> int;
 
         auto prepareForRead(float timeStep) -> float override;
 
@@ -50,7 +50,7 @@ namespace hdt
     class SkyrimSystemCreator
     {
     public:
-        SkyrimSystemCreator();
+        SkyrimSystemCreator() = default;
 
         auto createOrUpdateSystem(
             RE::NiNode* skeleton, RE::NiAVObject* model, DefaultBBP::PhysicsFile_t* file,
@@ -82,7 +82,7 @@ namespace hdt
 
         std::vector<DeferredBuild> m_deferredBuilds;
 
-        struct BoneTemplate : public btRigidBody::btRigidBodyConstructionInfo
+        struct BoneTemplate : btRigidBody::btRigidBodyConstructionInfo
         {
             static btEmptyShape emptyShape[1];
 
@@ -185,7 +185,7 @@ namespace hdt
         XMLReader* m_reader;
         std::unordered_map<RE::BSFixedString, RE::BSFixedString> m_renameMap;
 
-        auto findObjectByName(const RE::BSFixedString& name) -> RE::NiNode*;
+        auto findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*;
         auto getOrCreateBone(const RE::BSFixedString& name) -> SkyrimBone*;
 
         std::string m_filePath;
@@ -206,10 +206,10 @@ namespace hdt
         auto parseFrameType(const std::string& name, FrameType& type, btTransform& frame) -> bool;
         static auto calcFrame(FrameType type, const btTransform& frame, const btQsTransform& trA,
                               const btQsTransform& trB, btTransform& frameA, btTransform& frameB) -> void;
-        auto readFrameLerp(btTransform& tr) -> void;
+        auto readFrameLerp(btTransform& tr) const -> void;
         auto readBoneTemplate(BoneTemplate& dest) -> void;
         auto readGenericConstraintTemplate(GenericConstraintTemplate& dest) -> void;
-        auto readStiffSpringConstraintTemplate(StiffSpringConstraintTemplate& dest) -> void;
+        auto readStiffSpringConstraintTemplate(StiffSpringConstraintTemplate& dest) const -> void;
         auto readConeTwistConstraintTemplate(ConeTwistConstraintTemplate& dest) -> void;
 
         auto getBoneTemplate(const RE::BSFixedString& name) -> const BoneTemplate&;

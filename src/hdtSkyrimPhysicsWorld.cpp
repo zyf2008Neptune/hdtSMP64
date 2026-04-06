@@ -1,53 +1,55 @@
 #include "hdtSkyrimPhysicsWorld.h"
+
+#include <algorithm>
 #include "PluginInterfaceImpl.h"
 #include "WeatherManager.h"
 
 namespace hdt
 {
-    static const float* timeStamp = (float*)0x12E355C;
+    [[maybe_unused]] static const auto timeStamp = reinterpret_cast<float*>(0x12E355C);
 
-    SkyrimPhysicsWorld::SkyrimPhysicsWorld(void)
+    SkyrimPhysicsWorld::SkyrimPhysicsWorld()
     {
         gDisableDeactivation = true;
-        setGravity(btVector3(0, 0, -9.8f * scaleSkyrim));
+        btDiscreteDynamicsWorld::setGravity(btVector3(0, 0, -9.8f * scaleSkyrim));
 
         // https://github.com/bulletphysics/bullet3/blob/master/src/BulletDynamics/ConstraintSolver/btContactSolverInfo.h
 
-        getSolverInfo().m_friction = 0;
+        SkyrimPhysicsWorld::getSolverInfo().m_friction = 0;
 
         // This should be enabled by default, but just for clarity I put it here too
-        getSolverInfo().m_splitImpulse = true;
+        SkyrimPhysicsWorld::getSolverInfo().m_splitImpulse = true;
 
         // Set a very low threshold so even micro-penetrations use Split Impulse
         // Too low might cause weird visuals - default is -0.04f
-        getSolverInfo().m_splitImpulsePenetrationThreshold = -0.01f;
+        SkyrimPhysicsWorld::getSolverInfo().m_splitImpulsePenetrationThreshold = -0.01f;
 
         // Default ERP2 is 0.2
         // From Bullet: error reduction for non-contact constraints
-        getSolverInfo().m_erp2 = 0.15f;
+        SkyrimPhysicsWorld::getSolverInfo().m_erp2 = 0.15f;
 
         // constraint force mixing for contacts and non-contacts
         // Adds "sponginess" to collisions to absorb the constant recalculations
         // Default is 0
-        getSolverInfo().m_globalCfm = 0.001f;
+        SkyrimPhysicsWorld::getSolverInfo().m_globalCfm = 0.001f;
 
         // Ignore Bounciness (Restitution) on slow micro-collisions
         // If objects are moving slower than this, they will not bounce at all.
         // The default is 0.2f, but putting this here since it's very noteworthy!
-        getSolverInfo().m_restitutionVelocityThreshold = 0.2f;
+        SkyrimPhysicsWorld::getSolverInfo().m_restitutionVelocityThreshold = 0.2f;
 
         // Default is = SOLVER_USE_WARMSTARTING | SOLVER_SIMD;
         // But we don't even use warm starts since we delete the manifolds every frame
         // SOLVER_SIMD nets a small performance uplift
         // SOLVER_RANDMIZE_ORDER is also possible, but I clocked a pretty heavy performance hit. Maybe make it a config
         // option
-        getSolverInfo().m_solverMode = SOLVER_SIMD;
+        SkyrimPhysicsWorld::getSolverInfo().m_solverMode = SOLVER_SIMD;
 
         m_averageInterval = m_timeTick;
         m_accumulatedInterval = 0;
     }
 
-    SkyrimPhysicsWorld::~SkyrimPhysicsWorld(void) {}
+    //SkyrimPhysicsWorld::~SkyrimPhysicsWorld(void) {}
 
     // void hdtSkyrimPhysicsWorld::suspend()
     //{
@@ -152,7 +154,7 @@ namespace hdt
         stepSimulation(remainingTimeStep, 0, tick);
         restoreTranslationOffset(offset);
         m_accumulatedInterval = 0;
-        m_pendingTransformUpdate = true;
+        // m_pendingTransformUpdate = true;
 
         g_pluginInterface.onPostStep({.objects = getCollisionObjectArray(), .timeStep = remainingTimeStep});
 
@@ -235,7 +237,7 @@ namespace hdt
         }
     }
 
-    auto SkyrimPhysicsWorld::updateActiveState() -> void
+    auto SkyrimPhysicsWorld::updateActiveState() const -> void
     {
         struct Group
         {
@@ -276,24 +278,24 @@ namespace hdt
         {
             for (auto& j : i.second.list)
             {
-                if (i.second.tags.find(j.first) != i.second.tags.end())
+                if (i.second.tags.contains(j.first))
                 {
                     for (const auto& k : j.second)
                     {
                         k->m_disabled = true;
                     }
                 }
-                else if (j.second.size())
+                else if (!j.second.empty())
                 {
-                    std::sort(j.second.begin(), j.second.end(),
-                              [](SkyrimBody* a, SkyrimBody* b)
-                              {
-                                  if (a->m_disablePriority != b->m_disablePriority)
-                                  {
-                                      return a->m_disablePriority > b->m_disablePriority;
-                                  }
-                                  return a < b;
-                              });
+                    std::ranges::sort(j.second,
+                                      [](const SkyrimBody* a, const SkyrimBody* b)
+                                      {
+                                          if (a->m_disablePriority != b->m_disablePriority)
+                                          {
+                                              return a->m_disablePriority > b->m_disablePriority;
+                                          }
+                                          return a < b;
+                                      });
 
                     for (const auto& k : j.second)
                     {
@@ -359,8 +361,8 @@ namespace hdt
         }
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameEvent* e,
-                                          RE::BSTEventSource<Events::FrameEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameEvent* e, RE::BSTEventSource<Events::FrameEvent>*)
+        -> RE::BSEventNotifyControl
     {
         const auto mm = RE::UI::GetSingleton();
 
@@ -380,7 +382,6 @@ namespace hdt
 
         LARGE_INTEGER ticks;
         int64_t startTime = 0;
-        int64_t endTime = 0;
         if (m_doMetrics)
         {
             QueryPerformanceCounter(&ticks);
@@ -404,7 +405,7 @@ namespace hdt
         if (m_doMetrics)
         {
             QueryPerformanceCounter(&ticks);
-            endTime = ticks.QuadPart;
+            int64_t endTime = ticks.QuadPart;
             QueryPerformanceFrequency(&ticks);
             // float ticks_per_ms = static_cast<float>(ticks.QuadPart) * 1e-3;
             m_SMPProcessingTimeInMainLoop = (endTime - startTime) / static_cast<float>(ticks.QuadPart) * 1e3f;
@@ -413,8 +414,8 @@ namespace hdt
         return RE::BSEventNotifyControl::kContinue;
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameSyncEvent*,
-                                          RE::BSTEventSource<Events::FrameSyncEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameSyncEvent*, RE::BSTEventSource<Events::FrameSyncEvent>*)
+        -> RE::BSEventNotifyControl
     {
         if (m_doMetrics)
         {
@@ -426,12 +427,12 @@ namespace hdt
 
             QueryPerformanceCounter(&ticks);
             const int64_t t1 = ticks.QuadPart;
-            if (m_pendingTransformUpdate)
-            {
-                std::scoped_lock l(m_lock);
-                writeTransform();
-                m_pendingTransformUpdate = false;
-            }
+            // if (m_pendingTransformUpdate)
+            //{
+            std::scoped_lock l(m_lock);
+            writeTransform();
+            // m_pendingTransformUpdate = false;
+            //}
 
             QueryPerformanceCounter(&ticks);
             const int64_t t2 = ticks.QuadPart;
@@ -473,21 +474,21 @@ namespace hdt
         else
         {
             m_tasks.wait();
-            if (m_pendingTransformUpdate)
-            {
-                std::scoped_lock l(m_lock);
-                writeTransform();
-                m_pendingTransformUpdate = false;
-            }
+            // if (m_pendingTransformUpdate)
+            // {
+            std::scoped_lock l(m_lock);
+            writeTransform();
+            // m_pendingTransformUpdate = false;
+            // }
         }
 
         return RE::BSEventNotifyControl::kContinue;
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const Events::ShutdownEvent*,
-                                          RE::BSTEventSource<Events::ShutdownEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const Events::ShutdownEvent*, RE::BSTEventSource<Events::ShutdownEvent>*)
+        -> RE::BSEventNotifyControl
     {
-        while (m_systems.size())
+        while (!m_systems.empty())
         {
             SkinnedMeshWorld::removeSkinnedMeshSystem(m_systems.back().get());
         }
@@ -495,8 +496,8 @@ namespace hdt
         return RE::BSEventNotifyControl::kContinue;
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const SKSE::CameraEvent* evn,
-                                          RE::BSTEventSource<SKSE::CameraEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const SKSE::CameraEvent* evn, RE::BSTEventSource<SKSE::CameraEvent>*)
+        -> RE::BSEventNotifyControl
     {
         if (evn && evn->oldState && evn->newState)
         {

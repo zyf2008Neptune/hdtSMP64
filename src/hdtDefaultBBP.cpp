@@ -128,7 +128,7 @@ namespace hdt
     auto DefaultBBP::scanDefaultBBP(RE::NiNode* armor) -> DefaultBBP::PhysicsFile_t
     {
         static std::mutex s_lock;
-        std::scoped_lock l(s_lock);
+        std::lock_guard<std::mutex> l(s_lock);
 
         if (bbpFileList.empty())
         {

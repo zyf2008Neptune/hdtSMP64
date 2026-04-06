@@ -6,6 +6,8 @@
 //
 #include <xbyak/xbyak.h>
 
+#include "hdtSkyrimPhysicsWorld.h"
+
 namespace Hooks
 {
     auto BSFaceGenNiNodeHooks::ProcessHeadPart(RE::BSFaceGenNiNode* const a_this, RE::BGSHeadPart* headPart,
@@ -179,7 +181,7 @@ namespace Hooks
         if (a_skeleton)
         {
             const auto& children = a_this->GetChildren();
-            if (children.size() > 0)
+            if (!children.empty())
             {
                 for (std::uint16_t i = 0; i < children.size(); i++)
                 {
@@ -202,10 +204,9 @@ namespace Hooks
         REL::Relocation<uintptr_t> GeometrySkinningBoneFix{REL::VariantID(24330, 24836, 0x37ADD0),
                                                            REL::VariantOffset(0x58, 0x75, 0x58)};
 
-        struct BoneLimitFix : public Xbyak::CodeGenerator
+        struct BoneLimitFix : Xbyak::CodeGenerator
         {
-            BoneLimitFix(uintptr_t a_returnAddr) :
-                Xbyak::CodeGenerator()
+            BoneLimitFix(uintptr_t a_returnAddr)
             {
                 Xbyak::Label ret;
 
@@ -240,6 +241,13 @@ namespace Hooks
 
     auto MainHooks::Update(RE::Main* const a_this) -> void
     {
+        // Wait for the background physics task from the previous frame to complete
+        // before Skyrim begins mutating geometry. Without this, doUpdate2ndStep() can
+        // race with BSTriShape/NiSkinPartition destruction inside _Update(), because
+        // the FrameSyncEvent wait (via Unk_sub) only fires at Main::Update+0x611,
+        // well after the geometry-destroying code at +0x4FC.
+        hdt::SkyrimPhysicsWorld::get()->m_tasks.wait();
+
         //
         _Update(a_this);
 
@@ -334,7 +342,7 @@ namespace Hooks
                     }
                 }
 
-                if (result.size() > 0)
+                if (!result.empty())
                 {
                     backupBones.insert({NodeName, result});
                 }

@@ -11,13 +11,13 @@ namespace hdt
     {
     public:
         SkinnedMeshWorld();
-        ~SkinnedMeshWorld();
+        ~SkinnedMeshWorld() override;
 
         virtual auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
         virtual auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
 
         auto stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
-                            btScalar fixedTimeStep = btScalar(1.) / btScalar(60.)) -> int override;
+                            btScalar fixedTimeStep = 1.0f / 60.0f) -> int override;
 
         auto getWind() -> btVector3& { return m_windSpeed; }
         auto getWind() const -> const btVector3& { return m_windSpeed; }
@@ -27,13 +27,13 @@ namespace hdt
 
         virtual auto resetTransformsToOriginal() -> void
         {
-            for (int i = 0; i < m_systems.size(); ++i)
+            for (const auto& m_system : m_systems)
             {
-                m_systems[i]->resetTransformsToOriginal();
+                m_system->resetTransformsToOriginal();
             }
         }
 
-        auto readTransform(float timeStep) -> void
+        auto readTransform(const float timeStep) -> void
         {
             const size_t n = m_systems.size();
             if (n == 0)
@@ -49,19 +49,22 @@ namespace hdt
                 m_timeSteps[i] = m_systems[i]->prepareForRead(timeStep);
             }
 
-            concurrency::parallel_for(size_t{0}, n, [this](size_t i) { m_systems[i]->readTransform(m_timeSteps[i]); });
+            concurrency::parallel_for(size_t{0}, n, [this](const size_t i)
+            {
+                m_systems[i]->readTransform(m_timeSteps[i]);
+            });
         }
 
-        auto writeTransform() -> void
+        auto writeTransform() const -> void
         {
-            for (int i = 0; i < m_systems.size(); ++i)
+            for (const auto& m_system : m_systems)
             {
-                m_systems[i]->writeTransform();
+                m_system->writeTransform();
             }
         }
 
         auto applyGravity() -> void override;
-        auto applyWind() -> void;
+        auto applyWind() const -> void;
 
         auto predictUnconstraintMotion(btScalar timeStep) -> void override;
         auto integrateTransforms(btScalar timeStep) -> void override;

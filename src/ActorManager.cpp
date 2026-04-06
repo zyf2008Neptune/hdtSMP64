@@ -120,7 +120,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::scoped_lock l(m_lock);
+        std::lock_guard<decltype(m_lock)> l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -167,7 +167,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::scoped_lock l(m_lock);
+        std::lock_guard<decltype(m_lock)> l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -186,7 +186,7 @@ namespace hdt
         -> RE::BSEventNotifyControl
     {
         // The ActorManager members are protected from parallel events by ActorManager.m_lock.
-        std::scoped_lock l(m_lock);
+        std::lock_guard<decltype(m_lock)> l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -209,7 +209,7 @@ namespace hdt
     auto ActorManager::ProcessEvent(const Events::FrameEvent*, RE::BSTEventSource<Events::FrameEvent>*)
         -> RE::BSEventNotifyControl
     {
-        std::scoped_lock l(m_lock);
+        std::lock_guard<decltype(m_lock)> l(m_lock);
 
         fixArmorNameMaps();
 
@@ -222,7 +222,7 @@ namespace hdt
         -> RE::BSEventNotifyControl
     {
         m_shutdown = true;
-        std::scoped_lock l(m_lock);
+        std::lock_guard<decltype(m_lock)> l(m_lock);
 
         m_skeletons.clear();
 
@@ -240,7 +240,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::scoped_lock l(m_lock);
+        std::lock_guard<decltype(m_lock)> l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -294,7 +294,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::scoped_lock l(m_lock);
+        std::lock_guard<decltype(m_lock)> l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -951,7 +951,7 @@ namespace hdt
         }
         static std::mutex warnedMutex;
         static std::unordered_set<std::string> warned;
-        std::scoped_lock lock(warnedMutex);
+        std::lock_guard lock(warnedMutex);
         if (warned.count(nifPath))
         {
             return;

@@ -10,9 +10,9 @@ namespace hdt
     auto CollisionDispatcher::clearAllManifold() -> void
     {
         std::scoped_lock l(m_lock);
-        for (int i = 0; i < m_manifoldsPtr.size(); ++i)
+        for (auto i = 0; i < m_manifoldsPtr.size(); ++i)
         {
-            auto manifold = m_manifoldsPtr[i];
+            const auto manifold = m_manifoldsPtr[i];
             manifold->~btPersistentManifold();
             if (m_persistentManifoldPoolAllocator->validPtr(manifold))
             {
@@ -26,35 +26,41 @@ namespace hdt
         m_manifoldsPtr.clear();
     }
 
-    auto needsCollision(const SkinnedMeshBody* shape0, const SkinnedMeshBody* shape1) -> bool
+    namespace
     {
-        if (!shape0 || !shape1 || shape0 == shape1)
+        auto needsCollision(const SkinnedMeshBody* shape0, const SkinnedMeshBody* shape1) -> bool
         {
-            return false;
+            if (!shape0 || !shape1 || shape0 == shape1)
+            {
+                return false;
+            }
+
+            if (shape0->m_isKinematic && shape1->m_isKinematic)
+            {
+                return false;
+            }
+
+            return shape0->canCollideWith(shape1) && shape1->canCollideWith(shape0);
         }
+    } // namespace
 
-        if (shape0->m_isKinematic && shape1->m_isKinematic)
-        {
-            return false;
-        }
-
-        return shape0->canCollideWith(shape1) && shape1->canCollideWith(shape0);
-    }
-
-    static inline auto isSkinnedMesh(const btCollisionObject* obj) -> bool
+    namespace
     {
-        return obj->getCollisionShape()->getShapeType() == CUSTOM_CONCAVE_SHAPE_TYPE;
-    }
+        auto isSkinnedMesh(const btCollisionObject* obj) -> bool
+        {
+            return obj->getCollisionShape()->getShapeType() == CUSTOM_CONCAVE_SHAPE_TYPE;
+        }
+    } // namespace
 
     auto CollisionDispatcher::needsCollision(const btCollisionObject* body0, const btCollisionObject* body1) -> bool
     {
-        bool skinned0 = isSkinnedMesh(body0);
-        bool skinned1 = isSkinnedMesh(body1);
+        const bool skinned0 = isSkinnedMesh(body0);
+        const bool skinned1 = isSkinnedMesh(body1);
 
         if (skinned0 || skinned1)
         {
-            auto shape0 = skinned0 ? static_cast<const SkinnedMeshBody*>(body0) : nullptr;
-            auto shape1 = skinned1 ? static_cast<const SkinnedMeshBody*>(body1) : nullptr;
+            const auto shape0 = skinned0 ? dynamic_cast<const SkinnedMeshBody*>(body0) : nullptr;
+            const auto shape1 = skinned1 ? dynamic_cast<const SkinnedMeshBody*>(body1) : nullptr;
             return hdt::needsCollision(shape0, shape1);
         }
 
@@ -66,8 +72,8 @@ namespace hdt
         // Todo: This is likely dead code as only skinned objects can collide as of right now (3/20/2026)
         if (body0->checkCollideWith(body1) || body1->checkCollideWith(body0))
         {
-            auto rb0 = static_cast<SkinnedMeshBone*>(body0->getUserPointer());
-            auto rb1 = static_cast<SkinnedMeshBone*>(body1->getUserPointer());
+            const auto rb0 = static_cast<SkinnedMeshBone*>(body0->getUserPointer());
+            const auto rb1 = static_cast<SkinnedMeshBone*>(body1->getUserPointer());
 
             return rb0->canCollideWith(rb1) && rb1->canCollideWith(rb0);
         }
@@ -85,14 +91,14 @@ namespace hdt
                                                         [[maybe_unused]] const btDispatcherInfo& dispatchInfo,
                                                         [[maybe_unused]] btDispatcher* dispatcher) -> void
     {
-        auto size = pairCache->getNumOverlappingPairs();
+        const auto size = pairCache->getNumOverlappingPairs();
         if (!size)
         {
             return;
         }
 
         m_pairs.reserve(size);
-        auto pairs = pairCache->getOverlappingPairArrayPtr();
+        const auto pairs = pairCache->getOverlappingPairArrayPtr();
         std::vector<SkinnedMeshBody*> bodies;
 
         // SkinnedMeshBody:internalUpdate() already calls m_shape->internalUpdate() for both
@@ -105,28 +111,28 @@ namespace hdt
         bodies.reserve(size * 2);
         extra_vertex_shapes.reserve(size);
 
-        for (int i = 0; i < size; ++i)
+        for (auto i = 0; i < size; ++i)
         {
             auto& pair = pairs[i];
-            auto obj0 = static_cast<btCollisionObject*>(pair.m_pProxy0->m_clientObject);
-            auto obj1 = static_cast<btCollisionObject*>(pair.m_pProxy1->m_clientObject);
+            const auto obj0 = static_cast<btCollisionObject*>(pair.m_pProxy0->m_clientObject);
+            const auto obj1 = static_cast<btCollisionObject*>(pair.m_pProxy1->m_clientObject);
 
-            bool skinned0 = isSkinnedMesh(obj0);
-            bool skinned1 = isSkinnedMesh(obj1);
+            const bool skinned0 = isSkinnedMesh(obj0);
+            const bool skinned1 = isSkinnedMesh(obj1);
 
             if (skinned0 || skinned1)
             {
-                auto shape0 = skinned0 ? static_cast<SkinnedMeshBody*>(obj0) : nullptr;
-                auto shape1 = skinned1 ? static_cast<SkinnedMeshBody*>(obj1) : nullptr;
+                auto shape0 = skinned0 ? dynamic_cast<SkinnedMeshBody*>(obj0) : nullptr;
+                auto shape1 = skinned1 ? dynamic_cast<SkinnedMeshBody*>(obj1) : nullptr;
 
                 if (hdt::needsCollision(shape0, shape1))
                 {
                     bodies.push_back(shape0);
                     bodies.push_back(shape1);
-                    m_pairs.push_back(std::make_pair(shape0, shape1));
+                    m_pairs.emplace_back(shape0, shape1);
 
-                    auto a = shape0->m_shape->asPerTriangleShape();
-                    auto b = shape1->m_shape->asPerTriangleShape();
+                    const auto a = shape0->m_shape->asPerTriangleShape();
+                    const auto b = shape1->m_shape->asPerTriangleShape();
 
                     if (a && b)
                     {
@@ -146,11 +152,11 @@ namespace hdt
         }
 
         // Wipe duplicates, since we don't want to reskin anything!
-        std::sort(bodies.begin(), bodies.end());
-        bodies.erase(std::unique(bodies.begin(), bodies.end()), bodies.end());
+        std::ranges::sort(bodies);
+        bodies.erase(std::ranges::unique(bodies).begin(), bodies.end());
 
-        std::sort(extra_vertex_shapes.begin(), extra_vertex_shapes.end());
-        extra_vertex_shapes.erase(std::unique(extra_vertex_shapes.begin(), extra_vertex_shapes.end()),
+        std::ranges::sort(extra_vertex_shapes);
+        extra_vertex_shapes.erase(std::ranges::unique(extra_vertex_shapes).begin(),
                                   extra_vertex_shapes.end());
 
         concurrency::parallel_for_each(bodies.begin(), bodies.end(),
