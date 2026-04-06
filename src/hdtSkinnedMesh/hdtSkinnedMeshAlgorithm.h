@@ -92,7 +92,7 @@ namespace hdt
                     // wrap around, shouldn't realistically happen (~4 billion frames lol)
                     // This is virtually skipped entirely by the cpu, 0 cost. Just in case since it would
                     // create difficult to track down inconsistencies..
-                    std::fill_n(generations, mergeSize, 0u);
+                    std::fill_n(generations, mergeSize * sizeof(uint32_t), 0u);
                     currentGen = 1;
                 }
                 activeCells.clear();

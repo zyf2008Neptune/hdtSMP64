@@ -67,11 +67,11 @@ namespace hdt
     {
         const auto skinned0 = isSkinnedMesh(body0);
         const auto skinned1 = isSkinnedMesh(body1);
-        const auto shape0 = skinned0 ? dynamic_cast<const SkinnedMeshBody*>(body0) : nullptr;
-        const auto shape1 = skinned1 ? dynamic_cast<const SkinnedMeshBody*>(body1) : nullptr;
 
-        if (shape0 || shape1)
+        if (skinned0 || skinned1)
         {
+            const auto shape0 = skinned0 ? dynamic_cast<const SkinnedMeshBody*>(body0) : nullptr;
+            const auto shape1 = skinned1 ? dynamic_cast<const SkinnedMeshBody*>(body1) : nullptr;
             return hdt::needsCollision(shape0, shape1);
         }
         if (body0->isStaticOrKinematicObject() && body1->isStaticOrKinematicObject())
@@ -124,11 +124,11 @@ namespace hdt
 
             const bool skinned0 = isSkinnedMesh(obj0);
             const bool skinned1 = isSkinnedMesh(obj1);
-            auto shape0 = skinned0 ? dynamic_cast<SkinnedMeshBody*>(obj0) : nullptr;
-            auto shape1 = skinned1 ? dynamic_cast<SkinnedMeshBody*>(obj1) : nullptr;
 
-            if (shape0 || shape1)
+            if (skinned0 || skinned1)
             {
+                auto shape0 = skinned0 ? dynamic_cast<SkinnedMeshBody*>(obj0) : nullptr;
+                auto shape1 = skinned1 ? dynamic_cast<SkinnedMeshBody*>(obj1) : nullptr;
                 if (hdt::needsCollision(shape0, shape1))
                 {
                     bodies.emplace_back(shape0);

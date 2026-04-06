@@ -15,11 +15,6 @@ namespace hdt
     {
         const auto body = dynamic_cast<const SkyrimBody*>(rhs);
 
-        if (!body)
-        {
-            return SkinnedMeshBody::canCollideWith(rhs);
-        }
-
         if (m_disabled || body->m_disabled)
         {
             return false;
@@ -31,10 +26,6 @@ namespace hdt
             break;
         case SharedType::SHARED_INTERNAL:
         {
-            if (!m_mesh || !body->m_mesh)
-            {
-                break;
-            }
             if (m_mesh->m_skeleton != body->m_mesh->m_skeleton)
             {
                 return false;
@@ -43,10 +34,6 @@ namespace hdt
         }
         case SharedType::SHARED_EXTERNAL:
         {
-            if (!m_mesh || !body->m_mesh)
-            {
-                break;
-            }
             if (m_mesh->m_skeleton == body->m_mesh->m_skeleton)
             {
                 return false;
@@ -55,10 +42,6 @@ namespace hdt
         }
         case SharedType::SHARED_PRIVATE:
         {
-            if (!m_mesh || !body->m_mesh)
-            {
-                break;
-            }
             if (m_mesh != body->m_mesh)
             {
                 return false;

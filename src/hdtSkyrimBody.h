@@ -3,7 +3,6 @@
 #include <RE/B/BSFixedString.h>
 
 #include "hdtSkinnedMesh/hdtSkinnedMeshBody.h"
-#include "hdtSkyrimBone.h"
 
 namespace hdt
 {
@@ -11,15 +10,6 @@ namespace hdt
 
     struct SkyrimBody : SkinnedMeshBody
     {
-        ///* SkinnedMeshBody brings Bullet's operator new/delete into scope (lines 33-36 of hdtSkinnedMeshBody.h), but
-        // these using-declarations are not redeclared in SkyrimBody. This leaves delete ambiguous at the SkyrimBody
-        // scope under MSVC, causing RE::BSTSmartPointer<SkyrimBody> to fail when Release() invokes the destructor.*///
-
-        using SkinnedMeshBody::operator new;
-        using SkinnedMeshBody::operator delete;
-        using SkinnedMeshBody::operator new[];
-        using SkinnedMeshBody::operator delete[];
-
         SkyrimBody();
         ~SkyrimBody() override;
 

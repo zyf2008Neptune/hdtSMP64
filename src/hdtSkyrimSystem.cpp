@@ -288,17 +288,16 @@ namespace hdt
         m_model = model;
         m_filePath = path;
 
-        if (!old_system)
-        {
-            updateTransformUpDown(m_skeleton, true);
-        }
-
         XMLReader reader(reinterpret_cast<uint8_t*>(const_cast<char*>(loaded.data())), loaded.size());
         m_reader = std::addressof(reader);
-
         m_reader->nextStartElement();
+
         if (m_reader->GetName() != "system")
         {
+            if (!old_system)
+            {
+                updateTransformUpDown(m_skeleton, true);
+            }
             return nullptr;
         }
 

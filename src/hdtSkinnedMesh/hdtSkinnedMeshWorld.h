@@ -24,8 +24,8 @@ namespace hdt
         virtual auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
 
         auto stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
-                            btScalar fixedTimeStep = static_cast<btScalar>(1.) / static_cast<btScalar>(60.)) ->
-            int override;
+                            btScalar fixedTimeStep = static_cast<btScalar>(1.) / static_cast<btScalar>(60.))
+            -> int override;
 
         auto getWind() -> btVector3& { return m_windSpeed; }
         auto getWind() const -> const btVector3& { return m_windSpeed; }
@@ -41,16 +41,7 @@ namespace hdt
             }
         }
 
-
-        auto readTransform(float timeStep) const -> void
-        {
-            for (const auto& m_system : m_systems)
-            {
-                m_system->readTransform(timeStep);
-            }
-        }
-
-        auto readTransform(float timeStep) -> void
+        auto readTransform(const float timeStep) -> void
         {
             const size_t n = m_systems.size();
             if (n == 0)
@@ -66,7 +57,7 @@ namespace hdt
                 m_timeSteps[i] = m_systems[i]->prepareForRead(timeStep);
             }
 
-            concurrency::parallel_for(size_t{0}, n, [this](size_t i)
+            concurrency::parallel_for(size_t{0}, n, [this](const size_t i)
             {
                 m_systems[i]->readTransform(m_timeSteps[i]);
             });
@@ -97,4 +88,4 @@ namespace hdt
         std::vector<SkinnedMeshBody*> _bodies;
         std::vector<SkinnedMeshShape*> _shapes;
     };
-}
+} // namespace hdt
