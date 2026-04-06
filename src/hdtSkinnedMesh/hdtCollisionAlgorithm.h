@@ -16,7 +16,8 @@ namespace hdt
 
     auto checkSphereSphere(const btVector3& a, const btVector3& b, float ra, float rb, CollisionResult& res) -> bool;
 
-    inline auto BaryCoord(const btVector3& a, const btVector3& b, const btVector3& c, const btVector3& p) -> btVector3
+    static inline auto BaryCoord(const btVector3& a, const btVector3& b, const btVector3& c,
+                                 const btVector3& p) -> btVector3
     {
         auto xmm3 = a - p;
         auto xmm4 = b - p;

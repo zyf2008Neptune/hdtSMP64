@@ -7,17 +7,17 @@ namespace hdt
         BoneScaleConstraint(a, b, static_cast<btConeTwistConstraint*>(this)),
         btConeTwistConstraint(a->m_rig, b->m_rig, btTransform::getIdentity(), btTransform::getIdentity())
     {
-        const auto fa = a->m_rigToLocal * frameInA;
-        const auto fb = b->m_rigToLocal * frameInB;
-        btConeTwistConstraint::setFrames(fa, fb);
+        auto fa = a->m_rigToLocal * frameInA;
+        auto fb = b->m_rigToLocal * frameInB;
+        setFrames(fa, fb);
 
         enableMotor(false); // motor temporary not support
     }
 
     auto ConeTwistConstraint::scaleConstraint() -> void
     {
-        const auto newScaleA = m_boneA->m_currentTransform.getScale();
-        const auto newScaleB = m_boneB->m_currentTransform.getScale();
+        auto newScaleA = m_boneA->m_currentTransform.getScale();
+        auto newScaleB = m_boneB->m_currentTransform.getScale();
 
         if (btFuzzyZero(newScaleA - m_scaleA) && btFuzzyZero(newScaleB - m_scaleB))
         {
@@ -32,4 +32,4 @@ namespace hdt
         m_scaleA = newScaleA;
         m_scaleB = newScaleB;
     }
-}
+} // namespace hdt

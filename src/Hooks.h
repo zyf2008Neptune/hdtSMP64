@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <detours/detours.h>
 
 namespace Hooks
@@ -12,7 +11,7 @@ namespace Hooks
 
         static auto Hook() -> void
         {
-            REL::Relocation SkinSingleGeometryCode1{
+            REL::Relocation<uintptr_t> SkinSingleGeometryCode1{
                 REL::VariantID(26466, 27061, 0x03EBB30),
                 REL::VariantOffset(0x108, 0x10F,
                                    0x108)}; // 0x03dc1c0, 0x03F6770, 0x03EBB30 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
@@ -25,7 +24,7 @@ namespace Hooks
             logger::debug("Applying BSFaceGenNiNodeHooks hooks!");
 
             //
-            REL::Relocation BSFaceGenNiNode__vtbl{RE::VTABLE_BSFaceGenNiNode[0]};
+            REL::Relocation<uintptr_t> BSFaceGenNiNode__vtbl{RE::VTABLE_BSFaceGenNiNode[0]};
             // VR adds SKYRIM_REL_VR_VIRTUAL FixSkinInstances at slot 0x3E, pushing SkinAllGeometry to 0x3F
             BSFaceGenNiNode__vtbl.write_vfunc(REL::Module::IsVR() ? 0x3F : 0x3E, SkinAllGeometry__Hook);
 
@@ -48,7 +47,7 @@ namespace Hooks
                 // 1404332c0: 0F 84 8F 00 00 00  JZ 0x8F  140433355 (early bail)
                 // to: 0F 84 22 00 00 00  JZ 0x22   1404332e8 (actual node checks)
 
-                REL::Relocation func{RELOCATION_ID(26417, 26998)};
+                REL::Relocation<std::uintptr_t> func{RELOCATION_ID(26417, 26998)};
 
                 logger::debug("Applying FaceMorphProducer patch!");
 
@@ -67,11 +66,11 @@ namespace Hooks
         }
 
     public:
-        static auto ProcessHeadPart(RE::BSFaceGenNiNode*, RE::BGSHeadPart*, RE::NiNode*, bool) -> void;
-        static auto SkinAllGeometryCalls(RE::BSFaceGenNiNode*, RE::NiNode*, bool) -> void;
-        static auto SkinSingleGeometry__Hook(RE::BSFaceGenNiNode*, RE::NiNode*, RE::BSGeometry*, bool) -> void;
-        static auto SkinAllGeometry__Hook(RE::BSFaceGenNiNode*, RE::NiNode*, bool a_unk) -> void;
-        static auto SkinAllGeometry(RE::BSFaceGenNiNode*, RE::NiNode*, bool a_unk) -> void;
+        static auto ProcessHeadPart(RE::BSFaceGenNiNode* const, RE::BGSHeadPart*, RE::NiNode*, bool) -> void;
+        static auto SkinAllGeometryCalls(RE::BSFaceGenNiNode* const, RE::NiNode*, bool) -> void;
+        static auto SkinSingleGeometry__Hook(RE::BSFaceGenNiNode* const, RE::NiNode*, RE::BSGeometry*, bool) -> void;
+        static auto SkinAllGeometry__Hook(RE::BSFaceGenNiNode* const, RE::NiNode*, bool a_unk) -> void;
+        static auto SkinAllGeometry(RE::BSFaceGenNiNode* const, RE::NiNode*, bool a_unk) -> void;
 
         // Detour on SetBoneName entry so any caller (known or unknown) cannot write beyond FMD.bones[7].
         // Complements the loop-count cap in ApplyBoneLimitFix.
@@ -93,11 +92,11 @@ namespace Hooks
     public:
         static auto Hook() -> void
         {
-            REL::Relocation UpdateHook1{
+            REL::Relocation<uintptr_t> UpdateHook1{
                 REL::VariantID(35551, 36544, 0x05B6D70),
                 REL::VariantOffset(0x11F, 0x160,
                                    0x11F)}; // 0x05AF3D0, 0x05E7EE0, 0x05B6D70 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
-            REL::Relocation UpdateHook2{
+            REL::Relocation<uintptr_t> UpdateHook2{
                 REL::VariantID(35565, 36564, 0x05BAB10),
                 REL::VariantOffset(0x56D, 0x9DC,
                                    0x611)}; // 0x05B2FF0, 0x05EC240, 0x05BAB10 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
@@ -119,9 +118,8 @@ namespace Hooks
             logger::debug("...success");
         }
 
-        static auto Update(RE::Main*) -> void;
-
-        static auto Unk_sub(void* a_this) -> void; // RE::BSBethesdaPlatform*
+        static auto Update(RE::Main* const) -> void;
+        static auto Unk_sub(void*) -> void; // RE::BSBethesdaPlatform*
     public:
         static inline REL::Relocation<decltype(&Unk_sub)> _Unk_sub;
         static inline REL::Relocation<decltype(&Update)> _Update;
@@ -136,22 +134,23 @@ namespace Hooks
             logger::debug("Applying ActorEquipManagerHooks hooks!");
 
             //
-            DetourAttach(reinterpret_cast<PVOID*>(&_func), reinterpret_cast<PVOID>(func));
+            DetourAttach((PVOID*)(&_func), (PVOID)func);
 
             //
             logger::debug("...success");
         }
 
-        static auto func(RE::ActorEquipManager*, RE::Actor*, RE::TESBoundObject*, RE::ExtraDataList*, std::uint32_t,
-                         const RE::BGSEquipSlot*, bool, bool, bool, bool, const RE::BGSEquipSlot*) -> bool;
+        static auto func(RE::ActorEquipManager* const, RE::Actor*, RE::TESBoundObject*, RE::ExtraDataList*,
+                         std::uint32_t, const RE::BGSEquipSlot*, bool, bool, bool, bool,
+                         const RE::BGSEquipSlot*) -> bool;
 
     protected:
         using func_t = decltype(func);
 
     private:
-        static inline func_t* _func{reinterpret_cast<func_t*>(
-            REL::VariantID(37945, 38901, 0x06411A0)
-            .address())}; // 0x0638190, 0x0670210, 0x06411A0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
+        static inline func_t* _func{
+            (func_t*)REL::VariantID(37945, 38901, 0x06411A0)
+            .address()}; // 0x0638190, 0x0670210, 0x06411A0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
     };
 
     class BipedAnimHooks
@@ -165,22 +164,22 @@ namespace Hooks
             logger::debug("Applying BipedAnimHooks hooks!");
 
             //
-            DetourAttach(reinterpret_cast<PVOID*>(&_func), reinterpret_cast<PVOID>(func));
+            DetourAttach((PVOID*)(&_func), (PVOID)func);
 
             //
             logger::debug("...success");
         }
 
-        static auto func(RE::BipedAnim*, RE::NiNode*, RE::BSFadeNode*, uint32_t, void*, void*, void*)
-            -> RE::NiAVObject*;
+        static auto func(RE::BipedAnim* const, RE::NiNode*, RE::BSFadeNode*, uint32_t, void*, void*,
+                         void*) -> RE::NiAVObject*;
 
     protected:
         using func_t = decltype(func);
 
     private:
-        static inline func_t* _func{reinterpret_cast<func_t*>(
-            REL::VariantID(15535, 15712, 0x01DB9E0)
-            .address())}; // 0x01CAFB0, 0x01D83B0, 0x01DB9E0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
+        static inline func_t* _func{
+            (func_t*)REL::VariantID(15535, 15712, 0x01DB9E0)
+            .address()}; // 0x01CAFB0, 0x01D83B0, 0x01DB9E0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
     };
 
     auto Install() -> void;

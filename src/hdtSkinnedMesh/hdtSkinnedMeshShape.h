@@ -1,7 +1,5 @@
 #pragma once
 
-#include <LinearMath/btScalar.h>
-
 #include "hdtCollider.h"
 #include "hdtCollisionAlgorithm.h"
 #include "hdtSkinnedMeshBody.h"
@@ -17,7 +15,7 @@ namespace hdt
         BT_DECLARE_ALIGNED_ALLOCATOR()
 
         SkinnedMeshShape(SkinnedMeshBody* body);
-        virtual ~SkinnedMeshShape() = default;
+        virtual ~SkinnedMeshShape();
 
         virtual auto asPerVertexShape() -> PerVertexShape* { return nullptr; }
         virtual auto asPerTriangleShape() -> PerTriangleShape* { return nullptr; }
@@ -28,7 +26,6 @@ namespace hdt
         virtual auto finishBuild() -> void = 0;
         virtual auto internalUpdate() -> void = 0;
         virtual auto markUsedVertices(bool* flags) -> void = 0;
-        virtual auto markUsedVertices(std::vector<bool>& flags) -> void = 0;
         virtual auto remapVertices(UINT* map) -> void = 0;
 
         virtual auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float = 0;
@@ -48,38 +45,37 @@ namespace hdt
     {
     public:
         PerVertexShape(SkinnedMeshBody* body);
-        ~PerVertexShape() override = default;
+        virtual ~PerVertexShape();
 
         auto asPerVertexShape() -> PerVertexShape* override { return this; }
         auto internalUpdate() -> void override;
 
-        auto getBonePerCollider() -> int final { return 4; }
+        inline auto getBonePerCollider() -> int override final { return 4; }
 
-        auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float final
+        inline auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float override final
         {
             return m_owner->m_vertices[c->vertex].m_weight[boneIdx];
         }
 
-        auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int final
+        inline auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int override final
         {
             return m_owner->m_vertices[c->vertex].getBoneIdx(boneIdx);
         }
 
-        auto baryCoord([[maybe_unused]] const Collider* c,
-                       [[maybe_unused]] const btVector3& p) -> btVector3 final
+        inline auto baryCoord([[maybe_unused]] const Collider* c,
+                              [[maybe_unused]] const btVector3& p) -> btVector3 override final
         {
-            return {1, 1, 1};
+            return btVector3(1, 1, 1);
         }
 
-        auto baryWeight([[maybe_unused]] const btVector3& w,
-                        [[maybe_unused]] int boneIdx) -> float final
+        inline auto baryWeight([[maybe_unused]] const btVector3& w,
+                               [[maybe_unused]] int boneIdx) -> float override final
         {
             return 1;
         }
 
         auto finishBuild() -> void override;
         auto markUsedVertices(bool* flags) -> void override;
-        auto markUsedVertices(std::vector<bool>& flags) -> void override;
         auto remapVertices(UINT* map) -> void override;
         auto autoGen() -> void;
 
@@ -93,35 +89,34 @@ namespace hdt
     {
     public:
         PerTriangleShape(SkinnedMeshBody* body);
-        ~PerTriangleShape() override = default;
+        virtual ~PerTriangleShape();
 
         auto asPerVertexShape() -> PerVertexShape* override { return m_verticesCollision.get(); }
         auto asPerTriangleShape() -> PerTriangleShape* override { return this; }
         auto internalUpdate() -> void override;
 
-        auto getBonePerCollider() -> int final { return 12; }
+        inline auto getBonePerCollider() -> int override final { return 12; }
 
-        auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float final
+        inline auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float override final
         {
             return m_owner->m_vertices[c->vertices[boneIdx / 4]].m_weight[boneIdx % 4];
         }
 
-        auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int final
+        inline auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int override final
         {
             return m_owner->m_vertices[c->vertices[boneIdx / 4]].getBoneIdx(boneIdx % 4);
         }
 
-        auto baryCoord(const Collider* c, const btVector3& p) -> btVector3 final
+        inline auto baryCoord(const Collider* c, const btVector3& p) -> btVector3 override final
         {
             return BaryCoord(m_owner->m_vpos[c->vertices[0]].pos(), m_owner->m_vpos[c->vertices[1]].pos(),
                              m_owner->m_vpos[c->vertices[2]].pos(), p);
         }
 
-        auto baryWeight(const btVector3& w, int boneIdx) -> float final { return w[boneIdx / 4]; }
+        inline auto baryWeight(const btVector3& w, int boneIdx) -> float override final { return w[boneIdx / 4]; }
 
         auto finishBuild() -> void override;
         auto markUsedVertices(bool* flags) -> void override;
-        auto markUsedVertices(std::vector<bool>& flags) -> void override;
         auto remapVertices(UINT* map) -> void override;
 
         auto addTriangle(int p0, int p1, int p2) -> void;

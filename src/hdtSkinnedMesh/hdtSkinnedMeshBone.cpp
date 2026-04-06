@@ -1,9 +1,5 @@
 #include "hdtSkinnedMeshBone.h"
 
-#include <algorithm>
-
-#include <RE/B/BSFixedString.h>
-
 namespace hdt
 {
     SkinnedMeshBone::SkinnedMeshBone(const RE::BSFixedString& name, btRigidBody::btRigidBodyConstructionInfo& ci) :
@@ -18,6 +14,8 @@ namespace hdt
         m_rig.setUserPointer(this);
     }
 
+    SkinnedMeshBone::~SkinnedMeshBone() {}
+
     auto SkinnedMeshBone::internalUpdate() -> void
     {
         auto t = m_rigToLocal * m_rig.getInterpolationWorldTransform();
@@ -29,8 +27,10 @@ namespace hdt
     {
         if (m_canCollideWithBone.size())
         {
-            return std::ranges::find(m_canCollideWithBone, rhs->m_name) != m_canCollideWithBone.end();
+            return std::find(m_canCollideWithBone.begin(), m_canCollideWithBone.end(), rhs->m_name) !=
+                m_canCollideWithBone.end();
         }
-        return std::ranges::find(m_noCollideWithBone, rhs->m_name) == m_noCollideWithBone.end();
+        return std::find(m_noCollideWithBone.begin(), m_noCollideWithBone.end(), rhs->m_name) ==
+            m_noCollideWithBone.end();
     }
 } // namespace hdt

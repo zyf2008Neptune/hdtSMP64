@@ -10,36 +10,40 @@ namespace hdt
         m_owner->m_shape = hdt::make_smart(this);
     }
 
+    SkinnedMeshShape::~SkinnedMeshShape()
+    {
+        // m_aabbGridLink.discard_data();
+        // m_aabbGridBuffer.discard_data();
+    }
+
     auto SkinnedMeshShape::clipColliders() -> void
     {
-        m_tree.clipCollider([&, this](const Collider& n)-> bool
-        {
-            auto flg = false;
-            for (auto i = 0; i < getBonePerCollider() && !flg; ++i)
+        m_tree.clipCollider(
+            [&, this](const Collider& n) -> bool
             {
-                const float weight = getColliderBoneWeight(&n, i);
-                if (weight > FLT_EPSILON && weight > m_owner->m_skinnedBones[getColliderBoneIndex(&n, i)].
-                    weightThreshold)
+                bool flg = false;
+                for (int i = 0; i < getBonePerCollider() && !flg; ++i)
                 {
-                    flg = true;
+                    float weight = getColliderBoneWeight(&n, i);
+                    if (weight > FLT_EPSILON &&
+                        weight > m_owner->m_skinnedBones[getColliderBoneIndex(&n, i)].weightThreshold)
+                    {
+                        flg = true;
+                    }
                 }
-            }
-            return !flg;
-        });
+                return !flg;
+            });
     }
 
     PerVertexShape::PerVertexShape(SkinnedMeshBody* body) :
-        SkinnedMeshShape(body)
-    {
-    }
+        SkinnedMeshShape(body) {}
+
+    PerVertexShape::~PerVertexShape() {}
 
     auto PerVertexShape::finishBuild() -> void
     {
         m_tree.optimize();
-        m_tree.updateKinematic([this](const Collider* n)
-        {
-            return m_owner->flexible(m_owner->m_vertices[n->vertex]);
-        });
+        m_tree.updateKinematic([this](const Collider* n) { return m_owner->flexible(m_owner->m_vertices[n->vertex]); });
 
         m_owner->setCollisionFlags(m_tree.isKinematic ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
 
@@ -59,11 +63,11 @@ namespace hdt
 
         for (size_t i = 0; i < size; ++i)
         {
-            const __m128 p0 = vertices[colliders[i].vertex].m_data;
+            __m128 p0 = vertices[colliders[i].vertex].m_data;
 
             // Broadcast the W component and multiply by margin factor
-            const __m128 bcast = _mm_shuffle_ps(p0, p0, _MM_SHUFFLE(3, 3, 3, 3));
-            const __m128 margin = _mm_mul_ps(bcast, marginFactor);
+            __m128 bcast = _mm_shuffle_ps(p0, p0, _MM_SHUFFLE(3, 3, 3, 3));
+            __m128 margin = _mm_mul_ps(bcast, marginFactor);
 
             // Force 16-byte aligned vector stores to prevent MSVC scalar assignment fallback
             _mm_store_ps(reinterpret_cast<float*>(&aabbs[i].m_min), _mm_sub_ps(p0, margin));
@@ -93,15 +97,7 @@ namespace hdt
 
     auto PerVertexShape::markUsedVertices(bool* flags) -> void
     {
-        for (const auto& i : m_colliders)
-        {
-            flags[i.vertex] = true;
-        }
-    }
-
-    auto PerVertexShape::markUsedVertices(std::vector<bool>& flags) -> void
-    {
-        for (const auto& i : m_colliders)
+        for (auto& i : m_colliders)
         {
             flags[i.vertex] = true;
         }
@@ -116,9 +112,9 @@ namespace hdt
     }
 
     PerTriangleShape::PerTriangleShape(SkinnedMeshBody* body) :
-        SkinnedMeshShape(body)
-    {
-    }
+        SkinnedMeshShape(body) {}
+
+    PerTriangleShape::~PerTriangleShape() {}
 
     // Note: Don't waste your time trying to optimize this...
     // 1: The compiler auto-vertorizes, unrolls, and broadcasts W already (Very sensitive to changes)
@@ -156,13 +152,14 @@ namespace hdt
     auto PerTriangleShape::finishBuild() -> void
     {
         m_tree.optimize();
-        m_tree.updateKinematic([=](const Collider* c)
-        {
-            float k = m_owner->flexible(m_owner->m_vertices[c->vertices[0]]);
-            k += m_owner->flexible(m_owner->m_vertices[c->vertices[1]]);
-            k += m_owner->flexible(m_owner->m_vertices[c->vertices[2]]);
-            return k / 3;
-        });
+        m_tree.updateKinematic(
+            [=](const Collider* c)
+            {
+                float k = m_owner->flexible(m_owner->m_vertices[c->vertices[0]]);
+                k += m_owner->flexible(m_owner->m_vertices[c->vertices[1]]);
+                k += m_owner->flexible(m_owner->m_vertices[c->vertices[2]]);
+                return k / 3;
+            });
 
         m_owner->setCollisionFlags(m_tree.isKinematic ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
 
@@ -182,19 +179,7 @@ namespace hdt
 
     auto PerTriangleShape::markUsedVertices(bool* flags) -> void
     {
-        for (const auto& i : m_colliders)
-        {
-            flags[i.vertices[0]] = true;
-            flags[i.vertices[1]] = true;
-            flags[i.vertices[2]] = true;
-        }
-
-        m_verticesCollision->markUsedVertices(flags);
-    }
-
-    auto PerTriangleShape::markUsedVertices(std::vector<bool>& flags) -> void
-    {
-        for (const auto& i : m_colliders)
+        for (auto& i : m_colliders)
         {
             flags[i.vertices[0]] = true;
             flags[i.vertices[1]] = true;
@@ -221,7 +206,7 @@ namespace hdt
         assert(a < m_owner->m_vertices.size());
         assert(b < m_owner->m_vertices.size());
         assert(c < m_owner->m_vertices.size());
-        const Collider collider(a, b, c);
+        Collider collider(a, b, c);
 
         // Stacklocal fixed arrays, max 12 unique bones (3 verts * 4 weights)
         U32 keys[12];
@@ -237,12 +222,12 @@ namespace hdt
         {
             for (int wi = 0; wi < 4; ++wi)
             {
-                const float weight = verts[vi]->m_weight[wi];
+                float weight = verts[vi]->m_weight[wi];
                 if (weight < FLT_EPSILON)
                 {
                     continue;
                 }
-                const U32 bone = verts[vi]->getBoneIdx(wi);
+                U32 bone = verts[vi]->getBoneIdx(wi);
 
                 int found = -1;
                 for (int k = 0; k < count; ++k)
@@ -268,8 +253,8 @@ namespace hdt
 
         for (int i = 1; i < count; ++i)
         {
-            const float wTemp = w[i];
-            const U32 kTemp = keys[i];
+            float wTemp = w[i];
+            U32 kTemp = keys[i];
             int j = i;
             while (j > 0 && (w[j - 1] < wTemp || (w[j - 1] == wTemp && keys[j - 1] > kTemp)))
             {
@@ -283,4 +268,4 @@ namespace hdt
 
         m_tree.insertCollider(keys, count, collider);
     }
-}
+} // namespace hdt

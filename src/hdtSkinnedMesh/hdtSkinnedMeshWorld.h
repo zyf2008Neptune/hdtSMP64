@@ -1,16 +1,9 @@
 #pragma once
 
-#include <vector>
-
 #include <BulletCollision/CollisionDispatch/btSimulationIslandManager.h>
-#include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
-#include <LinearMath/btScalar.h>
-#include <LinearMath/btVector3.h>
-#include <RE/B/BSTSmartPointer.h>
-
-#include "hdtSkinnedMeshBody.h"
 #include "hdtSkinnedMeshSystem.h"
+#include "hdtSkyrimSystem.h"
 
 namespace hdt
 {
@@ -18,14 +11,13 @@ namespace hdt
     {
     public:
         SkinnedMeshWorld();
-        ~SkinnedMeshWorld() override;
+        ~SkinnedMeshWorld();
 
         virtual auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
         virtual auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
 
         auto stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
-                            btScalar fixedTimeStep = static_cast<btScalar>(1.) / static_cast<btScalar>(60.))
-            -> int override;
+                            btScalar fixedTimeStep = btScalar(1.) / btScalar(60.)) -> int override;
 
         auto getWind() -> btVector3& { return m_windSpeed; }
         auto getWind() const -> const btVector3& { return m_windSpeed; }
@@ -35,13 +27,13 @@ namespace hdt
 
         virtual auto resetTransformsToOriginal() -> void
         {
-            for (const auto& m_system : m_systems)
+            for (int i = 0; i < m_systems.size(); ++i)
             {
-                m_system->resetTransformsToOriginal();
+                m_systems[i]->resetTransformsToOriginal();
             }
         }
 
-        auto readTransform(const float timeStep) -> void
+        auto readTransform(float timeStep) -> void
         {
             const size_t n = m_systems.size();
             if (n == 0)
@@ -57,22 +49,19 @@ namespace hdt
                 m_timeSteps[i] = m_systems[i]->prepareForRead(timeStep);
             }
 
-            concurrency::parallel_for(size_t{0}, n, [this](const size_t i)
-            {
-                m_systems[i]->readTransform(m_timeSteps[i]);
-            });
+            concurrency::parallel_for(size_t{0}, n, [this](size_t i) { m_systems[i]->readTransform(m_timeSteps[i]); });
         }
 
-        auto writeTransform() const -> void
+        auto writeTransform() -> void
         {
-            for (const auto& m_system : m_systems)
+            for (int i = 0; i < m_systems.size(); ++i)
             {
-                m_system->writeTransform();
+                m_systems[i]->writeTransform();
             }
         }
 
         auto applyGravity() -> void override;
-        auto applyWind() const -> void;
+        auto applyWind() -> void;
 
         auto predictUnconstraintMotion(btScalar timeStep) -> void override;
         auto integrateTransforms(btScalar timeStep) -> void override;

@@ -14,7 +14,7 @@ namespace hdt
 
     class SkinnedMeshSystem : public RE::BSIntrusiveRefCounted
     {
-        friend class SkinnedMeshWorld;
+        friend class hdt::SkinnedMeshWorld;
 
     public:
         virtual ~SkinnedMeshSystem() = default;
@@ -24,9 +24,9 @@ namespace hdt
         virtual auto readTransform(float timeStep) -> void;
         virtual auto writeTransform() -> void;
 
-        auto internalUpdate() const -> void;
+        auto internalUpdate() -> void;
 
-        auto gather(std::vector<SkinnedMeshBody*>& bodies, std::vector<SkinnedMeshShape*>& shapes) const -> void;
+        auto gather(std::vector<SkinnedMeshBody*>& bodies, std::vector<SkinnedMeshShape*>& shapes) -> void;
 
         auto valid() const -> bool { return !m_bones.empty(); }
 

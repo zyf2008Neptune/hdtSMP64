@@ -29,6 +29,6 @@ namespace hdt
         auto loadDefaultBBPs() -> void;
         auto scanDefaultBBP(RE::NiNode* scan) -> PhysicsFile_t;
         auto getNameMap(RE::NiNode* armor) -> NameMap_t;
-        static auto defaultNameMap(RE::NiNode* armor) -> NameMap_t;
+        auto defaultNameMap(RE::NiNode* armor) -> NameMap_t;
     };
-}
+} // namespace hdt

@@ -1,63 +1,17 @@
 #pragma once
 
-#include <unordered_set>
-#include <vector>
-
-#include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
-#include <BulletCollision/CollisionShapes/btCollisionShape.h>
-#include <LinearMath/btScalar.h>
-#include <LinearMath/btTransform.h>
-#include <LinearMath/btVector3.h>
-#include <RE/B/BSFixedString.h>
-#include <RE/B/BSIntrusiveRefCounted.h>
-#include <RE/B/BSTSmartPointer.h>
-
 #include "hdtAABB.h"
-#include "hdtBone.h"
 #include "hdtBulletHelper.h"
 #include "hdtSkinnedMeshBone.h"
 #include "hdtVertex.h"
+
+#include <BulletCollision/Gimpact/btBoxCollision.h>
 
 namespace hdt
 {
     class SkinnedMeshShape;
 
-    struct CollisionShape : btCollisionShape // move out of SkinnedMeshBody ...
-    {
-        CollisionShape() :
-            m_aabb(_mm_setzero_ps(), _mm_setzero_ps()) { m_shapeType = CUSTOM_CONCAVE_SHAPE_TYPE; }
-
-        Aabb m_aabb;
-
-        auto getAabb([[maybe_unused]] const btTransform& t, btVector3& aabbMin, btVector3& aabbMax) const
-            -> void override
-        {
-            aabbMin = m_aabb.m_min;
-            aabbMax = m_aabb.m_max;
-        }
-
-        auto setLocalScaling([[maybe_unused]] const btVector3& scaling) -> void override {}
-
-        auto getLocalScaling() const -> const btVector3& override
-        {
-            static const btVector3 ret(1, 1, 1);
-            return ret;
-        }
-
-        auto calculateLocalInertia([[maybe_unused]] btScalar mass, [[maybe_unused]] btVector3& inertia) const
-            -> void override
-        {}
-
-        auto getName() const -> const char* override { return "btSkinnedMeshBody"; }
-        auto getMargin() const -> btScalar override { return 0; }
-
-        auto setMargin([[maybe_unused]] btScalar m) -> void override {}
-    };
-
-    class SkinnedMeshBody :
-        public btCollisionObject,
-        public RE::BSIntrusiveRefCounted
+    class SkinnedMeshBody : public btCollisionObject, public RE::BSIntrusiveRefCounted
     {
     public:
         using btCollisionObject::operator new;
@@ -65,10 +19,41 @@ namespace hdt
         using btCollisionObject::operator new[];
         using btCollisionObject::operator delete[];
 
+    public:
         SkinnedMeshBody();
-        ~SkinnedMeshBody() override;
+        virtual ~SkinnedMeshBody();
 
-        CollisionShape m_bulletShape;
+        struct CollisionShape : public btCollisionShape // a shape only used for markout
+        {
+            CollisionShape() :
+                m_aabb(_mm_setzero_ps(), _mm_setzero_ps()) { m_shapeType = CUSTOM_CONCAVE_SHAPE_TYPE; }
+
+            Aabb m_aabb;
+
+            auto getAabb([[maybe_unused]] const btTransform& t, btVector3& aabbMin,
+                         btVector3& aabbMax) const -> void override
+            {
+                aabbMin = m_aabb.m_min;
+                aabbMax = m_aabb.m_max;
+            }
+
+            auto setLocalScaling([[maybe_unused]] const btVector3& scaling) -> void override {}
+
+            auto getLocalScaling() const -> const btVector3& override
+            {
+                static const btVector3 ret(1, 1, 1);
+                return ret;
+            }
+
+            auto calculateLocalInertia([[maybe_unused]] btScalar mass,
+                                       [[maybe_unused]] btVector3& inertia) const -> void override
+            {}
+
+            auto getName() const -> const char* override { return "btSkinnedMeshBody"; }
+            auto getMargin() const -> btScalar override { return 0; }
+
+            auto setMargin([[maybe_unused]] btScalar m) -> void override {}
+        } m_bulletShape;
 
         struct SkinnedBone
         {
@@ -83,12 +68,12 @@ namespace hdt
         RE::BSFixedString m_name;
 
         //		int m_priority;
-        bool m_isKinematic{};
-        bool m_useBoundingSphere{};
+        bool m_isKinematic;
+        bool m_useBoundingSphere;
         RE::BSTSmartPointer<SkinnedMeshShape> m_shape;
 
-        auto addBone(SkinnedMeshBone* bone, const btQsTransform& verticesToBone, const BoundingSphere& boundingSphere)
-            -> int;
+        auto addBone(SkinnedMeshBone* bone, const btQsTransform& verticesToBone,
+                     const BoundingSphere& boundingSphere) -> int;
 
         auto finishBuild() -> void;
         virtual auto internalUpdate() -> void;
@@ -105,7 +90,7 @@ namespace hdt
         std::unordered_set<SkinnedMeshBone*> m_canCollideWithBones;
         std::unordered_set<SkinnedMeshBone*> m_noCollideWithBones;
 
-        auto flexible(const Vertex& v) const -> float;
+        auto flexible(const Vertex& v) -> float;
 
         auto canCollideWith(const SkinnedMeshBone* bone) const -> bool
         {
@@ -119,6 +104,6 @@ namespace hdt
         virtual auto canCollideWith(const SkinnedMeshBody* body) const -> bool;
 
         auto updateBoundingSphereAabb() -> void;
-        auto isBoundingSphereCollided(const SkinnedMeshBody* rhs) const -> bool;
+        auto isBoundingSphereCollided(SkinnedMeshBody* rhs) -> bool;
     };
 } // namespace hdt

@@ -1,16 +1,5 @@
 #pragma once
 
-#include <cstdint>
-#include <fstream>
-#include <string>
-
-#include <RE/B/BSDynamicTriShape.h>
-#include <RE/B/BSFixedString.h>
-#include <RE/B/BSResourceNiBinaryStream.h>
-#include <RE/B/BSTriShape.h>
-#include <RE/N/NiAVObject.h>
-#include <RE/N/NiNode.h>
-
 namespace hdt
 {
     // Returns true if obj looks like a valid NiObject safe to call virtuals on.
@@ -20,9 +9,9 @@ namespace hdt
     // address (> 0x7FFFFFFFFFFF) that faults on access. We also guard against null
     // vtable slots (stub objects from unknown NIF block types).
     // NiObject vtable layout: [0]=~NiRefObject, [1]=DeleteThis, [2]=GetRTTI, [3]=AsNode
-    inline constexpr auto kCanonicalUserSpaceMax = 0x00007FFFFFFFFFFFull;
+    static constexpr uintptr_t kCanonicalUserSpaceMax = 0x00007FFFFFFFFFFFull;
 
-    inline auto isValidNiObject(const RE::NiAVObject* obj) -> bool
+    static inline auto isValidNiObject(const RE::NiAVObject* obj) -> bool
     {
         if (!obj)
         {
@@ -45,7 +34,7 @@ namespace hdt
     // offset 0x158). VR uses slot 0x2B because ApplyLocalTransformToWorld is inserted at
     // slot 26, shifting all SKYRIM_REL_VR_VIRTUAL entries by +1 relative to SE's 0x2A.
     // VR creates these stubs for SE-specific NIF block types it can't fully instantiate.
-    inline auto isVRNiStreamStub(const RE::NiAVObject* obj) -> bool
+    static inline auto isVRNiStreamStub(const RE::NiAVObject* obj) -> bool
     {
         if (!isValidNiObject(obj))
         {
@@ -56,47 +45,51 @@ namespace hdt
         return slotGetObjectByName == 0 || slotGetObjectByName > kCanonicalUserSpaceMax;
     }
 
-    inline auto setNiNodeName(RE::NiNode* node, const char* name) -> void
+    static inline auto setNiNodeName(RE::NiNode* node, const char* name) -> void { node->name = name; }
+
+    static inline auto castNiNode(RE::NiAVObject* obj) -> RE::NiNode*
     {
-        node->name = name;
+        if (!isValidNiObject(obj))
+        {
+            if (obj)
+            {
+                logger::warn(
+                    "castNiNode: skipping object at {:p} with invalid vtable (VR NiStream stub or unresolved bone ref)",
+                    static_cast<const void*>(obj));
+            }
+            return nullptr;
+        }
+        return obj->AsNode();
     }
 
-    inline auto castNiNode(RE::NiAVObject* obj) -> RE::NiNode*
-    {
-        return obj ? obj->AsNode() : nullptr;
-    }
+    inline auto castBSTriShape(RE::NiAVObject* obj) -> RE::BSTriShape* { return obj ? obj->AsTriShape() : nullptr; }
 
-    inline auto castBSTriShape(RE::NiAVObject* obj) -> RE::BSTriShape*
-    {
-        return obj ? obj->AsTriShape() : nullptr;
-    }
-
-    inline auto castBSDynamicTriShape(RE::NiAVObject* obj) -> RE::BSDynamicTriShape*
+    static inline auto castBSDynamicTriShape(RE::NiAVObject* obj) -> RE::BSDynamicTriShape*
     {
         return obj ? obj->AsDynamicTriShape() : nullptr;
     }
 
-    inline auto findObject(RE::NiAVObject* obj, const RE::BSFixedString& name) -> RE::NiAVObject*
+    static inline auto findObject(RE::NiAVObject* obj, const RE::BSFixedString& name) -> RE::NiAVObject*
     {
-        return obj ? obj->GetObjectByName(name) : nullptr;
+        return obj->GetObjectByName(name);
     }
 
-    inline auto findNode(RE::NiNode* obj, const RE::BSFixedString& name) -> RE::NiNode*
+    static inline auto findNode(RE::NiNode* obj, const RE::BSFixedString& name) -> RE::NiNode*
     {
-        const auto ret = dynamic_cast<RE::NiNode*>(findObject(obj, name));
+        auto ret = obj->GetObjectByName(name);
         return ret ? ret->AsNode() : nullptr;
     }
 
-    inline auto readAllFile(const char* path) -> std::string
+    static inline auto readAllFile(const char* path) -> std::string
     {
         RE::BSResourceNiBinaryStream stream(path);
         if (!stream.good())
         {
-            return {};
+            return "";
         }
 
         //
-        std::string file;
+        std::string file = "";
 
         //
         size_t required = stream.stream->totalSize;
@@ -105,58 +98,58 @@ namespace hdt
         file.resize(required);
 
         //
-        stream.read(file.data(), static_cast<uint32_t>(required));
+        stream.read((char*)file.data(), (uint32_t)required);
 
         //
         return file;
     }
 
-    inline auto readAllFile2(const char* path) -> std::string
+    static inline auto readAllFile2(const char* path) -> std::string
     {
         std::ifstream stream(path, std::ios::binary);
         if (!stream.is_open())
         {
-            return {};
+            return "";
         }
 
         stream.seekg(0, std::ios::end);
-        const auto size = stream.tellg();
+        auto size = stream.tellg();
         stream.seekg(0, std::ios::beg);
         std::string ret;
         ret.resize(size);
-        stream.read(ret.data(), size);
+        stream.read(&ret[0], size);
         return ret;
     }
 
-    inline auto updateTransformUpDown(RE::NiAVObject* obj, bool dirty) -> void
+    static inline auto updateTransformUpDown(RE::NiAVObject* obj, bool dirty) -> void
     {
         if (!obj)
         {
             return;
         }
 
-        RE::NiUpdateData ctx = {
-            0.f,
-            dirty ? RE::NiUpdateData::Flag::kDirty : RE::NiUpdateData::Flag::kNone
-        };
+        RE::NiUpdateData ctx = {0.f, dirty ? RE::NiUpdateData::Flag::kDirty : RE::NiUpdateData::Flag::kNone};
 
         //
         obj->UpdateWorldData(&ctx);
 
-		//
-		RE::NiNode* node = castNiNode(obj);
-		if (node) {
-			for (auto& child : node->GetChildren()) {
-				if (child) {
-					updateTransformUpDown(child.get(), dirty);
-				}
-			}
-		}
-	}
+        //
+        RE::NiNode* node = castNiNode(obj);
+        if (node)
+        {
+            for (auto& child : node->GetChildren())
+            {
+                if (child)
+                {
+                    updateTransformUpDown(child.get(), dirty);
+                }
+            }
+        }
+    }
 
-	static inline RE::NiPoint3 rotate(const RE::NiPoint3& v, const RE::NiPoint3& axis, float theta)
-	{
-		const float cosTheta = std::cos(theta);
-		return (v * cosTheta) + (axis.Cross(v) * std::sin(theta)) + (axis * axis.Dot(v)) * (1.0f - cosTheta);
-	}
-}
+    static inline auto rotate(const RE::NiPoint3& v, const RE::NiPoint3& axis, float theta) -> RE::NiPoint3
+    {
+        const float cosTheta = std::cos(theta);
+        return (v * cosTheta) + (axis.Cross(v) * std::sin(theta)) + (axis * axis.Dot(v)) * (1.0f - cosTheta);
+    }
+} // namespace hdt

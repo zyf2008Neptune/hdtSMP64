@@ -1,18 +1,12 @@
 #pragma once
 
-#include <atomic>
+#include <btBulletCollisionCommon.h>
+#include <btBulletDynamicsCommon.h>
+
 #include <bit>
 #include <cassert>
 #include <cfloat>
-#include <limits>
-
-#include <xmmintrin.h>
-
-#include <LinearMath/btMatrix3x3.h>
-#include <LinearMath/btQuaternion.h>
-#include <LinearMath/btScalar.h>
-#include <LinearMath/btTransform.h>
-#include <LinearMath/btVector3.h>
+#include <intrin.h>
 
 #ifdef min
 #undef min
@@ -97,11 +91,6 @@ namespace hdt
 
     inline auto rsqrt(const float number) -> float
     {
-        if (number <= 0.0f)
-        {
-            return std::numeric_limits<float>::infinity();
-        }
-
         const __m128 n = _mm_set_ss(number);
         const __m128 est = _mm_rsqrt_ss(n);
 
@@ -147,7 +136,8 @@ namespace hdt
 
     inline auto aligned2Pow(const U32 lim) -> U32 { return std::bit_floor(lim); }
 
-    ATTRIBUTE_ALIGNED16(class) btQsTransform
+    ATTRIBUTE_ALIGNED16(class)
+    btQsTransform
     {
         btQuaternion m_basis;
         btVector4 m_originScale;
@@ -170,7 +160,7 @@ namespace hdt
 #endif
         }
 
-        explicit btQsTransform(const btTransform& t, const float s = 1.0f) :
+        btQsTransform(const btTransform& t, const float s = 1.0f) :
             m_basis(t.getRotation())
         {
 #ifdef BT_ALLOW_SSE4
@@ -272,7 +262,7 @@ namespace hdt
     public:
         btMatrix4x3() = default;
 
-        explicit btMatrix4x3(const btQsTransform& t)
+        btMatrix4x3(const btQsTransform& t)
         {
             this->setRotation(t.getBasis());
             const __m128 scale = pshufd<0xFF>(t.getOrigin().get128());
@@ -342,7 +332,7 @@ namespace hdt
     public:
         btMatrix4x3T() = default;
 
-        explicit btMatrix4x3T(const btQsTransform& t)
+        btMatrix4x3T(const btQsTransform& t)
         {
             btMatrix3x3 rot;
             rot.setRotation(t.getBasis());
@@ -359,7 +349,7 @@ namespace hdt
             return m_col[0] * rhs[0] + m_col[1] * rhs[1] + m_col[2] * rhs[2] + m_col[3];
         }
 
-        auto operator*(const btMatrix4x3T& r) const -> btMatrix4x3T // should not overload operator pointer
+        auto operator*(const btMatrix4x3T& r) const -> btMatrix4x3T
         {
             btMatrix4x3T ret;
             ret.m_col[0] = m_col[0] * r.m_col[0][0] + m_col[1] * r.m_col[0][1] + m_col[2] * r.m_col[0][2];

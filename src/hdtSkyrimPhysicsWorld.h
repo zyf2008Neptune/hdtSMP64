@@ -1,39 +1,26 @@
 #pragma once
-#include <atomic>
-#include <cstdint>
-#include <functional>
-#include <mutex>
 
-#include <ppl.h>
-#include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
-#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
-#include <LinearMath/btVector3.h>
-#include <RE/B/BSTEvent.h>
-#include <RE/N/NiPoint3.h>
-#include <SKSE/Events.h>
-
+#include "ActorManager.h"
 #include "Events.h"
-#include "hdtConvertNi.h"
-#include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
+#include "hdtSkyrimSystem.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
 
 namespace hdt
 {
-    inline constexpr float RESET_PHYSICS = -10.0f;
+    constexpr float RESET_PHYSICS = -10.0f;
 
-    class SkyrimPhysicsWorld :
-        protected SkinnedMeshWorld,
-        public RE::BSTEventSink<Events::FrameEvent>,
-        public RE::BSTEventSink<Events::ShutdownEvent>,
-        public RE::BSTEventSink<SKSE::CameraEvent>,
-        public RE::BSTEventSink<Events::FrameSyncEvent>
+    class SkyrimPhysicsWorld : protected SkinnedMeshWorld,
+                               public RE::BSTEventSink<Events::FrameEvent>,
+                               public RE::BSTEventSink<Events::ShutdownEvent>,
+                               public RE::BSTEventSink<SKSE::CameraEvent>,
+                               public RE::BSTEventSink<Events::FrameSyncEvent>
     {
     public:
         static auto get() -> SkyrimPhysicsWorld*;
 
-        auto doUpdate(float interval) -> void;
-        auto doUpdate2ndStep(float delta, float tick, float remainingTimeStep) -> void;
-        auto updateActiveState() const -> void;
+        auto doUpdate(float delta) -> void;
+        auto doUpdate2ndStep(float delta, const float tick, const float remainingTimeStep) -> void;
+        auto updateActiveState() -> void;
 
         auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
         auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
@@ -42,16 +29,16 @@ namespace hdt
         auto resetTransformsToOriginal() -> void override;
         auto resetSystems() -> void;
 
-        auto ProcessEvent(const Events::FrameEvent* e,
-                          RE::BSTEventSource<Events::FrameEvent>*) -> RE::BSEventNotifyControl override;
-        auto ProcessEvent(const Events::FrameSyncEvent* e,
-                          RE::BSTEventSource<Events::FrameSyncEvent>*) -> RE::BSEventNotifyControl override;
-        auto ProcessEvent(const Events::ShutdownEvent* e,
-                          RE::BSTEventSource<Events::ShutdownEvent>*) -> RE::BSEventNotifyControl override;
-        auto ProcessEvent(const SKSE::CameraEvent* evn,
-                          RE::BSTEventSource<SKSE::CameraEvent>* dispatcher) -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::FrameEvent* e, RE::BSTEventSource<Events::FrameEvent>*)
+            -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::FrameSyncEvent* e, RE::BSTEventSource<Events::FrameSyncEvent>*)
+            -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::ShutdownEvent* e, RE::BSTEventSource<Events::ShutdownEvent>*)
+            -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const SKSE::CameraEvent* evn, RE::BSTEventSource<SKSE::CameraEvent>* dispatcher)
+            -> RE::BSEventNotifyControl override;
 
-        auto isSuspended() const -> bool { return m_suspended; }
+        auto isSuspended() -> bool { return m_suspended; }
 
         auto suspend(bool loading = false) -> void
         {
@@ -75,18 +62,19 @@ namespace hdt
         auto applyTranslationOffset() -> btVector3;
         auto restoreTranslationOffset(const btVector3&) -> void;
 
-        auto getSolverInfo() -> btContactSolverInfo& { return btDiscreteDynamicsWorld::getSolverInfo(); }
+        auto getSolverInfo() -> btContactSolverInfo& override { return btDiscreteDynamicsWorld::getSolverInfo(); }
 
         // @brief setWind force value for the world
         // @param a_direction wind direction
         // @a_scale Amount to scale the windForce. Defaults to scaleSkyrim
-        // @a_smoothingSamples How many samples to smooth. Defaults to 8. Must be greater than 0. Value of 1 means no smoothing
-        auto setWind(const RE::NiPoint3& a_direction, float a_scale = scaleSkyrim,
-                     uint32_t a_smoothingSamples = 8) -> void;
-
-        concurrency::task_group m_tasks;
+        // @a_smoothingSamples How many samples to smooth. Defaults to 8. Must be greater than 0. Value of 1 means no
+        // smoothing
+        auto setWind(const RE::NiPoint3& a_direction, float a_scale = scaleSkyrim, uint32_t a_smoothingSamples = 8)
+            -> void;
 
         bool m_pendingTransformUpdate = false;
+        concurrency::task_group m_tasks;
+
         bool m_useRealTime = false;
         int min_fps = 60;
         float m_budgetMs = 3.5f;
@@ -102,10 +90,10 @@ namespace hdt
         bool disabled = false;
         uint8_t m_resetPc;
         bool m_doMetrics = false;
-        int m_sampleSize = 5;
-        // how many samples (each sample taken every second) for determining average time per activeSkeleton.
+        int m_sampleSize =
+            5; // how many samples (each sample taken every second) for determining average time per activeSkeleton.
 
-        //wind settings
+        // wind settings
         bool m_enableWind = true;
         float m_windStrength = 2.0f; // compare to gravity acceleration of 9.8
         float m_distanceForNoWind = 50.0f; // how close to wind obstruction to fully block wind
@@ -113,7 +101,7 @@ namespace hdt
 
     private:
         SkyrimPhysicsWorld();
-        ~SkyrimPhysicsWorld() override = default;
+        ~SkyrimPhysicsWorld() override;
 
         std::mutex m_lock;
 
@@ -123,4 +111,4 @@ namespace hdt
         float m_averageInterval;
         float m_SMPProcessingTimeInMainLoop = 0;
     };
-}
+} // namespace hdt

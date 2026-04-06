@@ -1,22 +1,17 @@
 #include "dhdtOverrideManager.h"
-
-#include <utility>
-
-#include <fmt/format.h>
-
-#include "dhdtPapyrusFunctions.h"
+#include <dhdtPapyrusFunctions.h>
 
 using namespace hdt::Override;
 
 bool g_hasPapyrusExtension = false;
 
-auto OverrideManager::GetSingleton() -> OverrideManager*
+auto hdt::Override::OverrideManager::GetSingleton() -> OverrideManager*
 {
     static OverrideManager g_overrideManager;
     return &g_overrideManager;
 }
 
-static auto checkPapyrusExtension() -> bool
+auto checkPapyrusExtension() -> bool
 {
     std::ofstream ifs("Data/Scripts/DynamicHDT.pex", std::ios::in | std::ios::_Nocreate);
     if (!ifs || !ifs.is_open())
@@ -29,16 +24,17 @@ static auto checkPapyrusExtension() -> bool
     return true;
 }
 
-auto OverrideManager::queryOverrideData() -> std::string
+auto hdt::Override::OverrideManager::queryOverrideData() -> std::string
 {
     std::string console_print("[DynamicHDT] -- Querying existing override data...\n");
 
-    for (const auto& [fst, snd] : m_ActorPhysicsFileSwapList)
+    for (auto i : m_ActorPhysicsFileSwapList)
     {
-        console_print += "Actor formID: " + util::UInt32toString(fst) + "\t" + std::to_string(snd.size()) + "\n";
-        for (const auto& [snd_fst, snd_snd] : snd)
+        console_print +=
+            "Actor formID: " + util::UInt32toString(i.first) + "\t" + std::to_string(i.second.size()) + "\n";
+        for (auto j : i.second)
         {
-            console_print += "\tOriginal file: " + snd_fst + "\n\t\t| Override: " + snd_snd + "\n";
+            console_print += "\tOriginal file: " + j.first + "\n\t\t| Override: " + j.second + "\n";
         }
     }
 
@@ -46,39 +42,39 @@ auto OverrideManager::queryOverrideData() -> std::string
     return console_print;
 }
 
-auto OverrideManager::registerOverride(const uint32_t actor_formID, std::string old_file_path,
-                                       std::string new_file_path) -> bool
+auto hdt::Override::OverrideManager::registerOverride(uint32_t actor_formID, std::string old_file_path,
+                                                      std::string new_file_path) -> bool
 {
     if (old_file_path.empty())
     {
         return false;
     }
-    for (auto& [fst, snd] : m_ActorPhysicsFileSwapList[actor_formID])
+    for (auto& e : m_ActorPhysicsFileSwapList[actor_formID])
     {
-        if (snd == old_file_path)
+        if (e.second == old_file_path)
         {
-            old_file_path = fst;
+            old_file_path = e.first;
         }
     }
-    m_ActorPhysicsFileSwapList[actor_formID][old_file_path] = std::move(new_file_path);
+    m_ActorPhysicsFileSwapList[actor_formID][old_file_path] = new_file_path;
     return true;
 }
 
-auto OverrideManager::checkOverride(const uint32_t actor_formID, const std::string& old_file_path) -> std::string
+auto hdt::Override::OverrideManager::checkOverride(uint32_t actor_formID, std::string old_file_path) -> std::string
 {
-    const auto iter1 = m_ActorPhysicsFileSwapList.find(actor_formID);
+    auto iter1 = m_ActorPhysicsFileSwapList.find(actor_formID);
     if (iter1 != m_ActorPhysicsFileSwapList.end())
     {
-        const auto iter2 = iter1->second.find(old_file_path);
+        auto iter2 = iter1->second.find(old_file_path);
         if (iter2 != iter1->second.end())
         {
             return iter2->second;
         }
     }
-    return {};
+    return std::string();
 }
 
-auto OverrideManager::Serialize() -> std::stringstream
+auto hdt::Override::OverrideManager::Serialize() -> std::stringstream
 {
     std::stringstream data_stream;
     if (!checkPapyrusExtension())
@@ -95,7 +91,7 @@ auto OverrideManager::Serialize() -> std::stringstream
             continue;
         }
 
-        data_stream << fmt::format("{:08X} {}\n", formID, count);
+        data_stream << std::format("{:08X} {}\n", formID, count);
 
         for (const auto& [orig, override_path] : overrides)
         {
@@ -104,14 +100,14 @@ auto OverrideManager::Serialize() -> std::stringstream
                 continue;
             }
 
-            data_stream << orig << "\t" << override_path << '\n';
+            data_stream << orig << "\t" << override_path << std::endl;
         }
     }
 
     return data_stream;
 }
 
-auto OverrideManager::Deserialize(std::stringstream& data_stream) -> void
+auto hdt::Override::OverrideManager::Deserialize(std::stringstream& data_stream) -> void
 {
     if (!checkPapyrusExtension())
     {
@@ -136,6 +132,7 @@ auto OverrideManager::Deserialize(std::stringstream& data_stream) -> void
             {
                 return;
             }
+
             for (auto i = 0u; i < override_size; ++i)
             {
                 std::string pathLine;
@@ -144,14 +141,14 @@ auto OverrideManager::Deserialize(std::stringstream& data_stream) -> void
                     return;
                 }
 
-                const auto tabPos = pathLine.find('\t');
+                auto tabPos = pathLine.find('\t');
                 if (tabPos == std::string::npos)
                 {
                     return;
                 }
 
-                papyrus::impl::SwapPhysicsFileImpl(actor_formID, pathLine.substr(0, tabPos),
-                                                   pathLine.substr(tabPos + 1), true, false);
+                hdt::papyrus::impl::SwapPhysicsFileImpl(actor_formID, pathLine.substr(0, tabPos),
+                                                        pathLine.substr(tabPos + 1), true, false);
             }
         }
     }

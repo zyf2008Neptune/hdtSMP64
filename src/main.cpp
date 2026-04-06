@@ -1,13 +1,3 @@
-#include <algorithm>
-#include <cstdint>
-#include <numeric>
-#include <string>
-
-#include <boost/beast/core/string.hpp>
-#include <RE/B/BSLightingShaderMaterial.h>
-#include <RE/B/BSTextureSet.h>
-#include <RE/N/NiSourceTexture.h>
-
 #include "ActorManager.h"
 #include "config.h"
 #include "dhdtOverrideManager.h"
@@ -18,19 +8,18 @@
 #include "PluginInterfaceImpl.h"
 #include "WeatherManager.h"
 
-static auto checkOldPlugins() -> void
+auto checkOldPlugins() -> void
 {
-    const auto framework = GetModuleHandleA("hdtSSEFramework");
-    const auto physics = GetModuleHandleA("hdtSSEPhysics");
-    const auto hh = GetModuleHandleA("hdtSSEHighHeels");
+    auto framework = GetModuleHandleA("hdtSSEFramework");
+    auto physics = GetModuleHandleA("hdtSSEPhysics");
+    auto hh = GetModuleHandleA("hdtSSEHighHeels");
 
     if (physics)
     {
-        MessageBox(
-            nullptr,
-            TEXT("hdtSSEPhysics.dll is loaded. This is an older verson of HDT-SMP and conflicts with hdtSMP64.dll. "
-                "Please remove it."),
-            TEXT("hdtSMP64"), MB_OK);
+        MessageBox(nullptr,
+                   TEXT("hdtSSEPhysics.dll is loaded. This is an older version of HDT-SMP and conflicts with "
+                       "hdtSMP64.dll. Please remove it."),
+                   TEXT("hdtSMP64"), MB_OK);
     }
 
     if (framework && !hh)
@@ -42,8 +31,7 @@ static auto checkOldPlugins() -> void
     }
 }
 
-static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const std::uint32_t index)
-    -> RE::NiSourceTexturePtr*
+auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, std::uint32_t index) -> RE::NiSourceTexturePtr*
 {
     switch (index)
     {
@@ -55,13 +43,13 @@ static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const st
     {
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kFaceGen)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialFacegen*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialFacegen*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->subsurfaceTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kGlowMap)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialFacegen*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialFacegen*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->subsurfaceTexture);
         }
@@ -72,20 +60,20 @@ static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const st
     {
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kFaceGen)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialFacegen*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialFacegen*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->detailTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kParallax)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialParallax*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialParallax*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->heightTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kParallax ||
             material->GetFeature() == RE::BSShaderMaterial::Feature::kParallaxOcc)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialParallaxOcc*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialParallaxOcc*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->heightTexture);
         }
@@ -96,18 +84,18 @@ static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const st
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kEye)
         {
             return std::addressof(
-                dynamic_cast<RE::BSLightingShaderMaterialEye*>(static_cast<RE::BSLightingShaderMaterialBase*>(material))
+                static_cast<RE::BSLightingShaderMaterialEye*>(static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->envTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kEnvironmentMap)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialEnvmap*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialEnvmap*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->envTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kMultilayerParallax)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialMultiLayerParallax*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialMultiLayerParallax*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->envTexture);
         }
@@ -118,18 +106,18 @@ static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const st
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kEye)
         {
             return std::addressof(
-                dynamic_cast<RE::BSLightingShaderMaterialEye*>(static_cast<RE::BSLightingShaderMaterialBase*>(material))
+                static_cast<RE::BSLightingShaderMaterialEye*>(static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->envMaskTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kEnvironmentMap)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialEnvmap*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialEnvmap*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->envTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kMultilayerParallax)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialMultiLayerParallax*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialMultiLayerParallax*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->envMaskTexture);
         }
@@ -139,13 +127,13 @@ static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const st
     {
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kFaceGen)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialFacegen*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialFacegen*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->tintTexture);
         }
         if (material->GetFeature() == RE::BSShaderMaterial::Feature::kMultilayerParallax)
         {
-            return std::addressof(dynamic_cast<RE::BSLightingShaderMaterialMultiLayerParallax*>(
+            return std::addressof(static_cast<RE::BSLightingShaderMaterialMultiLayerParallax*>(
                     static_cast<RE::BSLightingShaderMaterialBase*>(material))
                 ->layerTexture);
         }
@@ -159,7 +147,7 @@ static auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, const st
     return nullptr;
 }
 
-static auto DumpNodeChildren(RE::NiAVObject* node) -> void
+auto DumpNodeChildren(RE::NiAVObject* node) -> void
 {
     logger::info("{} {} [{:.2f}, {:.2f}, {:.2f}]", node->GetRTTI()->name, node->name, node->world.translate.x,
                  node->world.translate.y, node->world.translate.z);
@@ -174,14 +162,16 @@ static auto DumpNodeChildren(RE::NiAVObject* node) -> void
 
     RE::NiNode* niNode = node->AsNode();
     auto& children = niNode->GetChildren();
-    if (niNode && !children.empty())
+    if (niNode && children.size() > 0)
     {
-        for (const auto& object : children)
+        for (uint16_t i = 0; i < children.size(); i++)
         {
+            RE::NiPointer<RE::NiAVObject> object = children[i];
             if (object)
             {
                 RE::NiNode* childNode = object->AsNode();
-                if (RE::BSGeometry* geometry = object->AsGeometry())
+                RE::BSGeometry* geometry = object->AsGeometry();
+                if (geometry)
                 {
                     logger::info("{} {} [{:.2f}, {:.2f}, {:.2f}] - Geometry", object->GetRTTI()->name, object->name,
                                  geometry->world.translate.x, geometry->world.translate.y, geometry->world.translate.z);
@@ -192,37 +182,42 @@ static auto DumpNodeChildren(RE::NiAVObject* node) -> void
                         for (uint32_t boneIdx = 0;
                              boneIdx < geometry->GetGeometryRuntimeData().skinInstance->skinData->bones; boneIdx++)
                         {
-                            const auto bone = geometry->GetGeometryRuntimeData().skinInstance->bones[boneIdx];
+                            auto bone = geometry->GetGeometryRuntimeData().skinInstance->bones[boneIdx];
                             logger::info("Bone {} - {} {} [{:.2f}, {:.2f}, {:.2f}]", boneIdx, bone->GetRTTI()->name,
                                          bone->name, bone->world.translate.x, bone->world.translate.y,
                                          bone->world.translate.z);
                         }
                     }
 
-                    if (const auto shaderProperty = geometry->GetGeometryRuntimeData().shaderProperty.get())
+                    RE::BSShaderProperty* shaderProperty = geometry->GetGeometryRuntimeData().shaderProperty.get();
+                    if (shaderProperty)
                     {
-                        if (const auto lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(shaderProperty))
+                        RE::BSLightingShaderProperty* lightingShader =
+                            netimmerse_cast<RE::BSLightingShaderProperty*>(shaderProperty);
+                        if (lightingShader)
                         {
-                            const auto material = dynamic_cast<RE::BSLightingShaderMaterial*>(lightingShader->material);
+                            RE::BSLightingShaderMaterial* material =
+                                static_cast<RE::BSLightingShaderMaterial*>(lightingShader->material);
 
-                            for (auto i = 0; i < RE::BSTextureSet::Textures::kTotal; ++i)
+                            for (int texIdx = 0; texIdx < RE::BSTextureSet::Textures::kTotal; ++texIdx)
                             {
-                                const auto textureID = static_cast<RE::BSTextureSet::Textures::Texture>(i);
+                                RE::BSTextureSet::Textures::Texture textureID =
+                                    static_cast<RE::BSTextureSet::Textures::Texture>(texIdx);
 
-                                auto texturePath = material->textureSet->GetTexturePath(textureID);
+                                const char* texturePath = material->textureSet->GetTexturePath(textureID);
                                 if (!texturePath)
                                 {
                                     continue;
                                 }
 
-                                auto textureName = "";
-                                const RE::NiSourceTexturePtr* texture = GetTextureFromIndex(material, textureID);
+                                const char* textureName = "";
+                                RE::NiSourceTexturePtr* texture = GetTextureFromIndex(material, textureID);
                                 if (texture && texture->get())
                                 {
                                     textureName = texture->get()->name.c_str();
                                 }
 
-                                logger::info("Texture {} - {} ({})", i, texturePath, textureName);
+                                logger::info("Texture {} - {} ({})", texIdx, texturePath, textureName);
                             }
 
                             logger::info("Flags - {:08X}", lightingShader->flags.underlying());
@@ -243,7 +238,7 @@ static auto DumpNodeChildren(RE::NiAVObject* node) -> void
     }
 }
 
-static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
+auto SMPDebug_PrintDetailed(bool includeItems) -> void
 {
     static std::map<hdt::ActorManager::SkeletonState, const char*> stateStrings = {
         {hdt::ActorManager::SkeletonState::e_InactiveNotInScene, "Not in scene"},
@@ -254,15 +249,15 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 
     auto skeletons = hdt::ActorManager::instance()->getSkeletons();
     std::vector<int> order(skeletons.size());
-    std::ranges::iota(order, 0);
-    std::ranges::sort(order, [&](const int a, const int b) { return skeletons.at(a).state < skeletons.at(b).state; });
+    std::iota(order.begin(), order.end(), 0);
+    std::sort(order.begin(), order.end(), [&](int a, int b) { return skeletons[a].state < skeletons[b].state; });
 
-    for (const int i : order)
+    for (int i : order)
     {
         auto& skeleton = skeletons[i];
 
         RE::TESObjectREFR* skelOwner = nullptr;
-        const RE::TESFullName* ownerName = nullptr;
+        RE::TESFullName* ownerName = nullptr;
 
         if (skeleton.skeleton->GetUserData())
         {
@@ -282,7 +277,7 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 
         if (includeItems)
         {
-            for (const auto& armor : skeleton.getArmors())
+            for (auto armor : skeleton.getArmors())
             {
                 RE::ConsoleLog::GetSingleton()->Print(
                     "[HDT-SMP] -- tracked armor addon %s, %s", armor.armorWorn->name.c_str(),
@@ -294,7 +289,7 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 
                 if (armor.state() != hdt::ActorManager::ItemState::e_NoPhysics)
                 {
-                    for (const auto& mesh : armor.meshes())
+                    for (auto mesh : armor.meshes())
                     {
                         RE::ConsoleLog::GetSingleton()->Print("[HDT-SMP] ---- has collision mesh %s",
                                                               mesh->m_name.c_str());
@@ -304,7 +299,7 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 
             if (skeleton.head.headNode)
             {
-                for (const auto& headPart : skeleton.head.headParts)
+                for (auto headPart : skeleton.head.headParts)
                 {
                     RE::ConsoleLog::GetSingleton()->Print(
                         "[HDT-SMP] -- tracked headpart %s, %s", headPart.headPart->name.c_str(),
@@ -316,7 +311,7 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
 
                     if (headPart.state() != hdt::ActorManager::ItemState::e_NoPhysics)
                     {
-                        for (const auto& mesh : headPart.meshes())
+                        for (auto mesh : headPart.meshes())
                         {
                             RE::ConsoleLog::GetSingleton()->Print("[HDT-SMP] ---- has collision mesh %s",
                                                                   mesh->m_name.c_str());
@@ -328,44 +323,43 @@ static auto SMPDebug_PrintDetailed(const bool includeItems) -> void
     }
 }
 
-static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTION::ScriptData* a_scriptData,
-                             RE::TESObjectREFR* a_thisObj, RE::TESObjectREFR* a_containingObj, RE::Script* a_scriptObj,
-                             RE::ScriptLocals* a_locals, [[maybe_unused]] double& a_result, uint32_t& a_opcodeOffsetPtr)
-    -> bool
+auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTION::ScriptData* a_scriptData,
+                      RE::TESObjectREFR* a_thisObj, RE::TESObjectREFR* a_containingObj, RE::Script* a_scriptObj,
+                      RE::ScriptLocals* a_locals, [[maybe_unused]] double& a_result,
+                      uint32_t& a_opcodeOffsetPtr) -> bool
 {
-    std::string buffer;
-    buffer.resize(MAX_PATH);
-    std::string buffer2;
-    buffer2.resize(MAX_PATH);
+    char buffer[MAX_PATH];
+    memset(buffer, 0, MAX_PATH);
+    char buffer2[MAX_PATH];
+    memset(buffer2, 0, MAX_PATH);
 
     if (!RE::Script::ParseParameters(a_paramInfo, a_scriptData, a_opcodeOffsetPtr, a_thisObj, a_containingObj,
-                                     a_scriptObj, a_locals, buffer.c_str(), buffer2.c_str()))
+                                     a_scriptObj, a_locals, buffer, buffer2))
     {
         return false;
     }
 
     logger::debug("SMPCommand: {} {}"sv, buffer, buffer2);
 
-    //if (boost::beast::iequals(buffer, "reset"))
-    if (_strnicmp(buffer.c_str(), "reset", MAX_PATH) == 0)
+    if (_strnicmp(buffer, "reset", MAX_PATH) == 0)
     {
         logger::debug("smp reset: reloading config and resetting physics world"sv);
         RE::ConsoleLog::GetSingleton()->Print("running full smp reset");
         hdt::loadConfig();
+        hdt::logConfig();
+
         hdt::SkyrimPhysicsWorld::get()->resetTransformsToOriginal();
-        const RE::MenuOpenCloseEvent e{.menuName = {}, .opening = false, .pad09 = {}, .pad0A = {}, .pad0C = {}};
+        const RE::MenuOpenCloseEvent e{"", false};
         hdt::ActorManager::instance()->ProcessEvent(&e, nullptr);
         hdt::SkyrimPhysicsWorld::get()->resetSystems();
         return true;
     }
-
-    //if (boost::beast::iequals(buffer, "dumptree"))
-    if (_strnicmp(buffer.c_str(), "dumptree", MAX_PATH) == 0)
+    if (_strnicmp(buffer, "dumptree", MAX_PATH) == 0)
     {
         if (a_thisObj)
         {
             RE::ConsoleLog::GetSingleton()->Print("dumping targeted reference's node tree");
-            DumpNodeChildren(a_thisObj->Get3D1(false));
+            DumpNodeChildren(a_thisObj->Get3D1(0));
         }
         else
         {
@@ -375,22 +369,19 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
         return true;
     }
 
-    //if (boost::beast::iequals(buffer, "detail"))
-    if (_strnicmp(buffer.c_str(), "detail", MAX_PATH) == 0)
+    if (_strnicmp(buffer, "detail", MAX_PATH) == 0)
     {
         SMPDebug_PrintDetailed(true);
         return true;
     }
 
-    //if (boost::beast::iequals(buffer, "list"))
-    if (_strnicmp(buffer.c_str(), "list", MAX_PATH) == 0)
+    if (_strnicmp(buffer, "list", MAX_PATH) == 0)
     {
         SMPDebug_PrintDetailed(false);
         return true;
     }
 
-    //if (boost::beast::iequals(buffer, "on"))
-    if (_strnicmp(buffer.c_str(), "on", MAX_PATH) == 0)
+    if (_strnicmp(buffer, "on", MAX_PATH) == 0)
     {
         hdt::SkyrimPhysicsWorld::get()->disabled = false;
         {
@@ -399,8 +390,7 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
         return true;
     }
 
-    //if (boost::beast::iequals(buffer, "off"))
-    if (_strnicmp(buffer.c_str(), "off", MAX_PATH) == 0)
+    if (_strnicmp(buffer, "off", MAX_PATH) == 0)
     {
         hdt::SkyrimPhysicsWorld::get()->disabled = true;
         {
@@ -409,15 +399,14 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
         return true;
     }
 
-    //if (boost::beast::iequals(buffer, "QueryOverride"))
-    if (_strnicmp(buffer.c_str(), "QueryOverride", MAX_PATH) == 0)
+    if (_strnicmp(buffer, "QueryOverride", MAX_PATH) == 0)
     {
         RE::ConsoleLog::GetSingleton()->Print(
             hdt::Override::OverrideManager::GetSingleton()->queryOverrideData().c_str());
         return true;
     }
 
-    const auto skeletons = hdt::ActorManager::instance()->getSkeletons();
+    auto skeletons = hdt::ActorManager::instance()->getSkeletons();
 
     size_t activeSkeletons = 0;
     size_t armors = 0;
@@ -433,7 +422,7 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
             activeSkeletons++;
         }
 
-        for (const auto& armor : skeleton.getArmors())
+        for (const auto armor : skeleton.getArmors())
         {
             armors++;
 
@@ -447,7 +436,7 @@ static auto SMPDebug_Execute(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT
 
         if (skeleton.head.headNode)
         {
-            for (const auto& headpart : skeleton.head.headParts)
+            for (const auto headpart : skeleton.head.headParts)
             {
                 headParts++;
 
@@ -487,10 +476,9 @@ namespace
         *path /= fmt::format("{}.log"sv, Plugin::NAME);
         auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
 #endif
-        //
+
         const auto level = static_cast<spdlog::level::level_enum>(hdt::g_logLevel);
 
-        //
         auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
         log->set_level(level);
         log->flush_on(level);
@@ -500,7 +488,7 @@ namespace
     }
 } // namespace
 
-static auto MessageHandler(SKSE::MessagingInterface::Message* a_msg) -> void
+auto MessageHandler(SKSE::MessagingInterface::Message* a_msg) -> void
 {
     switch (a_msg->type)
     {
@@ -512,7 +500,7 @@ static auto MessageHandler(SKSE::MessagingInterface::Message* a_msg) -> void
         auto data = hdt::Override::OverrideManager::GetSingleton()->Serialize();
         if (!data.str().empty())
         {
-            std::string save_name = static_cast<char*>(a_msg->data);
+            std::string save_name = reinterpret_cast<char*>(a_msg->data);
             std::ofstream ofs("Data/SKSE/Plugins/hdtOverrideSaves/" + save_name + ".dhdt", std::ios::out);
             if (ofs && ofs.is_open())
             {
@@ -523,8 +511,8 @@ static auto MessageHandler(SKSE::MessagingInterface::Message* a_msg) -> void
     break;
     case SKSE::MessagingInterface::kPreLoadGame:
     {
-        std::string save_name = static_cast<char*>(a_msg->data);
-        save_name = save_name.substr(0, save_name.find_last_of('.'));
+        std::string save_name = reinterpret_cast<char*>(a_msg->data);
+        save_name = save_name.substr(0, save_name.find_last_of("."));
 
         std::ifstream ifs("Data/SKSE/Plugins/hdtOverrideSaves/" + save_name + ".dhdt", std::ios::in);
         if (ifs && ifs.is_open())
@@ -584,7 +572,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []()
 extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse) -> bool
 {
 #ifndef NDEBUG
-    const auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
 
     while (!IsDebuggerPresent())
     {
@@ -652,22 +640,22 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
     hdt::g_pluginInterface.init(a_skse);
 
     //
-    const auto unusedCommand = RE::SCRIPT_FUNCTION::LocateConsoleCommand("ShowRenderPasses");
+    auto unusedCommand = RE::SCRIPT_FUNCTION::LocateConsoleCommand("ShowRenderPasses");
     if (unusedCommand)
     {
         static RE::SCRIPT_PARAMETER params[1];
         params[0].paramType = RE::SCRIPT_PARAM_TYPE::kChar;
         params[0].paramName = "String (optional)";
-        params[0].optional = true;
+        params[0].optional = 1;
 
         unusedCommand->functionName = "SMPDebug";
         unusedCommand->shortName = "smp";
         unusedCommand->helpString = "smp <reset>";
-        unusedCommand->referenceFunction = false;
+        unusedCommand->referenceFunction = 0;
         unusedCommand->numParams = 1;
         unusedCommand->params = params;
         unusedCommand->executeFunction = SMPDebug_Execute;
-        unusedCommand->editorFilter = false;
+        unusedCommand->editorFilter = 0;
     }
 
     //

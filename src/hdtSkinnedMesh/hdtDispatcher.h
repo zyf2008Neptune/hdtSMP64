@@ -1,16 +1,10 @@
 #pragma once
 
-#include <mutex>
-#include <utility>
+#include <ppl.h>
+#include <ppltasks.h>
 #include <vector>
-
-#include <BulletCollision/BroadphaseCollision/btDispatcher.h>
-#include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
-#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
-#include <BulletCollision/NarrowPhaseCollision/btPersistentManifold.h>
-
 #include "hdtBulletHelper.h"
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 
 namespace hdt
 {
@@ -26,7 +20,7 @@ namespace hdt
         auto getNewManifold(const btCollisionObject* b0, const btCollisionObject* b1) -> btPersistentManifold* override
         {
             std::scoped_lock l(m_lock);
-            const auto ret = btCollisionDispatcherMt::getNewManifold(b0, b1);
+            auto ret = btCollisionDispatcherMt::getNewManifold(b0, b1);
             return ret;
         }
 

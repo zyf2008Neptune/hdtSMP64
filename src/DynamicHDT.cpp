@@ -1,11 +1,8 @@
 #include "DynamicHDT.h"
-
-#include <boost/beast/core/string.hpp>
-
 #include "hdtSkyrimSystem.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
 
-auto hdt::util::splitArmorAddonFormID(const std::string& nodeName) -> uint32_t
+auto hdt::util::splitArmorAddonFormID(std::string nodeName) -> uint32_t
 {
     try
     {
@@ -17,18 +14,21 @@ auto hdt::util::splitArmorAddonFormID(const std::string& nodeName) -> uint32_t
     }
 }
 
-auto hdt::util::UInt32toString(uint32_t formID) -> std::string { return fmt::format("{:08X}", formID); }
+auto hdt::util::UInt32toString(uint32_t formID) -> std::string
+{
+    char buffer[16];
+    sprintf_s(buffer, "%08X", formID);
+    return std::string(buffer);
+}
 
 auto _deprefix(std::string_view str_with_prefix) -> std::string
 {
     std::string str_no_prefix{str_with_prefix};
-    static constexpr auto autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;
+    std::string_view autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;
 
     // follows case-insensitivity semantics of BSFixedString
-    static constexpr auto str_size = autoRenameSubstr.size();
-    // if (str_with_prefix.size() >= autoRenameSubstr.size() &&
-    //     boost::beast::iequals(str_with_prefix.substr(0, str_size), autoRenameSubstr))
-    if (str_with_prefix.size() >= str_size && _memicmp(str_with_prefix.data(), autoRenameSubstr.data(), str_size) == 0)
+    if (str_with_prefix.size() >= autoRenameSubstr.size() &&
+        _memicmp(str_with_prefix.data(), autoRenameSubstr.data(), autoRenameSubstr.size()) == 0)
     {
         str_no_prefix = str_with_prefix.substr(str_with_prefix.find(' ') + 1);
     }
@@ -42,19 +42,22 @@ auto _match_name(const RE::BSFixedString& a, const RE::BSFixedString& b) -> bool
     {
         return false;
     }
-    //return boost::beast::iequals(_deprefix(a), _deprefix(b));
-    return _stricmp(_deprefix(a).c_str(), _deprefix(b).c_str()) == 0;
+
+    // follows case-insensitivity semantics of BSFixedString
+    const auto aDeprefixed = _deprefix(a);
+    const auto bDeprefixed = _deprefix(b);
+    return _stricmp(aDeprefixed.c_str(), bDeprefixed.c_str()) == 0;
 }
 
-auto hdt::util::transferCurrentPosesBetweenSystems(SkyrimSystem* src, SkyrimSystem* dst) -> void
+auto hdt::util::transferCurrentPosesBetweenSystems(hdt::SkyrimSystem* src, hdt::SkyrimSystem* dst) -> void
 {
-    for (const auto& b1 : src->getBones())
+    for (auto& b1 : src->getBones())
     {
         if (!b1)
         {
             continue;
         }
-        for (const auto& b2 : dst->getBones())
+        for (auto& b2 : dst->getBones())
         {
             if (!b2)
             {

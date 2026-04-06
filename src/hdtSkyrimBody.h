@@ -1,19 +1,20 @@
 #pragma once
 
-#include <RE/B/BSFixedString.h>
-
+#include "hdtConvertNi.h"
+#include "hdtSkyrimBone.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshBody.h"
 
 namespace hdt
 {
     class SkyrimSystem;
 
-    struct SkyrimBody : SkinnedMeshBody
+    class SkyrimBody : public SkinnedMeshBody
     {
+    public:
         SkyrimBody();
-        ~SkyrimBody() override;
+        ~SkyrimBody();
 
-        enum class SharedType : uint8_t
+        enum class SharedType
         {
             SHARED_PUBLIC,
             SHARED_INTERNAL,
@@ -27,7 +28,7 @@ namespace hdt
         int m_disablePriority = 0;
         RE::BSFixedString m_disableTag;
 
-        auto canCollideWith(const SkinnedMeshBody* rhs) const -> bool override;
+        auto canCollideWith(const SkinnedMeshBody* body) const -> bool override;
         auto internalUpdate() -> void override;
     };
 } // namespace hdt

@@ -1,19 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <cstdint>
-
-#include <BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h>
-#include <BulletCollision/BroadphaseCollision/btDispatcher.h>
-#include <BulletCollision/CollisionDispatch/btCollisionCreateFunc.h>
-#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
-#include <BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h>
-#include <BulletCollision/CollisionDispatch/btManifoldResult.h>
-#include <LinearMath/btScalar.h>
-#include <LinearMath/btVector3.h>
-
-#include "hdtCollisionAlgorithm.h"
 #include "hdtDispatcher.h"
 #include "hdtSkinnedMeshShape.h"
 
@@ -24,9 +10,9 @@ namespace hdt
     public:
         // Note: It's possible to exceed this with complex outfits, which is why we cap it.
         // We don't want to stress a simulation island too much!
-        static constexpr int MaxCollisionCount = 512;
+        static const int MaxCollisionCount = 512;
 
-        static auto processCollision(const SkinnedMeshBody* body0, const SkinnedMeshBody* body1,
+        static auto processCollision(SkinnedMeshBody* body0Wrap, SkinnedMeshBody* body1Wrap,
                                      CollisionDispatcher* dispatcher) -> void;
 
     protected:
@@ -38,28 +24,25 @@ namespace hdt
 
             CollisionMerge()
             {
-                _mm_store_ps(reinterpret_cast<float*>(this), _mm_setzero_ps());
-                _mm_store_ps(reinterpret_cast<float*>(this) + 4, _mm_setzero_ps());
-                _mm_store_ps(reinterpret_cast<float*>(this) + 8, _mm_setzero_ps());
-                _mm_store_ps(reinterpret_cast<float*>(this) + 12, _mm_setzero_ps());
+                _mm_store_ps(((float*)this), _mm_setzero_ps());
+                _mm_store_ps(((float*)this) + 4, _mm_setzero_ps());
+                _mm_store_ps(((float*)this) + 8, _mm_setzero_ps());
+                _mm_store_ps(((float*)this) + 12, _mm_setzero_ps());
             }
 
             auto reset() -> void
             {
-                _mm_store_ps(reinterpret_cast<float*>(this), _mm_setzero_ps());
-                _mm_store_ps(reinterpret_cast<float*>(this) + 4, _mm_setzero_ps());
-                _mm_store_ps(reinterpret_cast<float*>(this) + 8, _mm_setzero_ps());
-                _mm_store_ps(reinterpret_cast<float*>(this) + 12, _mm_setzero_ps());
+                _mm_store_ps(((float*)this), _mm_setzero_ps());
+                _mm_store_ps(((float*)this) + 4, _mm_setzero_ps());
+                _mm_store_ps(((float*)this) + 8, _mm_setzero_ps());
+                _mm_store_ps(((float*)this) + 12, _mm_setzero_ps());
             }
         };
 
         struct MergeBuffer
         {
             MergeBuffer() :
-                mergeStride(0), mergeSize(0), currentGen(0)
-            {
-                activeCells.reserve(256);
-            }
+                mergeStride(0), mergeSize(0), currentGen(0) { activeCells.reserve(256); }
 
             ~MergeBuffer()
             {
@@ -74,12 +57,13 @@ namespace hdt
             MergeBuffer(MergeBuffer&&) = delete;
             auto operator=(MergeBuffer&&) -> MergeBuffer& = delete;
 
-            // Buffer is ~2-10% occupied in basic scenes, so instead of zeroing old cells every resize() call we just bump a generation counter.
-            // cells get lazily reset on first touch in getAndTrack(). Makes resize() O(1).
-            auto resize(const int x, const int y) -> void
+            // Buffer is ~2-10% occupied in basic scenes, so instead of zeroing old cells every resize() call we just
+            // bump a generation counter. cells get lazily reset on first touch in getAndTrack(). Makes resize() O(1).
+            auto resize(int x, int y) -> void
             {
                 mergeStride = y;
-                if (const int needed = x * y; needed > mergeSize)
+                int needed = x * y;
+                if (needed > mergeSize)
                 {
                     std::free(buffer);
                     std::free(generations);
@@ -92,17 +76,17 @@ namespace hdt
                     // wrap around, shouldn't realistically happen (~4 billion frames lol)
                     // This is virtually skipped entirely by the cpu, 0 cost. Just in case since it would
                     // create difficult to track down inconsistencies..
-                    std::fill_n(generations, mergeSize * sizeof(uint32_t), 0u);
+                    std::memset(generations, 0, mergeSize * sizeof(uint32_t));
                     currentGen = 1;
                 }
                 activeCells.clear();
             }
 
-            auto get(const int x, const int y) const -> CollisionMerge* { return &buffer[x * mergeStride + y]; }
+            auto get(int x, int y) -> CollisionMerge* { return &buffer[x * mergeStride + y]; }
 
-            auto getAndTrack(const int x, const int y) -> CollisionMerge*
+            auto getAndTrack(int x, int y) -> CollisionMerge*
             {
-                const int idx = x * mergeStride + y;
+                int idx = x * mergeStride + y;
                 auto* c = &buffer[idx];
                 if (generations[idx] != currentGen)
                 {
@@ -116,8 +100,7 @@ namespace hdt
             template <class T0, class T1>
             auto doMerge(T0* shape0, T1* shape1, CollisionResult* collisions, int count) -> void;
 
-            auto apply(const SkinnedMeshBody* body0, const SkinnedMeshBody* body1,
-                       CollisionDispatcher* dispatcher) const -> void;
+            auto apply(SkinnedMeshBody* body0, SkinnedMeshBody* body1, CollisionDispatcher* dispatcher) -> void;
 
             int mergeStride;
             int mergeSize;

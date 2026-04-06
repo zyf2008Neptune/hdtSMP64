@@ -8,9 +8,9 @@ namespace hdt
 {
     auto SkinnedMeshSystem::resetTransformsToOriginal() -> void
     {
-        for (const auto& m_bone : m_bones)
+        for (int i = 0; i < m_bones.size(); ++i)
         {
-            m_bone->resetTransformToOriginal();
+            m_bones[i]->resetTransformToOriginal();
         }
     }
 
@@ -39,18 +39,18 @@ namespace hdt
 
     auto SkinnedMeshSystem::writeTransform() -> void
     {
-        for (const auto& m_bone : m_bones)
+        for (int i = 0; i < m_bones.size(); ++i)
         {
-            if (m_bone->m_rig.isKinematicObject())
+            if (m_bones[i]->m_rig.isKinematicObject())
             {
                 continue;
             }
 
-            m_bone->writeTransform();
+            m_bones[i]->writeTransform();
         }
     }
 
-    auto SkinnedMeshSystem::internalUpdate() const -> void
+    auto SkinnedMeshSystem::internalUpdate() -> void
     {
         for (auto& i : m_bones)
         {
@@ -64,7 +64,7 @@ namespace hdt
     }
 
     auto SkinnedMeshSystem::gather(std::vector<SkinnedMeshBody*>& bodies,
-                                   std::vector<SkinnedMeshShape*>& shapes) const -> void
+                                   std::vector<SkinnedMeshShape*>& shapes) -> void
     {
         for (auto& i : m_meshes)
         {
@@ -78,4 +78,4 @@ namespace hdt
             }
         }
     }
-}
+} // namespace hdt

@@ -1,21 +1,6 @@
 #include "hdtSkyrimBone.h"
-
-#include <cstdint>
-
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
-#include <BulletCollision/CollisionShapes/btCollisionShape.h>
-#include <BulletDynamics/Dynamics/btRigidBody.h>
-#include <LinearMath/btScalar.h>
-#include <LinearMath/btTransformUtil.h>
-#include <LinearMath/btVector3.h>
-#include <RE/N/NiNode.h>
-
-#include "hdtConvertNi.h"
 #include "hdtForceUpdateList.h"
 #include "hdtSkyrimPhysicsWorld.h"
-#include "NetImmerseUtils.h"
-#include "hdtSkinnedMesh/hdtBulletHelper.h"
-#include "hdtSkinnedMesh/hdtSkinnedMeshBone.h"
 
 namespace hdt
 {
@@ -23,7 +8,7 @@ namespace hdt
                            btRigidBody::btRigidBodyConstructionInfo& ci) :
         SkinnedMeshBone(name, ci), m_node(node), m_skeleton(skeleton)
     {
-        if (static_cast<bool>(ci.m_mass))
+        if (ci.m_mass)
         {
             m_rig.setCollisionFlags(0);
         }
@@ -39,7 +24,7 @@ namespace hdt
             ++m_depth;
         }
 
-        this->m_forceUpdateType = ForceUpdateList::GetSingleton()->isAmong(m_name);
+        this->m_forceUpdateType = hdt::ForceUpdateList::GetSingleton()->isAmong(m_name);
     }
 
     auto SkyrimBone::resetTransformToOriginal() -> void
@@ -50,34 +35,35 @@ namespace hdt
 
     auto SkyrimBone::readTransform(float timeStep) -> void
     {
-        const auto oldScale = m_currentTransform.getScale();
+        auto oldScale = m_currentTransform.getScale();
 
         m_currentTransform = convertNi(m_node->world);
 
-        const auto newScale = m_currentTransform.getScale();
-        const auto current = m_rig.getWorldTransform();
-        const auto isStaticOrKinematic = m_rig.isStaticOrKinematicObject();
+        auto newScale = m_currentTransform.getScale();
+        auto current = m_rig.getWorldTransform();
+        auto isStaticOrKinematic = m_rig.isStaticOrKinematicObject();
+        auto scaleChanged = !btFuzzyZero(newScale - oldScale);
 
-        if ([[maybe_unused]] const auto scaleChanged = !btFuzzyZero(newScale - oldScale))
+        if (scaleChanged)
         {
-            const auto factor = oldScale / newScale;
+            auto factor = oldScale / newScale;
             if (!isStaticOrKinematic)
             {
-                const auto factor2 = factor * factor;
-                const auto factor3 = factor2 * factor;
-                const auto factor5 = factor3 * factor2;
-                const auto inertia = m_rig.getInvInertiaDiagLocal();
+                auto factor2 = factor * factor;
+                auto factor3 = factor2 * factor;
+                auto factor5 = factor3 * factor2;
+                auto inertia = m_rig.getInvInertiaDiagLocal();
                 m_rig.setMassProps(1.0f / (m_rig.getInvMass() * factor3), btVector3(1, 1, 1));
                 m_rig.setInvInertiaDiagLocal(inertia * factor5);
                 m_rig.updateInertiaTensor();
             }
-            const auto invFactor = 1.0f / factor;
+            auto invFactor = 1.0f / factor;
             m_localToRig.getOrigin() *= invFactor;
             m_rigToLocal.getOrigin() *= invFactor;
             m_rig.getCollisionShape()->setLocalScaling(setAll(newScale));
         }
 
-        const auto dest = m_currentTransform.asTransform() * m_localToRig;
+        auto dest = m_currentTransform.asTransform() * m_localToRig;
         if (timeStep <= RESET_PHYSICS)
         {
             static const btVector3 zero(0, 0, 0);
@@ -90,11 +76,11 @@ namespace hdt
             m_rig.setInterpolationLinearVelocity(zero);
             m_rig.setInterpolationAngularVelocity(zero);
             m_rig.updateInertiaTensor();
-            //auto det = dest.getBasis().determinant();
-            //if (det < FLT_EPSILON || isnan(det) || isinf(det))
+            // auto det = dest.getBasis().determinant();
+            // if (det < FLT_EPSILON || isnan(det) || isinf(det))
             //	_WARNING("Invalid rotation matrix!!");
-            //det = m_rig.getInvInertiaTensorWorld().determinant();
-            //if (isnan(det) || isinf(det))
+            // det = m_rig.getInvInertiaTensorWorld().determinant();
+            // if (isnan(det) || isinf(det))
             //	_WARNING("Invalid inertia tensor matrix!!");
         }
         else if (isStaticOrKinematic)
@@ -106,7 +92,7 @@ namespace hdt
             m_rig.setInterpolationLinearVelocity(linVel);
             m_rig.setInterpolationAngularVelocity(angVel);
         }
-        //else
+        // else
         //{
         //	auto det = m_rig.getWorldTransform().getBasis().determinant();
         //	if (isnan(det))
@@ -120,12 +106,12 @@ namespace hdt
         //		m_rig.setInterpolationAngularVelocity(btVector3(0, 0, 0));
         //		m_rig.updateInertiaTensor();
         //	}
-        //}
+        // }
     }
 
     auto SkyrimBone::writeTransform() -> void
     {
-        //if (m_rig.isStaticOrKinematicObject()) return;
+        // if (m_rig.isStaticOrKinematicObject()) return;
         auto transform = m_rig.getWorldTransform() * m_rigToLocal;
 
         m_currentTransform.setBasis(transform.getBasis());
@@ -133,6 +119,7 @@ namespace hdt
 
         m_node->world.rotate = convertBt(transform.getBasis());
         m_node->world.translate = convertBt(transform.getOrigin());
+        // Todo: Look into why the hell we're doing this lol?
         m_node->world = m_node->world;
 
         if (m_forceUpdateType == 1)
@@ -145,8 +132,8 @@ namespace hdt
             for (uint16_t j = 0; j < children.size(); ++j)
             {
                 const auto& m_weapon_node = children[j];
-                //Why when re-equipping things some nodes turn into nullptr?
-                //Equipment skeleton renamed weapon bones which were romoved when the equipment was disattahced.
+                // Why when re-equipping things some nodes turn into nullptr?
+                // Equipment skeleton renamed weapon bones which were removed when the equipment was disattached.
                 if (!m_weapon_node)
                 {
                     continue;
@@ -157,23 +144,28 @@ namespace hdt
             }
         }
 
-        //_MESSAGE("wrote transforms bone %s [%f, %f, %f]", m_node->m_name, m_node->m_worldTransform.pos.x, m_node->m_worldTransform.pos.y, m_node->m_worldTransform.pos.z);
+        //_MESSAGE("wrote transforms bone %s [%f, %f, %f]", m_node->m_name, m_node->m_worldTransform.pos.x,
+        //m_node->m_worldTransform.pos.y, m_node->m_worldTransform.pos.z);
 
-        //auto parentTransform = m_node->m_parent ? m_node->m_parent->unkTransform : NiTransform();
-        //NiTransform invParentTransform;
-        //parentTransform.Invert(invParentTransform);
-        //m_node->m_localTransform = invParentTransform * m_node->unkTransform;
+        // auto parentTransform = m_node->m_parent ? m_node->m_parent->unkTransform : NiTransform();
+        // NiTransform invParentTransform;
+        // parentTransform.Invert(invParentTransform);
+        // m_node->m_localTransform = invParentTransform * m_node->unkTransform;
 
-        //updateTransformUpDown(m_node->GetAsNiNode());
+        // updateTransformUpDown(m_node->GetAsNiNode());
     }
 
-    //void SkyrimBone::debugPrint(std::string name) {
+    // void SkyrimBone::debugPrint(std::string name) {
     //	if (this->m_name == name && SkyrimPhysicsWorld::get()->isSuspended() == false) {
     //		auto tf0 = m_rig.getWorldTransform().getOrigin();
-    //		auto tf = (convertNi(m_skeleton->m_worldTransform).inverse() * convertNi(m_node->m_worldTransform)).getOrigin();
-    //		auto tf1 = (convertNi(m_node->m_parent->m_parent->m_worldTransform).inverse() * convertNi(m_node->m_worldTransform)).getOrigin();
+    //		auto tf = (convertNi(m_skeleton->m_worldTransform).inverse() *
+    //convertNi(m_node->m_worldTransform)).getOrigin(); 		auto tf1 =
+    //(convertNi(m_node->m_parent->m_parent->m_worldTransform).inverse() *
+    //convertNi(m_node->m_worldTransform)).getOrigin();
 
-    //		Console_Print("wrote transforms bone %s [%.3f, %.3f, %.3f] | [%.3f, %.3f, %.3f] | [%.3f, %.3f, %.3f], %d, Kinematic: %s", m_node->m_name, tf0.x(), tf0.y(), tf0.z(), tf.x(), tf.y(), tf.z(), tf1.x(), tf1.y(), tf1.z(), clock(), m_rig.isStaticOrKinematicObject() ? "true" : "false");
+    //		Console_Print("wrote transforms bone %s [%.3f, %.3f, %.3f] | [%.3f, %.3f, %.3f] | [%.3f, %.3f, %.3f], %d,
+    //Kinematic: %s", m_node->m_name, tf0.x(), tf0.y(), tf0.z(), tf.x(), tf.y(), tf.z(), tf1.x(), tf1.y(), tf1.z(),
+    //clock(), m_rig.isStaticOrKinematicObject() ? "true" : "false");
     //	}
     //}
-}
+} // namespace hdt

@@ -1,7 +1,5 @@
 #include "hdtDefaultBBP.h"
 
-#include <ranges>
-
 #include "NetImmerseUtils.h"
 #include "XmlReader.h"
 
@@ -10,14 +8,14 @@ namespace hdt
     auto DefaultBBP::instance() -> DefaultBBP*
     {
         static DefaultBBP s;
-        return std::addressof(s);
+        return &s;
     }
 
-    auto DefaultBBP::scanBBP(RE::NiNode* scan) -> PhysicsFile_t
+    auto DefaultBBP::scanBBP(RE::NiNode* scan) -> DefaultBBP::PhysicsFile_t
     {
-        for (auto i = 0; i < scan->extraDataSize; ++i)
+        for (int i = 0; i < scan->extraDataSize; ++i)
         {
-            const auto stringData = netimmerse_cast<RE::NiStringExtraData*>(scan->extra[i]);
+            auto stringData = netimmerse_cast<RE::NiStringExtraData*>(scan->extra[i]);
             if (stringData && stringData->name == "HDT Skinned Mesh Physics Object" && stringData->value)
             {
                 return {{std::string(stringData->value)}, defaultNameMap(scan)};
@@ -31,7 +29,7 @@ namespace hdt
 
     auto DefaultBBP::loadDefaultBBPs() -> void
     {
-        const auto path = "SKSE/Plugins/hdtSkinnedMeshConfigs/defaultBBPs.xml";
+        auto path = "SKSE/Plugins/hdtSkinnedMeshConfigs/defaultBBPs.xml";
 
         auto loaded = readAllFile(path);
         if (loaded.empty())
@@ -40,15 +38,13 @@ namespace hdt
         }
 
         // Store original locale
-        // const auto saved_locale = std::locale();
         char saved_locale[32];
         strcpy_s(saved_locale, std::setlocale(LC_NUMERIC, nullptr));
 
         // Set locale to en_US
-        // std::locale::global(std::locale("en_US"));
         std::setlocale(LC_NUMERIC, "en_US");
 
-        XMLReader reader(reinterpret_cast<uint8_t*>(loaded.data()), loaded.size());
+        XMLReader reader((uint8_t*)loaded.data(), loaded.size());
 
         reader.nextStartElement();
         if (reader.GetName() != "default-bbps")
@@ -76,23 +72,21 @@ namespace hdt
                 }
                 else if (reader.GetName() == "remap")
                 {
-                    const auto target = reader.getAttribute("target");
-                    Remap remap = {.name = target, .entries = {}, .required = {}};
+                    auto target = reader.getAttribute("target");
+                    Remap remap = {target, {}, {}};
                     while (reader.Inspect())
                     {
                         if (reader.GetInspected() == Xml::Inspected::StartTag)
                         {
                             if (reader.GetName() == "source")
                             {
-                                auto priority = 0;
+                                int priority = 0;
                                 try
                                 {
                                     priority = reader.getAttributeAsInt("priority");
                                 }
                                 catch (...)
-                                {
-                                    throw;
-                                }
+                                {}
                                 auto source = reader.readText();
                                 remap.entries.insert({priority, source});
                             }
@@ -113,7 +107,7 @@ namespace hdt
                             break;
                         }
                     }
-                    remaps.emplace_back(remap);
+                    remaps.push_back(remap);
                 }
                 else
                 {
@@ -127,13 +121,11 @@ namespace hdt
             }
         }
 
-
         // Restore original locale
-        //std::locale::global(saved_locale);
         std::setlocale(LC_NUMERIC, saved_locale);
     }
 
-    auto DefaultBBP::scanDefaultBBP(RE::NiNode* armor) -> PhysicsFile_t
+    auto DefaultBBP::scanDefaultBBP(RE::NiNode* armor) -> DefaultBBP::PhysicsFile_t
     {
         static std::mutex s_lock;
         std::scoped_lock l(s_lock);
@@ -143,23 +135,25 @@ namespace hdt
             return {{std::string("")}, {}};
         }
 
-        auto remappedNames = instance()->getNameMap(armor);
+        auto remappedNames = DefaultBBP::instance()->getNameMap(armor);
 
-        const auto it = std::ranges::find_if(
-            bbpFileList, [&](const std::pair<std::string, std::string>& e) { return remappedNames.contains(e.first); });
+        auto it = std::find_if(bbpFileList.begin(), bbpFileList.end(), [&](const std::pair<std::string, std::string>& e)
+        {
+            return remappedNames.find(e.first) != remappedNames.end();
+        });
         return {it == bbpFileList.end() ? "" : it->second, remappedNames};
     }
 
-    auto DefaultBBP::getNameMap(RE::NiNode* armor) -> NameMap_t
+    auto DefaultBBP::getNameMap(RE::NiNode* armor) -> DefaultBBP::NameMap_t
     {
         auto nameMap = defaultNameMap(armor);
 
         for (auto remap : remaps)
         {
-            auto doRemap = true;
-            for (const auto& req : remap.required)
+            bool doRemap = true;
+            for (auto req : remap.required)
             {
-                if (!nameMap.contains(req))
+                if (nameMap.find(req) == nameMap.end())
                 {
                     doRemap = false;
                 }
@@ -167,9 +161,9 @@ namespace hdt
 
             if (doRemap)
             {
-                auto start = std::ranges::find_if(std::views::reverse(remap.entries),
-                                                  [&](const auto& e) { return nameMap.contains(e.second); });
-                const auto end =
+                auto start = std::find_if(remap.entries.rbegin(), remap.entries.rend(),
+                                          [&](const auto& e) { return nameMap.find(e.second) != nameMap.end(); });
+                auto end =
                     std::find_if(start, remap.entries.rend(), [&](const auto& e) { return e.first != start->first; });
                 if (start != remap.entries.rend())
                 {
@@ -190,47 +184,47 @@ namespace hdt
         return nameMap;
     }
 
-    auto DefaultBBP::defaultNameMap(RE::NiNode* armor) -> NameMap_t
+    auto DefaultBBP::defaultNameMap(RE::NiNode* armor) -> DefaultBBP::NameMap_t
     {
         std::unordered_map<std::string, std::unordered_set<std::string>> nameMap;
 
         // This case never happens to a lurker skeleton, thus we don't need to test.
-        if (const auto skinned = findNode(armor, "BSFaceGenNiNodeSkinned"))
+        auto skinned = findNode(armor, "BSFaceGenNiNodeSkinned");
+        if (skinned)
         {
             const auto& skinnedNodechildren = skinned->GetChildren();
-            for (const auto& i : skinnedNodechildren)
+            for (uint16_t i = 0; i < skinnedNodechildren.size(); ++i)
             {
-                if (!i)
+                if (!skinnedNodechildren[i])
                 {
                     continue;
                 }
 
-                const auto tri = i->AsTriShape();
-                if (!tri || tri->name.empty())
+                auto tri = skinnedNodechildren[i]->AsTriShape();
+                if (!tri || !tri->name.size())
                 {
                     continue;
                 }
 
-
-                nameMap.emplace(tri->name.c_str(), std::unordered_set{std::string(tri->name.c_str())});
+                nameMap.emplace(tri->name.c_str(), std::unordered_set<std::string>{std::string(tri->name.c_str())});
             }
         }
 
         const auto& armorNodechildren = armor->GetChildren();
-        for (const auto& i : armorNodechildren)
+        for (uint16_t i = 0; i < armorNodechildren.size(); ++i)
         {
-            if (!i)
+            if (!armorNodechildren[i])
             {
                 continue;
             }
 
-            const auto tri = i->AsTriShape();
-            if (!tri || tri->name.empty())
+            auto tri = armorNodechildren[i]->AsTriShape();
+            if (!tri || !tri->name.size())
             {
                 continue;
             }
 
-            nameMap.emplace(tri->name.c_str(), std::unordered_set{std::string(tri->name.c_str())});
+            nameMap.emplace(tri->name.c_str(), std::unordered_set<std::string>{std::string(tri->name.c_str())});
         }
 
         return nameMap;

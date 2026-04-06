@@ -2,19 +2,18 @@
 
 namespace hdt
 {
-    auto checkSphereSphere(const btVector3& a, const btVector3& b, const float ra, const float rb, CollisionResult& res)
-        -> bool
+    auto checkSphereSphere(const btVector3& a, const btVector3& b, float ra, float rb, CollisionResult& res) -> bool
     {
-        const auto diff = a - b;
-        const auto dist2 = diff.length2();
-        const auto radiusSum = ra + rb;
+        btVector3 diff = a - b;
+        float dist2 = diff.length2();
+        float radiusSum = ra + rb;
 
         if (dist2 > radiusSum * radiusSum)
         {
             return false;
         }
 
-        const auto len = btSqrt(dist2);
+        float len = btSqrt(dist2);
 
         res.normOnB = btVector3(1, 0, 0);
         if (len > FLT_EPSILON)

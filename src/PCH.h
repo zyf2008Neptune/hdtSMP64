@@ -16,13 +16,18 @@
 #include <atomic>
 #include <cinttypes>
 #include <clocale>
+#include <d3d11.h>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <mutex>
+#include <optional>
 #include <ppl.h>
 #include <random>
 #include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -84,18 +89,20 @@ namespace hdt
     }
 } // namespace hdt
 
-template <typename CharT>
-struct std::hash<RE::detail::BSFixedString<CharT>>
+namespace std
 {
-    [[nodiscard]] auto operator()(const RE::detail::BSFixedString<CharT>& a_key) const noexcept -> std::size_t
+    // TODO: should this be contributed to CommonLibSSE-NG?
+    template <class CharT>
+    struct hash<RE::detail::BSFixedString<CharT>>
     {
-        if (a_key.empty())
+    public:
+        [[nodiscard]] inline auto operator()(
+            const RE::detail::BSFixedString<CharT>& a_key) const noexcept -> std::size_t
         {
-            return 0;
+            return std::hash<const CharT*>{}(a_key.data());
         }
-        return std::hash<const CharT*>{}(a_key.data());
-    }
-}; // namespace std
+    };
+} // namespace std
 
 #define DLLEXPORT __declspec(dllexport)
 

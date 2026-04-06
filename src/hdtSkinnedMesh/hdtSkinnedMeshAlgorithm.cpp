@@ -1,26 +1,5 @@
 #include "hdtSkinnedMeshAlgorithm.h"
-
-#include <algorithm>
-#include <atomic>
-#include <cfloat>
-#include <thread>
-#include <utility>
-#include <vector>
-
-#include <emmintrin.h>
-#include <ppl.h>
-#include <smmintrin.h>
-#include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
-#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
-#include <BulletCollision/NarrowPhaseCollision/btManifoldPoint.h>
-
-#include "hdtAABB.h"
 #include "hdtCollider.h"
-#include "hdtCollisionAlgorithm.h"
-#include "hdtDispatcher.h"
-#include "hdtSkinnedMeshBody.h"
-#include "hdtSkinnedMeshShape.h"
-#include "hdtVertex.h"
 
 namespace hdt
 {
@@ -29,8 +8,8 @@ namespace hdt
     template <typename T>
     struct CollisionCheckBase1
     {
-        using SP0 = PerVertexShape::ShapeProp;
-        using SP1 = T::ShapeProp;
+        using SP0 = typename PerVertexShape::ShapeProp;
+        using SP1 = typename T::ShapeProp;
 
         CollisionCheckBase1(PerVertexShape* a, T* b, CollisionResult* r)
         {
@@ -62,7 +41,7 @@ namespace hdt
     struct CollisionCheckBase2;
 
     template <typename T>
-    struct CollisionCheckBase2<T, false> : CollisionCheckBase1<T>
+    struct CollisionCheckBase2<T, false> : public CollisionCheckBase1<T>
     {
         template <typename... Ts>
         CollisionCheckBase2(Ts&&... ts) :
@@ -72,7 +51,7 @@ namespace hdt
         auto addResult(const CollisionResult& res) -> bool
         {
             int p = this->numResults.fetch_add(1);
-            if (std::cmp_less(p, SkinnedMeshAlgorithm::MaxCollisionCount))
+            if (p < SkinnedMeshAlgorithm::MaxCollisionCount)
             {
                 this->results[p] = res;
                 return true;
@@ -82,7 +61,7 @@ namespace hdt
     };
 
     template <typename T>
-    struct CollisionCheckBase2<T, true> : CollisionCheckBase1<T>
+    struct CollisionCheckBase2<T, true> : public CollisionCheckBase1<T>
     {
         template <typename... Ts>
         CollisionCheckBase2(Ts&&... ts) :
@@ -92,7 +71,7 @@ namespace hdt
         auto addResult(const CollisionResult& res) -> bool
         {
             int p = this->numResults.fetch_add(1);
-            if (std::cmp_less(p, SkinnedMeshAlgorithm::MaxCollisionCount))
+            if (p < SkinnedMeshAlgorithm::MaxCollisionCount)
             {
                 this->results[p].posA = res.posB;
                 this->results[p].posB = res.posA;
@@ -113,7 +92,7 @@ namespace hdt
     struct CollisionChecker;
 
     template <bool SwapResults>
-    struct CollisionChecker<PerVertexShape, SwapResults> : CollisionCheckBase2<PerVertexShape, SwapResults>
+    struct CollisionChecker<PerVertexShape, SwapResults> : public CollisionCheckBase2<PerVertexShape, SwapResults>
     {
         template <typename... Ts>
         CollisionChecker(Ts&&... ts) :
@@ -136,19 +115,19 @@ namespace hdt
 
     namespace
     {
-        auto cross_product(const __m128& vec0, const __m128& vec1) -> __m128
+        inline auto cross_product(__m128 const& vec0, __m128 const& vec1) -> __m128
         {
-            const __m128 tmp0 = _mm_shuffle_ps(vec0, vec0, _MM_SHUFFLE(3, 0, 2, 1));
-            const __m128 tmp1 = _mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2));
-            const __m128 tmp2 = _mm_mul_ps(tmp0, vec1);
-            const __m128 tmp3 = _mm_mul_ps(tmp0, tmp1);
-            const __m128 tmp4 = _mm_shuffle_ps(tmp2, tmp2, _MM_SHUFFLE(3, 0, 2, 1));
+            __m128 tmp0 = _mm_shuffle_ps(vec0, vec0, _MM_SHUFFLE(3, 0, 2, 1));
+            __m128 tmp1 = _mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2));
+            __m128 tmp2 = _mm_mul_ps(tmp0, vec1);
+            __m128 tmp3 = _mm_mul_ps(tmp0, tmp1);
+            __m128 tmp4 = _mm_shuffle_ps(tmp2, tmp2, _MM_SHUFFLE(3, 0, 2, 1));
             return _mm_sub_ps(tmp3, tmp4);
         }
     } // namespace
 
     template <bool SwapResults>
-    struct CollisionChecker<PerTriangleShape, SwapResults> : CollisionCheckBase2<PerTriangleShape, SwapResults>
+    struct CollisionChecker<PerTriangleShape, SwapResults> : public CollisionCheckBase2<PerTriangleShape, SwapResults>
     {
         template <typename... Ts>
         CollisionChecker(Ts&&... ts) :
@@ -189,7 +168,7 @@ namespace hdt
             auto distance = _mm_dp_ps(ap, normal, 0x77);
             float distanceFromPlane = _mm_cvtss_f32(distance);
             auto projection = _mm_sub_ps(s.pos().get128(), _mm_mul_ps(normal, distance));
-            const float radiusWithMargin = r + margin;
+            float radiusWithMargin = r + margin;
             bool isInsideContactPlane;
             if (penetration >= FLT_EPSILON)
             {
@@ -242,24 +221,24 @@ namespace hdt
     };
 
     template <typename T, bool SwapResults>
-    struct CollisionCheckDispatcher : CollisionChecker<T, SwapResults>
+    struct CollisionCheckDispatcher : public CollisionChecker<T, SwapResults>
     {
         template <typename... Ts>
         CollisionCheckDispatcher(Ts&&... ts) :
             CollisionChecker<T, SwapResults>(std::forward<Ts>(ts)...)
         {}
 
-        auto dispatch(ColliderTree* a, ColliderTree* b, const std::vector<Aabb*>& listA,
-                      const std::vector<Aabb*>& listB) -> void
+        // Modern Fast Dynamic 1D Sweep and Prune Algorithm eliminating O(N*M) tests
+        auto dispatch(ColliderTree* a, ColliderTree* b, std::vector<Aabb*>& listA, std::vector<Aabb*>& listB) -> void
         {
             CollisionResult result;
             CollisionResult temp;
-            auto hasResult = false;
+            bool hasResult = false;
 
             auto abeg = a->aabb;
             auto bbeg = b->aabb;
 
-            if (!listA.empty() && !listB.empty())
+            if (listA.size() && listB.size())
             {
                 for (auto i : listA)
                 {
@@ -289,7 +268,7 @@ namespace hdt
     };
 
     template <typename T, bool SwapResults = false>
-    struct CollisionCheckAlgorithm : CollisionCheckDispatcher<T, SwapResults>
+    struct CollisionCheckAlgorithm : public CollisionCheckDispatcher<T, SwapResults>
     {
         template <typename... Ts>
         CollisionCheckAlgorithm(Ts&&... ts) :
@@ -313,15 +292,14 @@ namespace hdt
                     return;
                 }
 
-                auto a = pair.first;
-                auto b = pair.second;
+                auto a = pair.first, b = pair.second;
 
-                const auto abeg = a->aabb;
-                const auto bbeg = b->aabb;
-                const auto asize = b->isKinematic ? a->dynCollider : a->numCollider;
-                const auto bsize = a->isKinematic ? b->dynCollider : b->numCollider;
-                const auto aend = abeg + asize;
-                const auto bend = bbeg + bsize;
+                auto abeg = a->aabb;
+                auto bbeg = b->aabb;
+                auto asize = b->isKinematic ? a->dynCollider : a->numCollider;
+                auto bsize = a->isKinematic ? b->dynCollider : b->numCollider;
+                auto aend = abeg + asize;
+                auto bend = bbeg + bsize;
 
                 Aabb aabbA;
                 auto aabbB = b->aabbMe;
@@ -339,29 +317,31 @@ namespace hdt
                 {
                     if (i->collideWith(aabbB))
                     {
-                        listA.emplace_back(i);
+                        listA.push_back(i);
                         aabbA.merge(*i);
                     }
                 }
 
                 // Colliders in B that intersect the new bounding box for A. Compute a new bounding box for those too.
-                if (!listA.empty())
+                if (listA.size())
                 {
                     aabbB.invalidate();
                     for (auto i = bbeg; i < bend; ++i)
                     {
                         if (i->collideWith(aabbA))
                         {
-                            listB.emplace_back(i);
+                            listB.push_back(i);
                             aabbB.merge(*i);
                         }
                     }
                 }
 
                 // Remove any colliders from A that don't intersect the new bounding box for B
-                if (!listB.empty())
+                if (listB.size())
                 {
-                    std::erase_if(listA, [&](const Aabb* aabb) { return !aabb->collideWith(aabbB); });
+                    listA.erase(std::remove_if(listA.begin(), listA.end(),
+                                               [&](Aabb* aabb) { return !aabb->collideWith(aabbB); }),
+                                listA.end());
                 }
 
                 // Now go through both lists and do the real collision (if needed).
@@ -388,30 +368,29 @@ namespace hdt
         }
     };
 
-    template <typename T1>
-    static auto checkCollide(PerVertexShape* a, T1* b, CollisionResult* results) -> int
+    template <class T1>
+    auto checkCollide(PerVertexShape* a, T1* b, CollisionResult* results) -> int
     {
         return CollisionCheckAlgorithm<T1>(a, b, results)();
     }
 
-    static auto checkCollide(PerTriangleShape* a, PerVertexShape* b, CollisionResult* results) -> int
+    auto checkCollide(PerTriangleShape* a, PerVertexShape* b, CollisionResult* results) -> int
     {
         return CollisionCheckAlgorithm<PerTriangleShape, true>(b, a, results)();
     }
 
-    template <typename T0, typename T1>
-    auto SkinnedMeshAlgorithm::MergeBuffer::doMerge(T0* shape0, T1* shape1, CollisionResult* collisions,
-                                                    const int count) -> void
+    template <class T0, class T1>
+    auto SkinnedMeshAlgorithm::MergeBuffer::doMerge(T0* a, T1* b, CollisionResult* collision, int count) -> void
     {
         for (int i = 0; i < count; ++i)
         {
-            auto& [posA, posB, normOnB, colliderA, colliderB, depth] = collisions[i];
-            if (depth >= -FLT_EPSILON)
+            auto& res = collision[i];
+            if (res.depth >= -FLT_EPSILON)
             {
                 break;
             }
 
-            const auto flexible = std::max(colliderA->flexible, colliderB->flexible);
+            auto flexible = std::max(res.colliderA->flexible, res.colliderB->flexible);
             // [3/13/2026]
             // Note: This was using a break before, but logically that doesn't make sense?
             // if we hit a stiffer collider earlier than our depth target, it'd early exit..
@@ -420,40 +399,40 @@ namespace hdt
                 continue;
             }
 
-            float w = flexible * depth;
+            float w = flexible * res.depth;
             float w2 = w * w;
 
             // pre-scale outside the bone loop, these don't depend on bone indices and the inner
             // loop runs bonePerCollider^2 times, so this matters
-            const auto normScaled = normOnB * w * w2; // cubic weight: bakes depth into normal magnitude
-            const auto posAScaled = posA * w2;
-            const auto posBScaled = posB * w2;
+            auto normScaled = res.normOnB * w * w2; // cubic weight: bakes depth into normal magnitude
+            auto posAScaled = res.posA * w2;
+            auto posBScaled = res.posB * w2;
 
-            for (auto ib = 0; ib < shape0->getBonePerCollider(); ++ib)
+            for (int ib = 0; ib < a->getBonePerCollider(); ++ib)
             {
-                const auto w0 = shape0->getColliderBoneWeight(colliderA, ib);
-                const int boneIdx0 = shape0->getColliderBoneIndex(colliderA, ib);
-                if (w0 <= shape0->m_owner->m_skinnedBones[boneIdx0].weightThreshold)
+                auto w0 = a->getColliderBoneWeight(res.colliderA, ib);
+                int boneIdx0 = a->getColliderBoneIndex(res.colliderA, ib);
+                if (w0 <= a->m_owner->m_skinnedBones[boneIdx0].weightThreshold)
                 {
                     continue;
                 }
 
-                for (auto jb = 0; jb < shape1->getBonePerCollider(); ++jb)
+                for (int jb = 0; jb < b->getBonePerCollider(); ++jb)
                 {
-                    const auto w1 = shape1->getColliderBoneWeight(colliderB, jb);
-                    const int boneIdx1 = shape1->getColliderBoneIndex(colliderB, jb);
-                    if (w1 <= shape1->m_owner->m_skinnedBones[boneIdx1].weightThreshold)
+                    auto w1 = b->getColliderBoneWeight(res.colliderB, jb);
+                    int boneIdx1 = b->getColliderBoneIndex(res.colliderB, jb);
+                    if (w1 <= b->m_owner->m_skinnedBones[boneIdx1].weightThreshold)
                     {
                         continue;
                     }
 
-                    if (shape0->m_owner->m_skinnedBones[boneIdx0].isKinematic &&
-                        shape1->m_owner->m_skinnedBones[boneIdx1].isKinematic)
+                    if (a->m_owner->m_skinnedBones[boneIdx0].isKinematic &&
+                        b->m_owner->m_skinnedBones[boneIdx1].isKinematic)
                     {
                         continue;
                     }
 
-                    const auto c = getAndTrack(boneIdx0, boneIdx1);
+                    auto c = getAndTrack(boneIdx0, boneIdx1);
                     c->weight += w2;
                     c->normal += normScaled;
                     c->pos[0] += posAScaled;
@@ -463,17 +442,17 @@ namespace hdt
         }
     }
 
-    auto SkinnedMeshAlgorithm::MergeBuffer::apply(const SkinnedMeshBody* body0, const SkinnedMeshBody* body1,
-                                                  CollisionDispatcher* dispatcher) const -> void
+    auto SkinnedMeshAlgorithm::MergeBuffer::apply(SkinnedMeshBody* body0, SkinnedMeshBody* body1,
+                                                  CollisionDispatcher* dispatcher) -> void
     {
         // only visit cells that were actually written to this frame,
         // instead of looping all bones0 * bones1 (far fewer iterations)
-        for (const int flatIdx : activeCells)
+        for (int flatIdx : activeCells)
         {
-            const int i = flatIdx / mergeStride;
-            const int j = flatIdx % mergeStride;
+            int i = flatIdx / mergeStride;
+            int j = flatIdx % mergeStride;
 
-            const auto* c = std::addressof(buffer[flatIdx]);
+            auto* c = &buffer[flatIdx];
             if (c->weight < FLT_EPSILON)
             {
                 continue;
@@ -492,8 +471,8 @@ namespace hdt
                 continue;
             }
 
-            const auto rb0 = body0->m_skinnedBones[i].ptr;
-            const auto rb1 = body1->m_skinnedBones[j].ptr;
+            auto rb0 = body0->m_skinnedBones[i].ptr;
+            auto rb1 = body1->m_skinnedBones[j].ptr;
             if (rb0 == rb1)
             {
                 continue;
@@ -513,7 +492,7 @@ namespace hdt
 
             // depth was baked into normal magnitude during doMerge (weighted cubically instead of storing a separate
             // depth field)
-            const auto depth = -normal.length();
+            auto depth = -normal.length();
             normal = -normal.normalized();
 
             if (depth >= -FLT_EPSILON)
@@ -528,14 +507,14 @@ namespace hdt
             newPt.m_combinedRestitution = rb0->m_rig.getRestitution() * rb1->m_rig.getRestitution();
             newPt.m_combinedRollingFriction = rb0->m_rig.getRollingFriction() * rb1->m_rig.getRollingFriction();
 
-            const auto maniford = dispatcher->getNewManifold(&rb0->m_rig, &rb1->m_rig);
+            auto maniford = dispatcher->getNewManifold(&rb0->m_rig, &rb1->m_rig);
             maniford->addManifoldPoint(newPt);
         }
     }
 
-    template <typename T0, typename T1>
-    auto SkinnedMeshAlgorithm::processCollision(T0* shape0, T1* shape1, MergeBuffer& merge, CollisionResult* collision)
-        -> void
+    template <class T0, class T1>
+    auto SkinnedMeshAlgorithm::processCollision(T0* shape0, T1* shape1, MergeBuffer& merge,
+                                                CollisionResult* collision) -> void
     {
         int count = std::min(checkCollide(shape0, shape1, collision), MaxCollisionCount);
         if (count > 0)
@@ -548,7 +527,7 @@ namespace hdt
         }
     }
 
-    auto SkinnedMeshAlgorithm::processCollision(const SkinnedMeshBody* body0, const SkinnedMeshBody* body1,
+    auto SkinnedMeshAlgorithm::processCollision(SkinnedMeshBody* body0, SkinnedMeshBody* body1,
                                                 CollisionDispatcher* dispatcher) -> void
     {
         // thread_local so we don't heap-alloc these 200+ times per frame

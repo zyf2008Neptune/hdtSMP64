@@ -13,8 +13,7 @@ namespace hdt
 
     auto SkyrimBody::canCollideWith(const SkinnedMeshBody* rhs) const -> bool
     {
-        const auto body = dynamic_cast<const SkyrimBody*>(rhs);
-
+        auto body = (SkyrimBody*)rhs;
         if (m_disabled || body->m_disabled)
         {
             return false;
@@ -25,29 +24,25 @@ namespace hdt
         case SharedType::SHARED_PUBLIC:
             break;
         case SharedType::SHARED_INTERNAL:
-        {
             if (m_mesh->m_skeleton != body->m_mesh->m_skeleton)
             {
                 return false;
             }
             break;
-        }
         case SharedType::SHARED_EXTERNAL:
-        {
             if (m_mesh->m_skeleton == body->m_mesh->m_skeleton)
             {
                 return false;
             }
             break;
-        }
         case SharedType::SHARED_PRIVATE:
-        {
             if (m_mesh != body->m_mesh)
             {
                 return false;
             }
             break;
-        }
+        default:
+            return false;
         }
 
         return SkinnedMeshBody::canCollideWith(rhs);

@@ -1,22 +1,7 @@
 #include "config.h"
-
-#include <algorithm>
-#include <cstdint>
-#include <locale>
-#include <sstream>
-#include <string>
-
-#include <LinearMath/btMinMax.h>
-#include <SKSE/Logger.h>
-
-#include "ActorManager.h"
 #include "hdtSkyrimPhysicsWorld.h"
 #include "Hooks.h"
-#include "NetImmerseUtils.h"
 #include "XmlReader.h"
-#include "hdtSkinnedMesh/hdtConstraintGroup.h"
-#include "XmlInspector/XmlInspector.hpp"
-
 
 namespace hdt
 {
@@ -29,13 +14,16 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
-            {
                 if (reader.GetLocalName() == "numIterations")
-
                 {
                     SkyrimPhysicsWorld::get()->getSolverInfo().m_numIterations = btClamped(reader.readInt(), 4, 128);
                 }
-
+                // This has been dead code for years. Todo: Remove references to this in all the configs/menus.
+                // else if (reader.GetLocalName() == "groupIterations") {
+                //	ConstraintGroup::MaxIterations = btClamped(reader.readInt(), 0, 4096);
+                //} else if (reader.GetLocalName() == "groupEnableMLCP") {
+                //	ConstraintGroup::EnableMLCP = reader.readBool();
+                //}
                 else if (reader.GetLocalName() == "erp")
                 {
                     SkyrimPhysicsWorld::get()->getSolverInfo().m_erp = btClamped(reader.readFloat(), 0.01f, 1.0f);
@@ -54,13 +42,9 @@ namespace hdt
                     logger::warn("Unknown config : {}", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
-
                 break;
-            }
             case XMLReader::Inspected::EndTag:
-            {
                 return;
-            }
             }
         }
     }
@@ -72,7 +56,6 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
-            {
                 if (reader.GetLocalName() == "windStrength")
                 {
                     SkyrimPhysicsWorld::get()->m_windStrength = btClamped(reader.readFloat(), 0.f, 1000.f);
@@ -91,16 +74,12 @@ namespace hdt
                 }
                 else
                 {
-                    logger::warn("Unknown config : ", reader.GetLocalName());
+                    logger::warn("Unknown config : {}", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
-
                 break;
-            }
             case XMLReader::Inspected::EndTag:
-            {
                 return;
-            }
             }
         }
     }
@@ -112,7 +91,6 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
-            {
                 if (reader.GetLocalName() == "logLevel")
                 {
                     // Inverted so: 0 = critical, 1 = err, 2 = warn, 3 = info, 4 = debug, 5 = trace.
@@ -197,13 +175,9 @@ namespace hdt
                     logger::warn("Unknown config : {}", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
-
                 break;
-            }
             case XMLReader::Inspected::EndTag:
-            {
                 return;
-            }
             }
         }
     }
@@ -215,7 +189,6 @@ namespace hdt
             switch (reader.GetInspected())
             {
             case XMLReader::Inspected::StartTag:
-            {
                 if (reader.GetLocalName() == "solver")
                 {
                     solver(reader);
@@ -233,13 +206,9 @@ namespace hdt
                     logger::warn("Unknown config : {}", reader.GetLocalName());
                     reader.skipCurrentElement();
                 }
-
                 break;
-            }
             case XMLReader::Inspected::EndTag:
-            {
                 return;
-            }
             }
         }
     }
@@ -253,15 +222,13 @@ namespace hdt
         }
 
         // Store original locale
-        //const auto saved_locale = std::locale();
         char saved_locale[32];
         strcpy_s(saved_locale, std::setlocale(LC_NUMERIC, nullptr));
 
         // Set locale to en_US
-        //std::locale::global(std::locale("en_US"));
         std::setlocale(LC_NUMERIC, "en_US");
 
-        XMLReader reader(reinterpret_cast<uint8_t*>(bytes.data()), bytes.size());
+        XMLReader reader((uint8_t*)bytes.data(), bytes.size());
 
         while (reader.Inspect())
         {
@@ -280,7 +247,6 @@ namespace hdt
         }
 
         // Restore original locale
-        //std::locale::global(saved_locale);
         std::setlocale(LC_NUMERIC, saved_locale);
     }
 
