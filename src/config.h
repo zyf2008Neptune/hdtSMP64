@@ -2,9 +2,9 @@
 
 namespace hdt
 {
-    extern int g_logLevel;
+	extern int g_logLevel;
 
-    //
-    auto loadConfig() -> void;
-    auto logConfig() -> void;
+	//
+	void loadConfig();
+	void logConfig();
 }

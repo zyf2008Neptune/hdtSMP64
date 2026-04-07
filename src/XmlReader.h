@@ -7,40 +7,41 @@
 
 namespace hdt
 {
-    class XMLReader : public Xml::Inspector<Xml::Encoding::Utf8Writer>
-    {
-    private:
-        using Base = Inspector<Xml::Encoding::Utf8Writer>;
-        bool isEmptyStart{};
+	class XMLReader : public Xml::Inspector<Xml::Encoding::Utf8Writer>
+	{
+		typedef Inspector<Xml::Encoding::Utf8Writer> Base;
+		bool isEmptyStart;
 
-    public:
-        XMLReader(BYTE* data, size_t count) :
-            Base(data, data + count) {}
+	public:
+		XMLReader(BYTE* data, size_t count) :
+			Base(data, data + count)
+		{
+		}
 
-        using Inspected = Xml::Inspected;
+		typedef Xml::Inspected Inspected;
 
-        auto Inspect() -> bool;
-        auto GetInspected() const -> Xml::Inspected;
+		bool Inspect();
+		Xml::Inspected GetInspected();
 
-        auto skipCurrentElement() -> void;
-        auto nextStartElement() -> void;
+		void skipCurrentElement();
+		void nextStartElement();
 
-        auto hasAttribute(const std::string& name) const -> bool;
-        auto getAttribute(const std::string& name) const -> std::string;
-        auto getAttribute(const std::string& name, const std::string& def) const -> std::string;
+		bool hasAttribute(const std::string& name);
+		std::string getAttribute(const std::string& name);
+		std::string getAttribute(const std::string& name, const std::string& def);
 
-        auto getAttributeAsFloat(const std::string& name) const -> float;
-        auto getAttributeAsInt(const std::string& name) const -> int;
-        auto getAttributeAsBool(const std::string& name) const -> bool;
+		float getAttributeAsFloat(const std::string& name);
+		int getAttributeAsInt(const std::string& name);
+		bool getAttributeAsBool(const std::string& name);
 
-        auto readText() -> std::string;
-        auto readFloat() -> float;
-        auto readInt() -> int;
-        auto readBool() -> bool;
+		std::string readText();
+		float readFloat();
+		int readInt();
+		bool readBool();
 
-        auto readVector3() -> btVector3;
-        auto readQuaternion() -> btQuaternion;
-        auto readAxisAngle() -> btQuaternion;
-        auto readTransform() -> btTransform;
-    };
+		btVector3 readVector3();
+		btQuaternion readQuaternion();
+		btQuaternion readAxisAngle();
+		btTransform readTransform();
+	};
 }

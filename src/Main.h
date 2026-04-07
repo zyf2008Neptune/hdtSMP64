@@ -1,7 +1,7 @@
 #pragma once
 
 //
-auto GetTextureFromIndex(RE::BSLightingShaderMaterial* material, std::uint32_t index) -> RE::NiSourceTexturePtr*;
+RE::NiSourceTexturePtr* GetTextureFromIndex(RE::BSLightingShaderMaterial* material, std::uint32_t index);
 
 //
-auto DumpNodeChildren(RE::NiAVObject* node) -> void;
+void DumpNodeChildren(RE::NiAVObject* node);

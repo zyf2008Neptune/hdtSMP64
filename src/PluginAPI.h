@@ -22,60 +22,60 @@ class btCollisionObject;
 
 namespace hdt
 {
-    //Sent right before the physics simulation begins updating.
-    //Only forces and torques may be applied during this event.
-    //The collision objects must in every other regard be treated as read-only.
-    struct PreStepEvent
-    {
-        const btAlignedObjectArray<btCollisionObject*>& objects;
-        float timeStep{0.0f};
-    };
+	//Sent right before the physics simulation begins updating.
+	//Only forces and torques may be applied during this event.
+	//The collision objects must in every other regard be treated as read-only.
+	struct PreStepEvent
+	{
+		const btAlignedObjectArray<btCollisionObject*>& objects;
+		float timeStep{ 0.0f };
+	};
 
-    //Sent right after the physics simulation has finished updating.
-    //The collision objects must in every regard be treated as read-only.
-    struct PostStepEvent
-    {
-        const btAlignedObjectArray<btCollisionObject*>& objects;
-        float timeStep{0.0f};
-    };
+	//Sent right after the physics simulation has finished updating.
+	//The collision objects must in every regard be treated as read-only.
+	struct PostStepEvent
+	{
+		const btAlignedObjectArray<btCollisionObject*>& objects;
+		float timeStep{ 0.0f };
+	};
 
-    using IPreStepListener = RE::BSTEventSink<PreStepEvent>;
-    using IPostStepListener = RE::BSTEventSink<PostStepEvent>;
+	using IPreStepListener = RE::BSTEventSink<PreStepEvent>;
+	using IPostStepListener = RE::BSTEventSink<PostStepEvent>;
 
-    class PluginInterface
-    {
-    public:
-        enum MessageType : uint8_t
-        {
-            MSG_STARTUP,
-        };
+	class PluginInterface
+	{
+	public:
+		enum MessageType : unsigned long
+		{
+			MSG_STARTUP,
+		};
 
-        struct Version
-        {
-            int major;
-            int minor;
-            int patch;
-        };
+		struct Version
+		{
+			int major;
+			int minor;
+			int patch;
+		};
 
-        struct VersionInfo
-        {
-            Version interfaceVersion;
-            Version bulletVersion;
-        };
+		struct VersionInfo
+		{
+			Version interfaceVersion;
+			Version bulletVersion;
+		};
 
-    public:
-        static constexpr Version INTERFACE_VERSION{2, 0, 0};
-        static constexpr Version BULLET_VERSION{3, 24, 0};
+	public:
+		constexpr static Version INTERFACE_VERSION{ 2, 0, 0 };
+		constexpr static Version BULLET_VERSION{ 3, 24, 0 };
 
-    public:
-        virtual ~PluginInterface() = default;
+	public:
+		virtual ~PluginInterface() = default;
 
-        virtual auto getVersionInfo() const -> const VersionInfo& = 0;
+		virtual const VersionInfo& getVersionInfo() const = 0;
 
-        virtual auto addListener(IPreStepListener*) -> void = 0;
-        virtual auto removeListener(IPreStepListener*) -> void = 0;
+		virtual void addListener(IPreStepListener*) = 0;
+		virtual void removeListener(IPreStepListener*) = 0;
 
-        virtual auto addListener(IPostStepListener*) -> void = 0;
-        virtual auto removeListener(IPostStepListener*) -> void = 0;
-    };
+		virtual void addListener(IPostStepListener*) = 0;
+		virtual void removeListener(IPostStepListener*) = 0;
+	};
 }

@@ -5,24 +5,27 @@
 
 namespace hdt
 {
-    auto convertNi(const RE::NiMatrix3& rhs) -> btQuaternion;
+	btQuaternion convertNi(const RE::NiMatrix3& rhs);
 
-    inline auto convertNi(const RE::NiPoint3& rhs) -> btVector3 { return btVector3(rhs.x, rhs.y, rhs.z); }
+	inline btVector3 convertNi(const RE::NiPoint3& rhs)
+	{
+		return btVector3(rhs.x, rhs.y, rhs.z);
+	}
 
-    inline auto convertNi(const RE::NiTransform& rhs) -> btQsTransform
-    {
-        btQsTransform ret;
-        ret.setBasis(convertNi(rhs.rotate));
-        ret.setOrigin(convertNi(rhs.translate));
-        ret.setScale(rhs.scale);
-        return ret;
-    }
+	inline btQsTransform convertNi(const RE::NiTransform& rhs)
+	{
+		btQsTransform ret;
+		ret.setBasis(convertNi(rhs.rotate));
+		ret.setOrigin(convertNi(rhs.translate));
+		ret.setScale(rhs.scale);
+		return ret;
+	}
 
-    auto convertBt(const btVector3& rhs) -> RE::NiPoint3;
-    auto convertBt(const btMatrix3x3& rhs) -> RE::NiMatrix3;
-    auto convertBt(const btQuaternion& rhs) -> RE::NiMatrix3;
-    auto convertBt(const btQsTransform& rhs) -> RE::NiTransform;
+	RE::NiPoint3 convertBt(const btVector3& rhs);
+	RE::NiMatrix3 convertBt(const btMatrix3x3& rhs);
+	RE::NiMatrix3 convertBt(const btQuaternion& rhs);
+	RE::NiTransform convertBt(const btQsTransform& rhs);
 
-    static const float scaleRealWorld = 0.01425f;
-    static const float scaleSkyrim = 1 / scaleRealWorld;
-} // namespace hdt
+	static const float scaleRealWorld = 0.01425f;
+	static const float scaleSkyrim = 1 / scaleRealWorld;
+}

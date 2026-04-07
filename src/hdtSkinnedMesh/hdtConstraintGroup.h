@@ -3,17 +3,14 @@
 
 namespace hdt
 {
-    class ConstraintGroup : public RefObject
-    {
-    public:
-        auto scaleConstraint() const -> void
-        {
-            for (auto& i : m_constraints)
-            {
-                i->scaleConstraint();
-            }
-        }
-
-        std::vector<RE::BSTSmartPointer<BoneScaleConstraint>> m_constraints;
-    };
+	class ConstraintGroup : public RefObject
+	{
+	public:
+		void scaleConstraint()
+		{
+			for (auto& i : m_constraints)
+				i->scaleConstraint();
+		}
+		std::vector<RE::BSTSmartPointer<BoneScaleConstraint>> m_constraints;
+	};
 }
