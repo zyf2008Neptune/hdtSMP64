@@ -7,23 +7,23 @@ namespace hdt::papyrus
     auto RegisterAllFunctions(const SKSE::PapyrusInterface* a_papy_intfc) -> bool;
 
     auto ReloadPhysicsFile(RE::StaticFunctionTag* base, RE::Actor* on_actor, RE::TESObjectARMA* on_item,
-                           const RE::BSFixedString& physics_file_path, bool persist, bool verbose_log) -> bool;
+                           RE::BSFixedString physics_file_path, bool persist, bool verbose_log) -> bool;
 
     auto SwapPhysicsFile(RE::StaticFunctionTag* base, RE::Actor* on_actor,
-                         const RE::BSFixedString& old_physics_file_path,
-                         const RE::BSFixedString& new_physics_file_path, bool persist, bool verbose_log) -> bool;
+                         RE::BSFixedString old_physics_file_path,
+                         RE::BSFixedString new_physics_file_path, bool persist, bool verbose_log) -> bool;
 
     auto QueryCurrentPhysicsFile(RE::StaticFunctionTag* base, RE::Actor* on_actor, RE::TESObjectARMA* on_item,
                                  bool verbose_log) -> RE::BSFixedString;
 
     namespace impl
     {
-        auto ReloadPhysicsFileImpl(uint32_t on_actor_formID, uint32_t on_item_formID, const std::string&
+        auto ReloadPhysicsFileImpl(uint32_t on_actor_formID, uint32_t on_item_formID, std::string_view
                                    physics_file_path,
                                    bool persist, bool verbose_log) -> bool;
 
-        auto SwapPhysicsFileImpl(uint32_t on_actor_formID, const std::string& old_physics_file_path,
-                                 const std::string& new_physics_file_path, bool persist, bool verbose_log) -> bool;
+        auto SwapPhysicsFileImpl(uint32_t on_actor_formID, std::string_view old_physics_file_path,
+                                 std::string_view new_physics_file_path, bool persist, bool verbose_log) -> bool;
 
         auto QueryCurrentPhysicsFileImpl(uint32_t on_actor_formID, uint32_t on_item_formID,
                                          bool verbose_log) -> std::string;

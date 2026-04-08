@@ -5,19 +5,16 @@
 #include "dhdtOverrideManager.h"
 #include "hdtSkyrimPhysicsWorld.h"
 
-namespace
+auto RegisterFuncs(RE::BSScript::IVirtualMachine* registry) -> bool
 {
-    auto RegisterFuncs(RE::BSScript::IVirtualMachine* registry) -> bool
-    {
-        //
-        registry->RegisterFunction("ReloadPhysicsFile", "DynamicHDT", hdt::papyrus::ReloadPhysicsFile);
-        registry->RegisterFunction("SwapPhysicsFile", "DynamicHDT", hdt::papyrus::SwapPhysicsFile);
-        registry->RegisterFunction("QueryCurrentPhysicsFile", "DynamicHDT", hdt::papyrus::QueryCurrentPhysicsFile);
+    //
+    registry->RegisterFunction("ReloadPhysicsFile", "DynamicHDT", hdt::papyrus::ReloadPhysicsFile);
+    registry->RegisterFunction("SwapPhysicsFile", "DynamicHDT", hdt::papyrus::SwapPhysicsFile);
+    registry->RegisterFunction("QueryCurrentPhysicsFile", "DynamicHDT", hdt::papyrus::QueryCurrentPhysicsFile);
 
-        //
-        return true;
-    }
-} // namespace
+    //
+    return true;
+}
 
 auto hdt::papyrus::RegisterAllFunctions(const SKSE::PapyrusInterface* a_papy_intfc) -> bool
 {
@@ -26,7 +23,7 @@ auto hdt::papyrus::RegisterAllFunctions(const SKSE::PapyrusInterface* a_papy_int
 
 // Some private/protected members are changed to public so that these functions can access them externally.
 auto hdt::papyrus::ReloadPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on_actor, RE::TESObjectARMA* on_item,
-                                     const RE::BSFixedString& physics_file_path, const bool persist,
+                                     const RE::BSFixedString physics_file_path, const bool persist,
                                      const bool verbose_log) -> bool
 {
     if (!(on_actor && on_item))
@@ -46,8 +43,8 @@ auto hdt::papyrus::ReloadPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on_actor
 }
 
 auto hdt::papyrus::SwapPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on_actor,
-                                   const RE::BSFixedString& old_physics_file_path,
-                                   const RE::BSFixedString& new_physics_file_path, const bool persist,
+                                   const RE::BSFixedString old_physics_file_path,
+                                   const RE::BSFixedString new_physics_file_path, const bool persist,
                                    const bool verbose_log) -> bool
 {
     if (!on_actor)
@@ -117,7 +114,7 @@ auto hdt::papyrus::QueryCurrentPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on
 //}
 
 auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, uint32_t on_item_formID,
-                                               const std::string& physics_file_path, const bool persist,
+                                               const std::string_view physics_file_path, const bool persist,
                                                const bool verbose_log) -> bool
 {
     const auto& AM = ActorManager::instance();
@@ -162,7 +159,7 @@ auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, u
 
                 std::string armorName(armor.armorWorn->name);
 
-                auto buffer = fmt::format("{ : 08X}", on_item_formID);
+                auto buffer = fmt::format("{:08X}", on_item_formID);
 
                 if (armorName.contains(buffer))
                 {
@@ -245,7 +242,7 @@ auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, u
     if (persist)
     {
         auto OM = Override::OverrideManager::GetSingleton();
-        OM->registerOverride(on_actor_formID, old_physics_file_path, physics_file_path);
+        OM->registerOverride(on_actor_formID, old_physics_file_path, std::string(physics_file_path));
     }
 
     if (verbose_log)
@@ -263,8 +260,9 @@ auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, u
     return succeeded;
 }
 
-auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID, const std::string& old_physics_file_path,
-                                             const std::string& new_physics_file_path, const bool persist,
+auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID,
+                                             const std::string_view old_physics_file_path,
+                                             const std::string_view new_physics_file_path, const bool persist,
                                              const bool verbose_log) -> bool
 {
     const auto& AM = ActorManager::instance();
@@ -383,7 +381,7 @@ auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID, con
     if (persist)
     {
         auto OM = Override::OverrideManager::GetSingleton();
-        OM->registerOverride(on_actor_formID, old_physics_file_path, new_physics_file_path);
+        OM->registerOverride(on_actor_formID, std::string(old_physics_file_path), std::string(new_physics_file_path));
     }
 
     if (verbose_log)
