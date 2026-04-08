@@ -127,13 +127,13 @@ jobs:
       # Use a matrix to run all presets at the same time
       matrix:
         include:
-          - preset: vs2022-windows
+          - preset: x64-windows
             avx_variant: noavx
-          - preset: vs2022-windows-avx
+          - preset: x64-windows-avx
             avx_variant: avx
-          - preset: vs2022-windows-avx2
+          - preset: x64-windows-avx2
             avx_variant: avx2
-          - preset: vs2022-windows-avx512
+          - preset: x64-windows-avx512
             avx_variant: avx512
 
     steps:
