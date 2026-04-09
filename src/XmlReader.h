@@ -1,7 +1,7 @@
 #pragma once
 
-#include "XmlInspector/XmlInspector.hpp"
 #include "XmlInspector/CharactersReader.hpp"
+#include "XmlInspector/XmlInspector.hpp"
 
 #include "hdtSkinnedMesh/hdtBulletHelper.h"
 
@@ -9,38 +9,39 @@ namespace hdt
 {
 	class XMLReader : public Xml::Inspector<Xml::Encoding::Utf8Writer>
 	{
-	private:
-		using Base = Inspector<Xml::Encoding::Utf8Writer>;
+		typedef Inspector<Xml::Encoding::Utf8Writer> Base;
 		bool isEmptyStart;
 
 	public:
 		XMLReader(BYTE* data, size_t count) :
-			Base(data, data + count) {}
+			Base(data, data + count)
+		{
+		}
 
-		using Inspected = Xml::Inspected;
+		typedef Xml::Inspected Inspected;
 
-		auto Inspect() -> bool;
-		auto GetInspected() -> Xml::Inspected;
+		bool Inspect();
+		Xml::Inspected GetInspected();
 
-		auto skipCurrentElement() -> void;
-		auto nextStartElement() -> void;
+		void skipCurrentElement();
+		void nextStartElement();
 
-		auto hasAttribute(const std::string& name) -> bool;
-		auto getAttribute(const std::string& name) -> std::string;
-		auto getAttribute(const std::string& name, const std::string& def) -> std::string;
+		bool hasAttribute(const std::string& name);
+		std::string getAttribute(const std::string& name);
+		std::string getAttribute(const std::string& name, const std::string& def);
 
-		auto getAttributeAsFloat(const std::string& name) -> float;
-		auto getAttributeAsInt(const std::string& name) -> int;
-		auto getAttributeAsBool(const std::string& name) -> bool;
+		float getAttributeAsFloat(const std::string& name);
+		int getAttributeAsInt(const std::string& name);
+		bool getAttributeAsBool(const std::string& name);
 
-		auto readText() -> std::string;
-		auto readFloat() -> float;
-		auto readInt() -> int;
-		auto readBool() -> bool;
+		std::string readText();
+		float readFloat();
+		int readInt();
+		bool readBool();
 
-		auto readVector3() -> btVector3;
-		auto readQuaternion() -> btQuaternion;
-		auto readAxisAngle() -> btQuaternion;
-		auto readTransform() -> btTransform;
+		btVector3 readVector3();
+		btQuaternion readQuaternion();
+		btQuaternion readAxisAngle();
+		btTransform readTransform();
 	};
 }

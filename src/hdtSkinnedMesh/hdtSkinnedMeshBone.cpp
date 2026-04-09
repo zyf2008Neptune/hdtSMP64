@@ -1,10 +1,9 @@
 #include "hdtSkinnedMeshBone.h"
-#include <algorithm>
 
 namespace hdt
 {
-	SkinnedMeshBone::SkinnedMeshBone(const IDStr& name, btRigidBody::btRigidBodyConstructionInfo& ci)
-		: m_name(name), m_rig(ci)
+	SkinnedMeshBone::SkinnedMeshBone(const RE::BSFixedString& name, btRigidBody::btRigidBodyConstructionInfo& ci) :
+		m_name(name), m_rig(ci)
 	{
 		m_rigToLocal.setIdentity();
 		m_localToRig.setIdentity();
@@ -14,7 +13,11 @@ namespace hdt
 
 		m_rig.setUserPointer(this);
 	}
-	
+
+	SkinnedMeshBone::~SkinnedMeshBone()
+	{
+	}
+
 	void SkinnedMeshBone::internalUpdate()
 	{
 		auto t = m_rigToLocal * m_rig.getInterpolationWorldTransform();
@@ -24,12 +27,10 @@ namespace hdt
 
 	bool SkinnedMeshBone::canCollideWith(SkinnedMeshBone* rhs)
 	{
-		if (m_canCollideWithBone.size())
-		{
+		if (m_canCollideWithBone.size()) {
 			return std::find(m_canCollideWithBone.begin(), m_canCollideWithBone.end(), rhs->m_name) !=
-				m_canCollideWithBone.end();
+			       m_canCollideWithBone.end();
 		}
-		return std::find(m_noCollideWithBone.begin(), m_noCollideWithBone.end(), rhs->m_name) == m_noCollideWithBone.
-			end();
+		return std::find(m_noCollideWithBone.begin(), m_noCollideWithBone.end(), rhs->m_name) == m_noCollideWithBone.end();
 	}
 }

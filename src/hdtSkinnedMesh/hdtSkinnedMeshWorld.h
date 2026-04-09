@@ -1,75 +1,72 @@
 #pragma once
 
-#include <vector>
-
-#include <BulletDynamics/ConstraintSolver/btContactSolverInfo.h>
-#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
-#include <LinearMath/btScalar.h>
-#include <LinearMath/btVector3.h>
-#include <RE/B/BSTSmartPointer.h>
-
-#include "hdtGroupConstraintSolver.h"
-#include "hdtSkinnedMeshBody.h"
 #include "hdtSkinnedMeshSystem.h"
+#include "hdtSkyrimSystem.h"
+#include <BulletCollision/CollisionDispatch/btSimulationIslandManager.h>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
 
 namespace hdt
 {
-    class SkinnedMeshWorld : protected btDiscreteDynamicsWorldMt
-    {
-    public:
-        SkinnedMeshWorld();
-        ~SkinnedMeshWorld() override;
+	class SkinnedMeshWorld : protected btDiscreteDynamicsWorldMt
+	{
+	public:
+		SkinnedMeshWorld();
+		~SkinnedMeshWorld();
 
-        virtual auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
-        virtual auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
+		virtual void addSkinnedMeshSystem(SkinnedMeshSystem* system);
+		virtual void removeSkinnedMeshSystem(SkinnedMeshSystem* system);
 
-        auto stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
-                            btScalar fixedTimeStep = btScalar(1.) / btScalar(60.)) -> int override;
+		int stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
+			btScalar fixedTimeStep = btScalar(1.) / btScalar(60.)) override;
 
-        auto getWind() -> btVector3& { return m_windSpeed; }
-        auto getWind() const -> const btVector3& { return m_windSpeed; }
+		btVector3& getWind() { return m_windSpeed; }
+		const btVector3& getWind() const { return m_windSpeed; }
 
-    protected:
-        virtual auto resetTransformsToOriginal() -> void
-        {
-            for (const auto& m_system : m_systems)
-            {
-                m_system->resetTransformsToOriginal();
-            }
-        }
+	protected:
+		std::vector<float> m_timeSteps;
 
-        auto readTransform(float timeStep) const -> void
-        {
-            for (const auto& m_system : m_systems)
-            {
-                m_system->readTransform(timeStep);
-            }
-        }
+		void resetTransformsToOriginal()
+		{
+			for (int i = 0; i < m_systems.size(); ++i) m_systems[i]->resetTransformsToOriginal();
+		}
 
-        auto writeTransform() const -> void
-        {
-            for (const auto& m_system : m_systems)
-            {
-                m_system->writeTransform();
-            }
-        }
+		void readTransform(float timeStep)
+		{
+			const size_t n = m_systems.size();
+			if (n == 0)
+				return;
 
-        auto applyGravity() -> void override;
-        auto applyWind() const -> void;
+			m_timeSteps.resize(n);
 
-        auto predictUnconstraintMotion(btScalar timeStep) -> void override;
-        auto integrateTransforms(btScalar timeStep) -> void override;
-        auto performDiscreteCollisionDetection() -> void override;
-        auto solveConstraints(btContactSolverInfo& solverInfo) -> void override;
+			// processSkeletonRoot must be ran synchronously to avoid race issues
+			for (size_t i = 0; i < n; ++i)
+				m_timeSteps[i] = m_systems[i]->prepareForRead(timeStep);
 
-        std::vector<RE::BSTSmartPointer<SkinnedMeshSystem>> m_systems;
+			concurrency::parallel_for(size_t{ 0 }, n, [this](size_t i) {
+				m_systems[i]->readTransform(m_timeSteps[i]);
+			});
+		}
 
-        btVector3 m_windSpeed; // world windspeed
+		void writeTransform()
+		{
+			for (int i = 0; i < m_systems.size(); ++i) m_systems[i]->writeTransform();
+		}
 
-    private:
-        std::vector<SkinnedMeshBody*> _bodies;
-        std::vector<SkinnedMeshShape*> _shapes;
-        btConstraintSolverPoolMt* m_solverPool;
-        GroupConstraintSolver m_constraintSolver;
-    };
+		void applyGravity() override;
+		void applyWind();
+
+		void predictUnconstraintMotion(btScalar timeStep) override;
+		void integrateTransforms(btScalar timeStep) override;
+		void performDiscreteCollisionDetection() override;
+		void calculateSimulationIslands() override;
+		void solveConstraints(btContactSolverInfo& solverInfo) override;
+
+		std::vector<RE::BSTSmartPointer<SkinnedMeshSystem>> m_systems;
+
+		btVector3 m_windSpeed;  // world windspeed
+
+	private:
+		std::vector<SkinnedMeshBody*> _bodies;
+		std::vector<SkinnedMeshShape*> _shapes;
+	};
 }

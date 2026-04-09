@@ -3,12 +3,9 @@
 #include "hdtSkyrimSystem.h"
 
 //
-namespace hdt 
+namespace hdt::util
 {
-	namespace util 
-	{
-		uint32_t splitArmorAddonFormID(std::string nodeName);
-		std::string UInt32toString(uint32_t formID);
-		void transferCurrentPosesBetweenSystems(hdt::SkyrimSystem* src, hdt::SkyrimSystem* dst);
-	}
+    auto splitArmorAddonFormID(const std::string& nodeName) -> uint32_t;
+    auto UInt32toString(uint32_t formID) -> std::string;
+    auto transferCurrentPosesBetweenSystems(hdt::SkyrimSystem* src, hdt::SkyrimSystem* dst) -> void;
 }

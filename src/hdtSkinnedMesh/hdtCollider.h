@@ -1,12 +1,7 @@
 #pragma once
 
-#include <emmintrin.h>
-#include <functional>
-#include <utility>
-#include <vector>
-
 #include "hdtAABB.h"
-#include "hdtBulletHelper.h"
+#include <functional>
 
 namespace hdt
 {
@@ -47,7 +42,8 @@ namespace hdt
 			aabbMe.invalidate();
 		}
 
-		ColliderTree(U32 k) : key(k)
+		ColliderTree(U32 k) :
+			key(k)
 		{
 			aabbAll.invalidate();
 			aabbMe.invalidate();
@@ -69,12 +65,9 @@ namespace hdt
 		vectorA16<Collider> colliders;
 		U32 key;
 
-		void insertCollider(const std::vector<U32>& keys, const Collider& c);
+		void insertCollider(const U32* keys, size_t keyCount, const Collider& c);
 		void exportColliders(vectorA16<Collider>& exportTo);
 		void remapColliders(Collider* start, Aabb* startAabb);
-#ifdef CUDA
-		void relocateAabb(Aabb* newAabb);
-#endif
 
 		void checkCollisionL(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret);
 		void checkCollisionR(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret);
@@ -89,20 +82,4 @@ namespace hdt
 		bool collapseCollideL(ColliderTree* r);
 		bool collapseCollideR(ColliderTree* r);
 	};
-
-	/*
-	struct _CRT_ALIGN(16) ColliderTree
-	{
-
-		Aabb aabb;
-		vectorA16<Node> nodes;
-		U32 isKinematic;
-
-		void insertCollider(const std::vector<U32>& keys, const Collider& c);
-		void checkCollision(const ColliderTree& r, std::vector<std::pair<Node*, Node*>>& ret);
-		void clipCollider(const std::function<bool(const Collider&)>& func);
-		void updateKinematic(const std::function<bool(const Collider*)>& func);
-		void updateAabb(const std::function<void(Collider*)>& func);
-		void visitColliders(const std::function<void(Collider*)>& func);
-	};*/
 }

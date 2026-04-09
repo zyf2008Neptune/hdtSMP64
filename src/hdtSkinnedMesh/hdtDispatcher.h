@@ -1,14 +1,10 @@
 #pragma once
 
-#include <mutex>
-#include <utility>
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
+#include "hdtBulletHelper.h"
+#include <ppl.h>
+#include <ppltasks.h>
 #include <vector>
-
-#include <BulletCollision/BroadphaseCollision/btDispatcher.h>
-#include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
-#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
-#include <BulletCollision/NarrowPhaseCollision/btPersistentManifold.h>
 
 namespace hdt
 {
@@ -17,9 +13,9 @@ namespace hdt
 	class CollisionDispatcher : public btCollisionDispatcherMt
 	{
 	public:
-
-		CollisionDispatcher(btCollisionConfiguration* collisionConfiguration) : btCollisionDispatcherMt(
-			collisionConfiguration)
+		CollisionDispatcher(btCollisionConfiguration* collisionConfiguration) :
+			btCollisionDispatcherMt(
+				collisionConfiguration)
 		{
 		}
 
@@ -38,7 +34,7 @@ namespace hdt
 
 		bool needsCollision(const btCollisionObject* body0, const btCollisionObject* body1) override;
 		void dispatchAllCollisionPairs(btOverlappingPairCache* pairCache, const btDispatcherInfo& dispatchInfo,
-		                               btDispatcher* dispatcher) override;
+			btDispatcher* dispatcher) override;
 
 		int getNumManifolds() const override;
 		btPersistentManifold** getInternalManifoldPointer() override;
@@ -46,11 +42,7 @@ namespace hdt
 
 		void clearAllManifold();
 
-		std::mutex m_lock;
+		hdt::SpinLock m_lock;
 		std::vector<std::pair<SkinnedMeshBody*, SkinnedMeshBody*>> m_pairs;
-#ifdef CUDA
-		std::vector<std::function<void()>> m_immediateFuncs;
-		std::vector<std::function<void()>> m_delayedFuncs;
-#endif
 	};
 }

@@ -1,10 +1,5 @@
 #pragma once
-
-#include <BulletDynamics/ConstraintSolver/btConeTwistConstraint.h>
-#include <LinearMath/btTransform.h>
-
 #include "hdtBoneScaleConstraint.h"
-#include "hdtSkinnedMeshBone.h"
 
 namespace hdt
 {
@@ -13,12 +8,8 @@ namespace hdt
 		public btConeTwistConstraint
 	{
 	public:
-		using btConeTwistConstraint::operator new;
-		using btConeTwistConstraint::operator delete;
-		using btConeTwistConstraint::operator new[];
-		using btConeTwistConstraint::operator delete[];
+		BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	public:
 		ConeTwistConstraint(SkinnedMeshBone* a, SkinnedMeshBone* b, const btTransform& frameInA, const btTransform& frameInB);
 		virtual ~ConeTwistConstraint() override = default;
 

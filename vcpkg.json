@@ -3,13 +3,17 @@
   "version": "1",
   "dependencies": 
   [
-    "boost-beast",
     "directxtk",
     "fmt",
     "rapidcsv",
-    "detours", 
-    "spdlog", 
-	  "bullet3",
+    "detours",
+    "spdlog",
+    {
+      "name": "bullet3",
+      "features": [
+        "multithreading"
+      ]
+    },
     "xbyak"
   ]
 }

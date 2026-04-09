@@ -12,10 +12,6 @@
 #endif
 #pragma warning(pop)
 
-#include "FrameworkUtils.h"
-#include "IString.h"
-
-//
 #include <algorithm>
 #include <atomic>
 #include <cinttypes>
@@ -35,26 +31,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#if defined(__has_include)
-#	if __has_include(<amp.h>) && __has_include(<amp_graphics.h>) \
-     && __has_include(<amp_math.h>) && __has_include(<amp_short_vectors.h>)
-#		include <amp.h>
-#		include <amp_graphics.h>
-#		include <amp_math.h>
-#		include <amp_short_vectors.h>
-#	else
-#		pragma message("C++ AMP headers not found — building without C++ AMP support")
-// Minimal stubs for types you actually use from AMP can go here.
-// Keep this small — add only the declarations your project needs.
-
-#	endif
-#else
-#	include <amp.h>
-#	include <amp_graphics.h>
-#	include <amp_math.h>
-#	include <amp_short_vectors.h>
-#endif
 
 using namespace std::literals;
 
@@ -114,21 +90,14 @@ namespace hdt
 
 namespace std
 {
-	template <>
-	struct hash<hdt::IDStr>
+	// TODO: should this be contributed to CommonLibSSE-NG?
+	template <class CharT>
+	struct hash<RE::detail::BSFixedString<CharT>>
 	{
-		size_t operator()(const hdt::IDStr& id) const noexcept
+	public:
+		[[nodiscard]] inline std::size_t operator()(const RE::detail::BSFixedString<CharT>& a_key) const noexcept
 		{
-			return std::hash<std::string>()(id->cstr());
-		}
-	};
-
-	template <>
-	struct hash<hdt::IString>
-	{
-		size_t operator()(const hdt::IString& id) const noexcept
-		{
-			return std::hash<std::string>()(id.cstr());
+			return std::hash<const CharT*>{}(a_key.data());
 		}
 	};
 }
