@@ -1,11 +1,11 @@
 {
   "configurePresets": [
     {
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": {
           "type": "STRING",
-          "value": "Release"
+          "value": "Debug"
         }
       },
       "errors": {
@@ -124,68 +124,89 @@
       "name": "windows-avx512"
     },
     {
-      
+      "architecture": {
+        "strategy": "set",
+        "value": "x64"
+      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4"
       },
-      
+      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows",
         "skyrim-runtimes"
       ],
-      "name": "x64-windows"
-      
+      "name": "vs2022-windows",
+      "toolset": "v143"
     },
     {
-      
+      "architecture": {
+        "strategy": "set",
+        "value": "x64"
+      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX"
       },
-      
+      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows-avx",
         "skyrim-runtimes"
       ],
-      "name": "x64-windows-avx"
+      "name": "vs2022-windows-avx",
+      "toolset": "v143"
     },
     {
-      
+      "architecture": {
+        "strategy": "set",
+        "value": "x64"
+      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX2"
       },
-      
+      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows-avx2",
         "skyrim-runtimes"
       ],
-      "name": "x64-windows-avx2"
+      "name": "vs2022-windows-avx2",
+      "toolset": "v143"
     },
     {
-      
+      "architecture": {
+        "strategy": "set",
+        "value": "x64"
+      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX512"
       },
-      
+      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows-avx512",
         "skyrim-runtimes"
       ],
-      "name": "x64-windows-avx512"
+      "name": "vs2022-windows-avx512",
+      "toolset": "v143"
     }
   ],
   "buildPresets": [
     {
+      "name": "avx2-debug",
+      "displayName": "Debug",
+      "configurePreset": "vs2022-windows-avx2",
+      "configuration": "Debug"
+    },
+    {
       "name": "avx2-release",
       "displayName": "Release",
-      "configurePreset": "x64-windows-avx2",
+      "configurePreset": "vs2022-windows-avx2",
       "configuration": "Release"
     }
   ],

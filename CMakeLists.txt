@@ -5,7 +5,6 @@ project(
 	VERSION 3.0.0
 	LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Pre-release build identifier (e.g. "dev-abc1234"). Empty for production builds.
 set(PROJECT_BUILD_INFO
@@ -24,8 +23,7 @@ endmacro()
 
 set_from_environment(CompiledPluginsPath)
 if(NOT DEFINED CompiledPluginsPath)
-	#message(FATAL_ERROR "CompiledPluginsPath is not set")
-	set(CompiledPluginsPath "${PROJECT_BINARY_DIR}")
+	message(FATAL_ERROR "CompiledPluginsPath is not set")
 endif()
 
 option(COPY_OUTPUT "Copy the output of build operations to the game directory" ON)
@@ -43,4 +41,3 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 add_subdirectory(src)
 include(cmake/packaging.cmake)
-
