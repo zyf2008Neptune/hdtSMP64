@@ -138,7 +138,7 @@ namespace hdt
         btVector4 m_originScale;
 
     public:
-        BT_DECLARE_ALIGNED_ALLOCATOR();
+        BT_DECLARE_ALIGNED_ALLOCATOR()
 
         btQsTransform() :
             m_basis(btQuaternion::getIdentity()), m_originScale(0, 0, 0, 1) {}
