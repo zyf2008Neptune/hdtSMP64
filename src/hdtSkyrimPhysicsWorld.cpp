@@ -39,38 +39,39 @@ namespace hdt
         // Default is = SOLVER_USE_WARMSTARTING | SOLVER_SIMD;
         // But we don't even use warm starts since we delete the manifolds every frame
         // SOLVER_SIMD nets a small performance uplift
-        // SOLVER_RANDMIZE_ORDER is also possible, but I clocked a pretty heavy performance hit. Maybe make it a config option
+        // SOLVER_RANDMIZE_ORDER is also possible, but I clocked a pretty heavy performance hit. Maybe make it a config
+        // option
         getSolverInfo().m_solverMode = SOLVER_SIMD;
 
         m_averageInterval = m_timeTick;
         m_accumulatedInterval = 0;
     }
 
-    //void hdtSkyrimPhysicsWorld::suspend()
+    // void hdtSkyrimPhysicsWorld::suspend()
     //{
     //	m_suspended++;
-    //}
+    // }
 
-    //void hdtSkyrimPhysicsWorld::resume()
+    // void hdtSkyrimPhysicsWorld::resume()
     //{
     //	--m_suspended;
-    //}
+    // }
 
-    //void hdtSkyrimPhysicsWorld::switchToSeperateClock()
+    // void hdtSkyrimPhysicsWorld::switchToSeperateClock()
     //{
     //	m_lock.lock();
     //	m_useSeperatedClock = true;
     //	m_timeLastUpdate = clock()*0.001;
     //	m_lock.unlock();
-    //}
+    // }
 
-    //void hdtSkyrimPhysicsWorld::switchToInternalClock()
+    // void hdtSkyrimPhysicsWorld::switchToInternalClock()
     //{
     //	m_lock.lock();
     //	m_useSeperatedClock = false;
     //	m_timeLastUpdate = *timeStamp;
     //	m_lock.unlock();
-    //}
+    // }
 
     auto SkyrimPhysicsWorld::get() -> SkyrimPhysicsWorld*
     {
@@ -97,8 +98,9 @@ namespace hdt
             // to still allow a physics with max increments of 1/60s.
             const auto tick = std::min(m_averageInterval, m_timeTick);
 
-            // No need to calculate physics when too little time has passed (time exceptionally short since last computation).
-            // This magic value directly impacts the number of computations and the time cost of the mod...
+            // No need to calculate physics when too little time has passed (time exceptionally short since last
+            // computation). This magic value directly impacts the number of computations and the time cost of the
+            // mod...
             if (m_accumulatedInterval * 2.0f > tick)
             {
                 // The interval is limited to a configurable number of substeps, by default 4.
@@ -115,9 +117,7 @@ namespace hdt
                 m_resetPc -= m_resetPc > 0;
 
                 m_tasks.run([this, interval, tick, remainingTimeStep]
-                {
-                    doUpdate2ndStep(interval, tick, remainingTimeStep);
-                });
+                            { doUpdate2ndStep(interval, tick, remainingTimeStep); });
             }
         }
     }
@@ -129,7 +129,7 @@ namespace hdt
             return;
         }
 
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
 
         _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 
@@ -165,7 +165,15 @@ namespace hdt
     auto SkyrimPhysicsWorld::suspendSimulationUntilFinished(const std::function<void()>& process) -> void
     {
         this->m_isStasis = true;
-        process();
+        try
+        {
+            process();
+        }
+        catch (...)
+        {
+            this->m_isStasis = false;
+            throw;
+        }
         this->m_isStasis = false;
     }
 
@@ -221,15 +229,9 @@ namespace hdt
             m_windSpeed.setValue((oldValueWeight * m_windSpeed.getX() + a_point.x * a_scale) / a_smoothingSamples,
                                  (oldValueWeight * m_windSpeed.getY() + a_point.y * a_scale) / a_smoothingSamples,
                                  (oldValueWeight * m_windSpeed.getZ() + a_point.z * a_scale) / a_smoothingSamples);
-            logger::debug(
-                "Wind Speed now ({:.2f}, {:.2f}, {:.2f}), target ({:.2f}, {:.2f}, {:.2f}) using {} samples.",
-                m_windSpeed.getX(),
-                m_windSpeed.getY(),
-                m_windSpeed.getZ(),
-                a_point.x * a_scale,
-                a_point.y * a_scale,
-                a_point.z * a_scale,
-                a_smoothingSamples);
+            logger::debug("Wind Speed now ({:.2f}, {:.2f}, {:.2f}), target ({:.2f}, {:.2f}, {:.2f}) using {} samples.",
+                          m_windSpeed.getX(), m_windSpeed.getY(), m_windSpeed.getZ(), a_point.x * a_scale,
+                          a_point.y * a_scale, a_point.z * a_scale, a_smoothingSamples);
         }
     }
 
@@ -281,16 +283,17 @@ namespace hdt
                         k->m_disabled = true;
                     }
                 }
-                else if (snd.size())
+                else if (!snd.empty())
                 {
-                    std::ranges::sort(snd, [](const SkyrimBody* a, const SkyrimBody* b)
-                    {
-                        if (a->m_disablePriority != b->m_disablePriority)
-                        {
-                            return a->m_disablePriority > b->m_disablePriority;
-                        }
-                        return a < b;
-                    });
+                    std::ranges::sort(snd,
+                                      [](const SkyrimBody* a, const SkyrimBody* b)
+                                      {
+                                          if (a->m_disablePriority != b->m_disablePriority)
+                                          {
+                                              return a->m_disablePriority > b->m_disablePriority;
+                                          }
+                                          return a < b;
+                                      });
 
                     for (const auto& k : snd)
                     {
@@ -304,7 +307,7 @@ namespace hdt
 
     auto SkyrimPhysicsWorld::addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void
     {
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         const auto s = dynamic_cast<SkyrimSystem*>(system);
         if (!s)
         {
@@ -317,14 +320,14 @@ namespace hdt
 
     auto SkyrimPhysicsWorld::removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void
     {
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
 
         SkinnedMeshWorld::removeSkinnedMeshSystem(system);
     }
 
     auto SkyrimPhysicsWorld::removeSystemByNode(void* root) -> void
     {
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
 
         for (int i = 0; i < m_systems.size();)
         {
@@ -343,21 +346,21 @@ namespace hdt
 
     auto SkyrimPhysicsWorld::resetTransformsToOriginal() -> void
     {
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         SkinnedMeshWorld::resetTransformsToOriginal();
     }
 
     auto SkyrimPhysicsWorld::resetSystems() -> void
     {
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         for (const auto& i : m_systems)
         {
             i->readTransform(i->prepareForRead(RESET_PHYSICS));
         }
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameEvent* e,
-                                          RE::BSTEventSource<Events::FrameEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameEvent* e, RE::BSTEventSource<Events::FrameEvent>*)
+        -> RE::BSEventNotifyControl
     {
         const auto mm = RE::UI::GetSingleton();
 
@@ -384,11 +387,10 @@ namespace hdt
             startTime = ticks.QuadPart;
         }
 
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
 
-        const float interval = (m_useRealTime
-            ? RE::BSTimer::GetSingleton()->realTimeDelta
-            : RE::BSTimer::GetSingleton()->delta);
+        const float interval =
+            (m_useRealTime ? RE::BSTimer::GetSingleton()->realTimeDelta : RE::BSTimer::GetSingleton()->delta);
 
         if (interval > FLT_EPSILON && !m_suspended && !m_isStasis && !m_systems.empty())
         {
@@ -411,8 +413,8 @@ namespace hdt
         return RE::BSEventNotifyControl::kContinue;
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameSyncEvent*,
-                                          RE::BSTEventSource<Events::FrameSyncEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const Events::FrameSyncEvent*, RE::BSTEventSource<Events::FrameSyncEvent>*)
+        -> RE::BSEventNotifyControl
     {
         if (m_doMetrics)
         {
@@ -426,7 +428,7 @@ namespace hdt
             const int64_t t1 = ticks.QuadPart;
 
             {
-                std::lock_guard l(m_lock);
+                std::scoped_lock l(m_lock);
                 writeTransform();
             }
 
@@ -441,8 +443,8 @@ namespace hdt
 
             const float instFpsImpact = instSetupTime + instWaitTime + instWriteTime;
 
-            m_averageSMPProcessingTimeInMainLoop = (m_averageSMPProcessingTimeInMainLoop * (m_sampleSize - 1) +
-                instFpsImpact) / m_sampleSize;
+            m_averageSMPProcessingTimeInMainLoop =
+                (m_averageSMPProcessingTimeInMainLoop * (m_sampleSize - 1) + instFpsImpact) / m_sampleSize;
 
             // Smooth the individual components for logging so the math adds up perfectly visually
             static float avgSetupTime = 0.0f;
@@ -462,19 +464,16 @@ namespace hdt
             float avgTotalCpuWork = avgSetupTime + avgBackgroundCalcTime + avgWriteTime;
 
             logger::info(
-                "[SMP Metrics] Avg Frame-time Impact: {:.2f}ms (Setup: {:.2f}, Wait: {:.2f}, Apply: {:.2f}) | Avg Hidden Time: {:.2f}ms | Avg Total CPU Work: {:.2f}ms",
+                "[SMP Metrics] Avg Frame-time Impact: {:.2f}ms (Setup: {:.2f}, Wait: {:.2f}, Apply: {:.2f}) | Avg "
+                "Hidden Time: {:.2f}ms | Avg Total CPU Work: {:.2f}ms",
                 m_averageSMPProcessingTimeInMainLoop, // This will exactly equal Setup + Wait + Apply
-                avgSetupTime,
-                avgWaitTime,
-                avgWriteTime,
-                avgHiddenTime,
-                avgTotalCpuWork);
+                avgSetupTime, avgWaitTime, avgWriteTime, avgHiddenTime, avgTotalCpuWork);
         }
         else
         {
             m_tasks.wait();
             {
-                std::lock_guard l(m_lock);
+                std::scoped_lock l(m_lock);
                 writeTransform();
             }
         }
@@ -482,10 +481,13 @@ namespace hdt
         return RE::BSEventNotifyControl::kContinue;
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const Events::ShutdownEvent*,
-                                          RE::BSTEventSource<Events::ShutdownEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const Events::ShutdownEvent*, RE::BSTEventSource<Events::ShutdownEvent>*)
+        -> RE::BSEventNotifyControl
     {
-        while (m_systems.size())
+        m_tasks.wait();
+        std::scoped_lock l(m_lock);
+
+        while (!m_systems.empty())
         {
             SkinnedMeshWorld::removeSkinnedMeshSystem(m_systems.back().get());
         }
@@ -493,13 +495,13 @@ namespace hdt
         return RE::BSEventNotifyControl::kContinue;
     }
 
-    auto SkyrimPhysicsWorld::ProcessEvent(const SKSE::CameraEvent* evn,
-                                          RE::BSTEventSource<SKSE::CameraEvent>*) -> RE::BSEventNotifyControl
+    auto SkyrimPhysicsWorld::ProcessEvent(const SKSE::CameraEvent* evn, RE::BSTEventSource<SKSE::CameraEvent>*)
+        -> RE::BSEventNotifyControl
     {
         if (evn && evn->oldState && evn->newState)
         {
-            if (evn->oldState->id == RE::CameraState::kFirstPerson && evn->newState->id ==
-                RE::CameraState::kThirdPerson)
+            if (evn->oldState->id == RE::CameraState::kFirstPerson &&
+                evn->newState->id == RE::CameraState::kThirdPerson)
             {
                 m_resetPc = 3;
             }
@@ -507,4 +509,4 @@ namespace hdt
 
         return RE::BSEventNotifyControl::kContinue;
     }
-}
+} // namespace hdt

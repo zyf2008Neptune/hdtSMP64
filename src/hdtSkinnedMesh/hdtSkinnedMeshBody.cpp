@@ -300,7 +300,7 @@ namespace hdt
         }
     }
 
-    auto SkinnedMeshBody::isBoundingSphereCollided(SkinnedMeshBody* rhs) const -> bool
+    auto SkinnedMeshBody::isBoundingSphereCollided(const SkinnedMeshBody* rhs) const -> bool
     {
         if (canCollideWith(rhs) && rhs->canCollideWith(this))
         {

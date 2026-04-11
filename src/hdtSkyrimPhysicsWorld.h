@@ -2,19 +2,18 @@
 
 #include "ActorManager.h"
 #include "Events.h"
-#include "hdtSkyrimSystem.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
+#include "hdtSkyrimSystem.h"
 
 namespace hdt
 {
     constexpr float RESET_PHYSICS = -10.0f;
 
-    class SkyrimPhysicsWorld :
-        protected SkinnedMeshWorld,
-        public RE::BSTEventSink<Events::FrameEvent>,
-        public RE::BSTEventSink<Events::ShutdownEvent>,
-        public RE::BSTEventSink<SKSE::CameraEvent>,
-        public RE::BSTEventSink<Events::FrameSyncEvent>
+    class SkyrimPhysicsWorld : protected SkinnedMeshWorld,
+                               public RE::BSTEventSink<Events::FrameEvent>,
+                               public RE::BSTEventSink<Events::ShutdownEvent>,
+                               public RE::BSTEventSink<SKSE::CameraEvent>,
+                               public RE::BSTEventSink<Events::FrameSyncEvent>
     {
     public:
         static auto get() -> SkyrimPhysicsWorld*;
@@ -30,14 +29,14 @@ namespace hdt
         auto resetTransformsToOriginal() -> void;
         auto resetSystems() -> void;
 
-        auto ProcessEvent(const Events::FrameEvent* e,
-                          RE::BSTEventSource<Events::FrameEvent>*) -> RE::BSEventNotifyControl override;
-        auto ProcessEvent(const Events::FrameSyncEvent* e,
-                          RE::BSTEventSource<Events::FrameSyncEvent>*) -> RE::BSEventNotifyControl override;
-        auto ProcessEvent(const Events::ShutdownEvent* e,
-                          RE::BSTEventSource<Events::ShutdownEvent>*) -> RE::BSEventNotifyControl override;
-        auto ProcessEvent(const SKSE::CameraEvent* evn,
-                          RE::BSTEventSource<SKSE::CameraEvent>* dispatcher) -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::FrameEvent* e, RE::BSTEventSource<Events::FrameEvent>*)
+            -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::FrameSyncEvent* e, RE::BSTEventSource<Events::FrameSyncEvent>*)
+            -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::ShutdownEvent* e, RE::BSTEventSource<Events::ShutdownEvent>*)
+            -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const SKSE::CameraEvent* evn, RE::BSTEventSource<SKSE::CameraEvent>* dispatcher)
+            -> RE::BSEventNotifyControl override;
 
         auto isSuspended() -> bool { return m_suspended; }
 
@@ -57,7 +56,7 @@ namespace hdt
             }
         }
 
-        auto suspendSimulationUntilFinished(const std::function<void(void)>& process) -> void;
+        auto suspendSimulationUntilFinished(const std::function<void()>& process) -> void;
         std::atomic_bool m_isStasis = false;
 
         auto applyTranslationOffset() -> btVector3;
@@ -68,9 +67,10 @@ namespace hdt
         // @brief setWind force value for the world
         // @param a_direction wind direction
         // @a_scale Amount to scale the windForce. Defaults to scaleSkyrim
-        // @a_smoothingSamples How many samples to smooth. Defaults to 8. Must be greater than 0. Value of 1 means no smoothing
-        auto setWind(const RE::NiPoint3& a_direction, float a_scale = scaleSkyrim,
-                     uint32_t a_smoothingSamples = 8) -> void;
+        // @a_smoothingSamples How many samples to smooth. Defaults to 8. Must be greater than 0. Value of 1 means no
+        // smoothing
+        auto setWind(const RE::NiPoint3& a_direction, float a_scale = scaleSkyrim, uint32_t a_smoothingSamples = 8)
+            -> void;
 
         concurrency::task_group m_tasks;
 
@@ -92,7 +92,7 @@ namespace hdt
         int m_sampleSize = 5;
         // how many samples (each sample taken every second) for determining average time per activeSkeleton.
 
-        //wind settings
+        // wind settings
         bool m_enableWind = true;
         float m_windStrength = 2.0f; // compare to gravity acceleration of 9.8
         float m_distanceForNoWind = 50.0f; // how close to wind obstruction to fully block wind
@@ -110,4 +110,4 @@ namespace hdt
         float m_averageInterval;
         float m_SMPProcessingTimeInMainLoop = 0;
     };
-}
+} // namespace hdt
