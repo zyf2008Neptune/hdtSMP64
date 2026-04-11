@@ -231,9 +231,9 @@ namespace hdt
 
         m_shape->finishBuild();
 
-        // bool* flags = new bool[m_vertices.size()]; 
-        // ZeroMemory(flags, m_vertices.size());
-        auto flags = std::vector<bool>(m_vertices.size());
+        bool* flags = new bool[m_vertices.size()];
+        ZeroMemory(flags, m_vertices.size());
+        // auto flags = std::vector<bool>(m_vertices.size());
         m_shape->markUsedVertices(flags);
 
         UINT numUsed = 0;
@@ -247,7 +247,7 @@ namespace hdt
                 map[i] = numUsed++;
             }
         }
-        // delete[] flags;
+        delete[] flags;
         m_shape->remapVertices(map.data());
         m_vertices.resize(numUsed);
         m_vpos.resize(numUsed);
