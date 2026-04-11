@@ -29,10 +29,10 @@ namespace hdt
             return *this;
         }
 
-        struct
+        union
         {
-            U32 vertex{}; // vertexshape
-            U32 vertices[3]{}; // triangleshape
+            U32 vertex; // vertexshape
+            U32 vertices[3]; // triangleshape
         };
 
         float flexible{};
