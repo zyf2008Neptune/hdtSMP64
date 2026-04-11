@@ -9,7 +9,7 @@ namespace hdt
 {
     auto CollisionDispatcher::clearAllManifold() -> void
     {
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         for (int i = 0; i < m_manifoldsPtr.size(); ++i)
         {
             const auto manifold = m_manifoldsPtr[i];
@@ -26,25 +26,31 @@ namespace hdt
         m_manifoldsPtr.clear();
     }
 
-    auto needsCollision(const SkinnedMeshBody* shape0, const SkinnedMeshBody* shape1) -> bool
+    namespace
     {
-        if (!shape0 || !shape1 || shape0 == shape1)
+        auto needsCollision(const SkinnedMeshBody* shape0, const SkinnedMeshBody* shape1) -> bool
         {
-            return false;
+            if (!shape0 || !shape1 || shape0 == shape1)
+            {
+                return false;
+            }
+
+            if (shape0->m_isKinematic && shape1->m_isKinematic)
+            {
+                return false;
+            }
+
+            return shape0->canCollideWith(shape1) && shape1->canCollideWith(shape0);
         }
+    } // namespace
 
-        if (shape0->m_isKinematic && shape1->m_isKinematic)
-        {
-            return false;
-        }
-
-        return shape0->canCollideWith(shape1) && shape1->canCollideWith(shape0);
-    }
-
-    static inline auto isSkinnedMesh(const btCollisionObject* obj) -> bool
+    namespace
     {
-        return obj->getCollisionShape()->getShapeType() == CUSTOM_CONCAVE_SHAPE_TYPE;
-    }
+        auto isSkinnedMesh(const btCollisionObject* obj) -> bool
+        {
+            return obj->getCollisionShape()->getShapeType() == CUSTOM_CONCAVE_SHAPE_TYPE;
+        }
+    } // namespace
 
     auto CollisionDispatcher::needsCollision(const btCollisionObject* body0, const btCollisionObject* body1) -> bool
     {
@@ -53,8 +59,8 @@ namespace hdt
 
         if (skinned0 || skinned1)
         {
-            const auto shape0 = skinned0 ? dynamic_cast<const SkinnedMeshBody*>(body0) : nullptr;
-            const auto shape1 = skinned1 ? dynamic_cast<const SkinnedMeshBody*>(body1) : nullptr;
+            const auto shape0 = skinned0 ? static_cast<const SkinnedMeshBody*>(body0) : nullptr;
+            const auto shape1 = skinned1 ? static_cast<const SkinnedMeshBody*>(body1) : nullptr;
             return hdt::needsCollision(shape0, shape1);
         }
 
@@ -74,9 +80,10 @@ namespace hdt
         return false;
     }
 
-    // Docs: This is called by Bullet's broad phase, which finds pairs that may be colliding. We built these aabb's inside SkinnedMeshBody::updateBoundingSphereAabb() using Skyrim's bone
-    // spheres. This function checks if those pairs are even allowed to collide, updates the skinned shapes, then passes it to the next few phases of collision checks.
-    // Collision phases are: Bullet's broadphase, our BVH midphase, then finally our narrowphase
+    // Docs: This is called by Bullet's broad phase, which finds pairs that may be colliding. We built these aabb's
+    // inside SkinnedMeshBody::updateBoundingSphereAabb() using Skyrim's bone spheres. This function checks if those
+    // pairs are even allowed to collide, updates the skinned shapes, then passes it to the next few phases of collision
+    // checks. Collision phases are: Bullet's broadphase, our BVH midphase, then finally our narrowphase
     auto CollisionDispatcher::dispatchAllCollisionPairs(btOverlappingPairCache* pairCache,
                                                         [[maybe_unused]] const btDispatcherInfo& dispatchInfo,
                                                         [[maybe_unused]] btDispatcher* dispatcher) -> void
@@ -112,8 +119,8 @@ namespace hdt
 
             if (skinned0 || skinned1)
             {
-                auto shape0 = skinned0 ? dynamic_cast<SkinnedMeshBody*>(obj0) : nullptr;
-                auto shape1 = skinned1 ? dynamic_cast<SkinnedMeshBody*>(obj1) : nullptr;
+                auto shape0 = skinned0 ? static_cast<SkinnedMeshBody*>(obj0) : nullptr;
+                auto shape1 = skinned1 ? static_cast<SkinnedMeshBody*>(obj1) : nullptr;
 
                 if (hdt::needsCollision(shape0, shape1))
                 {
@@ -134,8 +141,9 @@ namespace hdt
             else
             {
                 // [3/13/2026]
-                // This should never be called. We do addRigidBody(&system->m_bones[i]->m_rig, 0, 0) which means it's invisible
-                // to bullet's collision detector entirely. Why is this here? Likely in preparation for non-skinned objects..?
+                // This should never be called. We do addRigidBody(&system->m_bones[i]->m_rig, 0, 0) which means it's
+                // invisible to bullet's collision detector entirely. Why is this here? Likely in preparation for
+                // non-skinned objects..?
                 getNearCallback()(pair, *this, dispatchInfo);
             }
         }
@@ -147,21 +155,19 @@ namespace hdt
         std::ranges::sort(extra_vertex_shapes);
         extra_vertex_shapes.erase(std::ranges::unique(extra_vertex_shapes).begin(), extra_vertex_shapes.end());
 
-        concurrency::parallel_for_each(bodies.begin(), bodies.end(), [](SkinnedMeshBody* shape)
-        {
-            if (shape->m_useBoundingSphere)
-            {
-                shape->internalUpdate();
-            }
-        });
+        concurrency::parallel_for_each(bodies.begin(), bodies.end(),
+                                       [](SkinnedMeshBody* shape)
+                                       {
+                                           if (shape->m_useBoundingSphere)
+                                           {
+                                               shape->internalUpdate();
+                                           }
+                                       });
 
         if (!extra_vertex_shapes.empty())
         {
             concurrency::parallel_for_each(extra_vertex_shapes.begin(), extra_vertex_shapes.end(),
-                                           [](PerVertexShape* shape)
-                                           {
-                                               shape->internalUpdate();
-                                           });
+                                           [](PerVertexShape* shape) { shape->internalUpdate(); });
         }
 
         concurrency::parallel_for_each(m_pairs.begin(), m_pairs.end(),
@@ -176,10 +182,7 @@ namespace hdt
         m_pairs.clear();
     }
 
-    auto CollisionDispatcher::getNumManifolds() const -> int
-    {
-        return m_manifoldsPtr.size();
-    }
+    auto CollisionDispatcher::getNumManifolds() const -> int { return m_manifoldsPtr.size(); }
 
     auto CollisionDispatcher::getManifoldByIndexInternal(const int index) -> btPersistentManifold*
     {
@@ -190,4 +193,4 @@ namespace hdt
     {
         return btCollisionDispatcherMt::getInternalManifoldPointer();
     }
-}
+} // namespace hdt

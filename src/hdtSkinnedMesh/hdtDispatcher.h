@@ -21,14 +21,14 @@ namespace hdt
 
         auto getNewManifold(const btCollisionObject* b0, const btCollisionObject* b1) -> btPersistentManifold* override
         {
-            std::lock_guard l(m_lock);
+            std::scoped_lock l(m_lock);
             auto ret = btCollisionDispatcherMt::getNewManifold(b0, b1);
             return ret;
         }
 
         auto releaseManifold(btPersistentManifold* manifold) -> void override
         {
-            std::lock_guard l(m_lock);
+            std::scoped_lock l(m_lock);
             btCollisionDispatcherMt::releaseManifold(manifold);
         }
 

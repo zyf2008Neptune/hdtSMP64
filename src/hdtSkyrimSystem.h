@@ -135,7 +135,8 @@ namespace hdt
             bool springDampingLimited = true;
             bool linearMotors = false;
             bool angularMotors = false;
-            // TODO: Test if servo motors go to [0, 0, 0], or whatever equilibrium is.  Provide option to set server motor target.  Hard coded to equilibrium right now.
+            // TODO: Test if servo motors go to [0, 0, 0], or whatever equilibrium is.  Provide option to set server
+            // motor target.  Hard coded to equilibrium right now.
             bool linearServoMotors = false;
             bool angularServoMotors = false;
             btVector3 linearNonHookeanDamping = btVector3(0, 0, 0);
@@ -195,9 +196,8 @@ namespace hdt
         std::unordered_map<RE::BSFixedString, std::shared_ptr<btCollisionShape>> m_shapes;
         std::vector<std::shared_ptr<btCollisionShape>> m_shapeRefs;
 
-        auto generateMeshBody(std::string_view name,
-                              DefaultBBP::NameSet_t* names) -> std::pair<
-            RE::BSTSmartPointer<SkyrimBody>, VertexOffsetMap>;
+        auto generateMeshBody(std::string_view name, DefaultBBP::NameSet_t* names)
+            -> std::pair<RE::BSTSmartPointer<SkyrimBody>, VertexOffsetMap>;
 
         auto findBones(const RE::BSFixedString& bodyAName, const RE::BSFixedString& bodyBName, SkyrimBone*& bodyA,
                        SkyrimBone*& bodyB) -> bool;
@@ -217,7 +217,7 @@ namespace hdt
 
         auto createBoneFromNodeName(const RE::BSFixedString& bodyName, const RE::BSFixedString& templateName = "",
                                     bool readTemplate = false, const SkyrimSystem* old_system = nullptr) -> SkyrimBone*;
-        auto readOrUpdateBone(SkyrimSystem* old_system = nullptr) -> void;
+        auto readOrUpdateBone(const SkyrimSystem* old_system = nullptr) -> void;
         auto readPerVertexShape(DefaultBBP::NameMap_t meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readPerTriangleShape(DefaultBBP::NameMap_t* meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readGenericConstraint() -> RE::BSTSmartPointer<Generic6DofConstraint>;
@@ -226,4 +226,4 @@ namespace hdt
         auto readConstraintGroup() -> RE::BSTSmartPointer<ConstraintGroup>;
         auto readShape() -> std::shared_ptr<btCollisionShape>;
     };
-}
+} // namespace hdt

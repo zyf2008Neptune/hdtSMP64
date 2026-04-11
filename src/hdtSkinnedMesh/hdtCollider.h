@@ -1,85 +1,90 @@
 #pragma once
 
-#include "hdtAABB.h"
 #include <functional>
+#include "hdtAABB.h"
 
 namespace hdt
 {
-	struct alignas(16) Collider
-	{
-		Collider()
-		{
-		}
+    struct alignas(16) Collider
+    {
+        Collider() = default;
 
-		Collider(int i0) { vertex = i0; }
-		Collider(int i0, int i1, int i2) { vertices[0] = i0, vertices[1] = i1, vertices[2] = i2; }
-		Collider(const Collider& rhs) { operator=(rhs); }
+        Collider(const int i0) { vertex = i0; }
 
-		Collider& operator=(const Collider& rhs)
-		{
-			__m128i* dst = (__m128i*)this;
-			__m128i* src = (__m128i*)&rhs;
-			auto xmm0 = _mm_load_si128(src + 0);
-			_mm_store_si128(dst, xmm0);
-			return *this;
-		}
+        Collider(const int i0, const int i1, const int i2)
+        {
+            vertices[0] = i0;
+            vertices[1] = i1;
+            vertices[2] = i2;
+        }
 
-		union
-		{
-			U32 vertex;       // vertexshape
-			U32 vertices[3];  // triangleshape
-		};
+        Collider(const Collider& rhs) { operator=(rhs); }
 
-		float flexible;
-		//		inline bool operator <(const Collider& rhs){ return aligned < rhs.aligned; }
-	};
+        auto operator=(const Collider& rhs) -> Collider&
+        {
+            const auto dst = reinterpret_cast<__m128i*>(this);
+            const auto src = reinterpret_cast<__m128i*>(const_cast<Collider*>(&rhs));
+            const auto xmm0 = _mm_load_si128(src + 0);
+            _mm_store_si128(dst, xmm0);
+            return *this;
+        }
 
-	struct alignas(16) ColliderTree
-	{
-		ColliderTree()
-		{
-			aabbAll.invalidate();
-			aabbMe.invalidate();
-		}
+        struct
+        {
+            U32 vertex{}; // vertexshape
+            U32 vertices[3]{}; // triangleshape
+        };
 
-		ColliderTree(U32 k) :
-			key(k)
-		{
-			aabbAll.invalidate();
-			aabbMe.invalidate();
-		}
+        float flexible{};
+        //		inline bool operator <(const Collider& rhs){ return aligned < rhs.aligned; }
+    };
 
-		Aabb aabbAll;
-		Aabb aabbMe;
+    struct alignas(16) ColliderTree
+    {
+        ColliderTree()
+        {
+            aabbAll.invalidate();
+            aabbMe.invalidate();
+        }
 
-		U32 isKinematic;
+        ColliderTree(const U32 k) :
+            key(k)
+        {
+            aabbAll.invalidate();
+            aabbMe.invalidate();
+        }
 
-		Collider* cbuf = nullptr;
-		Aabb* aabb;
-		U32 numCollider;
-		U32 dynCollider;
+        Aabb aabbAll;
+        Aabb aabbMe;
 
-		U32 dynChild;
-		vectorA16<ColliderTree> children;
+        U32 isKinematic{};
 
-		vectorA16<Collider> colliders;
-		U32 key;
+        Collider* cbuf = nullptr;
+        Aabb* aabb = nullptr;
+        U32 numCollider{};
+        U32 dynCollider{};
 
-		void insertCollider(const U32* keys, size_t keyCount, const Collider& c);
-		void exportColliders(vectorA16<Collider>& exportTo);
-		void remapColliders(Collider* start, Aabb* startAabb);
+        U32 dynChild{};
+        vectorA16<ColliderTree> children;
 
-		void checkCollisionL(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret);
-		void checkCollisionR(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret);
-		void clipCollider(const std::function<bool(const Collider&)>& func);
-		void updateKinematic(const std::function<float(const Collider*)>& func);
-		void visitColliders(const std::function<void(Collider*)>& func);
-		void updateAabb();
-		void optimize();
+        vectorA16<Collider> colliders;
+        U32 key{};
 
-		bool empty() const { return children.empty() && colliders.empty(); }
+        auto insertCollider(const U32* keys, size_t keyCount, const Collider& c) -> void;
+        auto exportColliders(vectorA16<Collider>& exportTo) -> void;
+        auto remapColliders(Collider* start, Aabb* startAabb) -> void;
 
-		bool collapseCollideL(ColliderTree* r);
-		bool collapseCollideR(ColliderTree* r);
-	};
-}
+        auto checkCollisionL(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret) -> void;
+        auto checkCollisionR(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret) -> void;
+        auto clipCollider(const std::function<bool(const Collider&)>& func) -> void;
+        auto updateKinematic(const std::function<float(const Collider*)>& func) -> void;
+        auto visitColliders(const std::function<void(Collider*)>& func) -> void;
+        auto updateAabb() -> void;
+        auto optimize() -> void;
+
+        auto empty() const -> bool { return children.empty() && colliders.empty(); }
+
+        auto collapseCollideL(ColliderTree* r) -> bool;
+        auto collapseCollideR(ColliderTree* r) -> bool;
+    };
+} // namespace hdt

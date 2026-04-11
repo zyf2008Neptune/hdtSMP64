@@ -223,7 +223,7 @@ namespace hdt
         const auto saved_locale = std::locale();
 
         // Set locale to en_US
-        std::locale::global(std::locale("en_US"));
+        std::locale::global(std::locale::classic());
 
         XMLReader reader(reinterpret_cast<uint8_t*>(bytes.data()), bytes.size());
 

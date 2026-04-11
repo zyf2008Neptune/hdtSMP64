@@ -47,7 +47,7 @@ namespace hdt
 
     auto SkyrimSystem::findBone(const RE::BSFixedString& name) const -> SkinnedMeshBone*
     {
-        for (const auto i : m_bones)
+        for (const auto& i : m_bones)
         {
             if (i->m_name == name)
             {
@@ -60,7 +60,7 @@ namespace hdt
 
     auto SkyrimSystem::findBody(const RE::BSFixedString& name) const -> SkinnedMeshBody*
     {
-        for (const auto i : m_meshes)
+        for (const auto& i : m_meshes)
         {
             if (i->m_name == name)
             {
@@ -151,9 +151,9 @@ namespace hdt
                         m_skeleton->world.rotate = convertBt(m_lastRootRotation);
 
                         const auto& children = m_skeleton->GetChildren();
-                        for (uint16_t i = 0; i < children.size(); ++i)
+                        for (const auto& i : children)
                         {
-                            if (const auto node = castNiNode(children[i].get()))
+                            if (const auto node = castNiNode(i.get()))
                             {
                                 updateTransformUpDown(node, true);
                             }
@@ -259,7 +259,7 @@ namespace hdt
         const auto saved_locale = std::locale();
 
         // Set locale to en_US
-        std::locale::global(std::locale("en_US"));
+        std::locale::global(std::locale::classic());
 
         // This forces the skeleton into a neutral reference pose, which avoids building invalid shape data
         // We pull the references directly from havok for the exact same reference data the engine uses
@@ -326,7 +326,7 @@ namespace hdt
                         auto shape = readPerVertexShape(meshNameMap);
                         if (shape && shape->m_vertices.size())
                         {
-                            m_mesh->m_meshes.push_back(shape);
+                            m_mesh->m_meshes.emplace_back(shape);
                             shape->m_mesh = m_mesh.get();
                         }
                     }
@@ -335,7 +335,7 @@ namespace hdt
                         auto shape = readPerTriangleShape(&meshNameMap);
                         if (shape && shape->m_vertices.size())
                         {
-                            m_mesh->m_meshes.push_back(shape);
+                            m_mesh->m_meshes.emplace_back(shape);
                             shape->m_mesh = m_mesh.get();
                         }
                     }
@@ -350,21 +350,21 @@ namespace hdt
                     {
                         if (auto constraint = readGenericConstraint())
                         {
-                            m_mesh->m_constraints.push_back(constraint);
+                            m_mesh->m_constraints.emplace_back(constraint);
                         }
                     }
                     else if (name == "stiffspring-constraint")
                     {
                         if (auto constraint = readStiffSpringConstraint())
                         {
-                            m_mesh->m_constraints.push_back(constraint);
+                            m_mesh->m_constraints.emplace_back(constraint);
                         }
                     }
                     else if (name == "conetwist-constraint")
                     {
                         if (auto constraint = readConeTwistConstraint())
                         {
-                            m_mesh->m_constraints.push_back(constraint);
+                            m_mesh->m_constraints.emplace_back(constraint);
                         }
                     }
                     else if (name == "generic-constraint-default")
@@ -455,10 +455,11 @@ namespace hdt
 
         m_mesh->m_skeleton = hdt::make_nismart(m_skeleton);
         m_mesh->m_shapeRefs.swap(m_shapeRefs);
-        std::ranges::sort(m_mesh->m_bones, [](const auto& a, const auto& b)
-        {
-            return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->m_depth;
-        });
+        std::ranges::sort(
+            m_mesh->m_bones, [](const auto& a, const auto& b)
+            {
+                return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->m_depth;
+            });
 
         // Restore the original pose to avoid a visual 1 Havok tick T-pose (only for visual reasons, it won't break
         // anything otherwise)
@@ -489,21 +490,21 @@ namespace hdt
                 {
                     if (auto constraint = readGenericConstraint())
                     {
-                        ret->m_constraints.push_back(constraint);
+                        ret->m_constraints.emplace_back(constraint);
                     }
                 }
                 else if (name == "stiffspring-constraint")
                 {
                     if (auto constraint = readStiffSpringConstraint())
                     {
-                        ret->m_constraints.push_back(constraint);
+                        ret->m_constraints.emplace_back(constraint);
                     }
                 }
                 else if (name == "conetwist-constraint")
                 {
                     if (auto constraint = readConeTwistConstraint())
                     {
-                        ret->m_constraints.push_back(constraint);
+                        ret->m_constraints.emplace_back(constraint);
                     }
                 }
                 else if (name == "generic-constraint-default")
@@ -613,7 +614,7 @@ namespace hdt
                         cinfo.m_noCollideWithBone.clear();
                         clearCollide = false;
                     }
-                    cinfo.m_canCollideWithBone.push_back(m_reader->readText());
+                    cinfo.m_canCollideWithBone.emplace_back(m_reader->readText());
                 }
                 else if (name == "no-collide-with-bone")
                 {
@@ -623,7 +624,7 @@ namespace hdt
                         cinfo.m_noCollideWithBone.clear();
                         clearCollide = false;
                     }
-                    cinfo.m_noCollideWithBone.push_back(m_reader->readText());
+                    cinfo.m_noCollideWithBone.emplace_back(m_reader->readText());
                 }
                 else if (name == "gravity-factor")
                 {
@@ -871,7 +872,7 @@ namespace hdt
         return nullptr;
     }
 
-    auto SkyrimSystemCreator::readOrUpdateBone(SkyrimSystem* old_system) -> void
+    auto SkyrimSystemCreator::readOrUpdateBone(const SkyrimSystem* old_system) -> void
     {
         const RE::BSFixedString name = getRenamedBone(m_reader->getAttribute("name"));
         if (findBoneFromIndex(name))
@@ -931,7 +932,7 @@ namespace hdt
                 bone->readTransform(RESET_PHYSICS);
             }
 
-            m_mesh->m_bones.push_back(hdt::make_smart(bone));
+            m_mesh->m_bones.emplace_back(hdt::make_smart(bone));
             indexBone(bone);
             return bone;
         }
@@ -979,7 +980,7 @@ namespace hdt
                 {
                     auto defaultBoneInfo = getBoneTemplate("");
                     auto newBone = new SkyrimBone(boneName, node->AsNode(), this->m_skeleton, defaultBoneInfo);
-                    m_mesh->m_bones.push_back(hdt::make_smart(newBone));
+                    m_mesh->m_bones.emplace_back(hdt::make_smart(newBone));
                     indexBone(newBone);
                     bone = newBone;
                     logger::info("Created bone {} added to body {}, created without default values", boneName.c_str(),
@@ -1151,7 +1152,7 @@ namespace hdt
                 }
                 else if (nodeName == "tag")
                 {
-                    body->m_tags.push_back(m_reader->readText());
+                    body->m_tags.emplace_back(m_reader->readText());
                 }
                 else if (nodeName == "can-collide-with-tag")
                 {
@@ -1179,11 +1180,11 @@ namespace hdt
                 {
                     auto boneName = m_reader->getAttribute("bone");
                     const float wt = m_reader->readFloat();
-                    for (auto i = 0; i < body->m_skinnedBones.size(); ++i)
+                    for (auto& m_skinnedBone : body->m_skinnedBones)
                     {
-                        if (body->m_skinnedBones[i].ptr->m_name == getRenamedBone(boneName))
+                        if (m_skinnedBone.ptr->m_name == getRenamedBone(boneName))
                         {
-                            body->m_skinnedBones[i].weightThreshold = wt;
+                            m_skinnedBone.weightThreshold = wt;
                             break;
                         }
                     }
@@ -1212,7 +1213,7 @@ namespace hdt
             }
         }
 
-        m_deferredBuilds.push_back({body.get(), shape.get()});
+        m_deferredBuilds.emplace_back(body.get(), shape.get());
 
         return body;
     }
@@ -1234,16 +1235,15 @@ namespace hdt
 
         auto shape = RE::make_smart<PerTriangleShape>(body.get());
 
-        for (auto entry : vertexOffsetMap)
+        for (const auto& entry : vertexOffsetMap)
         {
             auto* g = castBSTriShape(findObject(m_model, entry.first.c_str()));
             if (g->GetGeometryRuntimeData().skinInstance)
             {
                 int offset = entry.second;
                 RE::NiSkinPartition* skinPartition = g->GetGeometryRuntimeData().skinInstance->skinPartition.get();
-                for (auto i = 0; i < skinPartition->partitions.size(); ++i)
+                for (auto& partition : skinPartition->partitions)
                 {
-                    auto& partition = skinPartition->partitions[i];
                     for (auto j = 0; j < partition.triangles; ++j)
                     {
                         shape->addTriangle(partition.triList[j * 3] + offset, partition.triList[j * 3 + 1] + offset,
@@ -1303,7 +1303,7 @@ namespace hdt
                 }
                 else if (nodeName == "tag")
                 {
-                    body->m_tags.push_back(m_reader->readText());
+                    body->m_tags.emplace_back(m_reader->readText());
                 }
                 else if (nodeName == "no-collide-with-tag")
                 {
@@ -1331,11 +1331,11 @@ namespace hdt
                 {
                     auto boneName = m_reader->getAttribute("bone");
                     float wt = m_reader->readFloat();
-                    for (auto i = 0; i < body->m_skinnedBones.size(); ++i)
+                    for (auto& m_skinnedBone : body->m_skinnedBones)
                     {
-                        if (body->m_skinnedBones[i].ptr->m_name == getRenamedBone(boneName))
+                        if (m_skinnedBone.ptr->m_name == getRenamedBone(boneName))
                         {
-                            body->m_skinnedBones[i].weightThreshold = wt;
+                            m_skinnedBone.weightThreshold = wt;
                         }
                     }
                 }
@@ -1363,7 +1363,7 @@ namespace hdt
             }
         }
 
-        m_deferredBuilds.push_back({body.get(), nullptr});
+        m_deferredBuilds.emplace_back(body.get(), nullptr);
 
         return body;
     }
@@ -1431,7 +1431,6 @@ namespace hdt
                 auto name = m_reader->GetName();
                 if (parseFrameType(name, dest.frameType, dest.frame))
                 {
-                    ;
                 }
                 else if (name == "enableLinearSprings")
                 {
@@ -1633,18 +1632,21 @@ namespace hdt
         return true;
     }
 
-    auto rotFromAtoB(const btVector3& a, const btVector3& b) -> btQuaternion
+    namespace
     {
-        const auto axis = a.cross(b);
-        if (axis.fuzzyZero())
+        auto rotFromAtoB(const btVector3& a, const btVector3& b) -> btQuaternion
         {
-            return btQuaternion::getIdentity();
+            const auto axis = a.cross(b);
+            if (axis.fuzzyZero())
+            {
+                return btQuaternion::getIdentity();
+            }
+            const float sinA = axis.length();
+            const float cosA = a.dot(b);
+            const float angle = btAtan2(cosA, sinA);
+            return {axis, angle};
         }
-        const float sinA = axis.length();
-        const float cosA = a.dot(b);
-        const float angle = btAtan2(cosA, sinA);
-        return btQuaternion(axis, angle);
-    }
+    } // namespace
 
     auto SkyrimSystemCreator::calcFrame(FrameType type, const btTransform& frame, const btQsTransform& trA,
                                         const btQsTransform& trB, btTransform& frameA, btTransform& frameB) -> void
@@ -1851,7 +1853,6 @@ namespace hdt
                 auto name = m_reader->GetName();
                 if (parseFrameType(name, dest.frameType, dest.frame))
                 {
-                    ;
                 }
                 else if (name == "swingSpan1" || name == "coneLimit" || name == "limitZ")
                 {

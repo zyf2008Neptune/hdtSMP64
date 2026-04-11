@@ -6,103 +6,132 @@
 
 namespace hdt
 {
-	class PerVertexShape;
-	class PerTriangleShape;
+    class PerVertexShape;
+    class PerTriangleShape;
 
-	class SkinnedMeshShape :
-		public RE::BSIntrusiveRefCounted
-	{
-	public:
-		BT_DECLARE_ALIGNED_ALLOCATOR();
+    class SkinnedMeshShape :
+        public RE::BSIntrusiveRefCounted
+    {
+    public:
+        BT_DECLARE_ALIGNED_ALLOCATOR()
 
-		SkinnedMeshShape(SkinnedMeshBody* body);
-		virtual ~SkinnedMeshShape();
+        SkinnedMeshShape(SkinnedMeshBody* body);
+        virtual ~SkinnedMeshShape();
 
-		virtual PerVertexShape* asPerVertexShape() { return nullptr; }
-		virtual PerTriangleShape* asPerTriangleShape() { return nullptr; }
+        virtual auto asPerVertexShape() -> PerVertexShape* { return nullptr; }
+        virtual auto asPerTriangleShape() -> PerTriangleShape* { return nullptr; }
 
-		const Aabb& getAabb() const { return m_tree.aabbAll; }
+        auto getAabb() const -> const Aabb& { return m_tree.aabbAll; }
 
-		virtual void clipColliders();
-		virtual void finishBuild() = 0;
-		virtual void internalUpdate() = 0;
-		virtual void markUsedVertices(bool* flags) = 0;
-		virtual void remapVertices(UINT* map) = 0;
+        virtual auto clipColliders() -> void;
+        virtual auto finishBuild() -> void = 0;
+        virtual auto internalUpdate() -> void = 0;
+        virtual auto markUsedVertices(bool* flags) -> void = 0;
+        virtual auto markUsedVertices(std::vector<bool>& flags) -> void = 0;
+        virtual auto remapVertices(UINT* map) -> void = 0;
 
-		virtual float getColliderBoneWeight(const Collider* c, int boneIdx) = 0;
-		virtual int getColliderBoneIndex(const Collider* c, int boneIdx) = 0;
-		virtual btVector3 baryCoord(const Collider* c, const btVector3& p) = 0;
-		virtual float baryWeight(const btVector3& w, int boneIdx) = 0;
-		virtual int getBonePerCollider() = 0;
+        virtual auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float = 0;
+        virtual auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int = 0;
+        virtual auto baryCoord(const Collider* c, const btVector3& p) -> btVector3 = 0;
+        virtual auto baryWeight(const btVector3& w, int boneIdx) -> float = 0;
+        virtual auto getBonePerCollider() -> int = 0;
 
-		SkinnedMeshBody* m_owner;
-		vectorA16<Aabb> m_aabb;
-		vectorA16<Collider> m_colliders;
-		ColliderTree m_tree;
-		float m_windEffect = 0.f;  //effect from xml m_windEffect
-	};
+        SkinnedMeshBody* m_owner;
+        vectorA16<Aabb> m_aabb;
+        vectorA16<Collider> m_colliders;
+        ColliderTree m_tree;
+        float m_windEffect = 0.f; //effect from xml m_windEffect
+    };
 
-	class PerVertexShape : public SkinnedMeshShape
-	{
-	public:
-		PerVertexShape(SkinnedMeshBody* body);
-		virtual ~PerVertexShape();
+    class PerVertexShape : public SkinnedMeshShape
+    {
+    public:
+        PerVertexShape(SkinnedMeshBody* body);
+        ~PerVertexShape() override = default;
 
-		PerVertexShape* asPerVertexShape() override { return this; }
-		void internalUpdate() override;
+        auto asPerVertexShape() -> PerVertexShape* override { return this; }
+        auto internalUpdate() -> void override;
 
-		inline int getBonePerCollider() override final { return 4; }
-		inline float getColliderBoneWeight(const Collider* c, int boneIdx) override final { return m_owner->m_vertices[c->vertex].m_weight[boneIdx]; }
-		inline int getColliderBoneIndex(const Collider* c, int boneIdx) override final { return m_owner->m_vertices[c->vertex].getBoneIdx(boneIdx); }
-		inline btVector3 baryCoord([[maybe_unused]] const Collider* c, [[maybe_unused]] const btVector3& p) override final { return btVector3(1, 1, 1); }
-		inline float baryWeight([[maybe_unused]] const btVector3& w, [[maybe_unused]] int boneIdx) override final { return 1; }
+        auto getBonePerCollider() -> int final { return 4; }
 
-		void finishBuild() override;
-		void markUsedVertices(bool* flags) override;
-		void remapVertices(UINT* map) override;
-		void autoGen();
+        auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float final
+        {
+            return m_owner->m_vertices[c->vertex].m_weight[boneIdx];
+        }
 
-		struct ShapeProp
-		{
-			float margin = 1.0f;
-		} m_shapeProp;
-	};
+        auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int final
+        {
+            return m_owner->m_vertices[c->vertex].getBoneIdx(boneIdx);
+        }
 
-	class PerTriangleShape : public SkinnedMeshShape
-	{
-	public:
-		PerTriangleShape(SkinnedMeshBody* body);
-		virtual ~PerTriangleShape();
+        auto baryCoord([[maybe_unused]] const Collider* c, [[maybe_unused]] const btVector3& p) -> btVector3 final
+        {
+            return {1, 1, 1};
+        }
 
-		PerVertexShape* asPerVertexShape() override { return m_verticesCollision.get(); }
-		PerTriangleShape* asPerTriangleShape() override { return this; }
-		void internalUpdate() override;
+        auto baryWeight([[maybe_unused]] const btVector3& w, [[maybe_unused]] int boneIdx) -> float final
+        {
+            return 1;
+        }
 
-		inline int getBonePerCollider() override final { return 12; }
-		inline float getColliderBoneWeight(const Collider* c, int boneIdx) override final { return m_owner->m_vertices[c->vertices[boneIdx / 4]].m_weight[boneIdx % 4]; }
-		inline int getColliderBoneIndex(const Collider* c, int boneIdx) override final { return m_owner->m_vertices[c->vertices[boneIdx / 4]].getBoneIdx(boneIdx % 4); }
-		inline btVector3 baryCoord(const Collider* c, const btVector3& p) override final
-		{
-			return BaryCoord(
-				m_owner->m_vpos[c->vertices[0]].pos(),
-				m_owner->m_vpos[c->vertices[1]].pos(),
-				m_owner->m_vpos[c->vertices[2]].pos(),
-				p);
-		}
-		inline float baryWeight(const btVector3& w, int boneIdx) override final { return w[boneIdx / 4]; }
+        auto finishBuild() -> void override;
+        auto markUsedVertices(bool* flags) -> void override;
+        auto markUsedVertices(std::vector<bool>& flags) -> void override;
+        auto remapVertices(UINT* map) -> void override;
+        auto autoGen() -> void;
 
-		void finishBuild() override;
-		void markUsedVertices(bool* flags) override;
-		void remapVertices(UINT* map) override;
+        struct ShapeProp
+        {
+            float margin = 1.0f;
+        } m_shapeProp;
+    };
 
-		void addTriangle(int p0, int p1, int p2);
+    class PerTriangleShape : public SkinnedMeshShape
+    {
+    public:
+        PerTriangleShape(SkinnedMeshBody* body);
+        ~PerTriangleShape() override = default;
 
-		struct ShapeProp
-		{
-			float margin = 1.0f;
-			float penetration = 1.f;
-		} m_shapeProp;
+        auto asPerVertexShape() -> PerVertexShape* override { return m_verticesCollision.get(); }
+        auto asPerTriangleShape() -> PerTriangleShape* override { return this; }
+        auto internalUpdate() -> void override;
 
-		RE::BSTSmartPointer<PerVertexShape> m_verticesCollision;
-	};
+        auto getBonePerCollider() -> int final { return 12; }
+
+        auto getColliderBoneWeight(const Collider* c, int boneIdx) -> float final
+        {
+            return m_owner->m_vertices[c->vertices[boneIdx / 4]].m_weight[boneIdx % 4];
+        }
+
+        auto getColliderBoneIndex(const Collider* c, int boneIdx) -> int final
+        {
+            return m_owner->m_vertices[c->vertices[boneIdx / 4]].getBoneIdx(boneIdx % 4);
+        }
+
+        auto baryCoord(const Collider* c, const btVector3& p) -> btVector3 final
+        {
+            return BaryCoord(
+                m_owner->m_vpos[c->vertices[0]].pos(),
+                m_owner->m_vpos[c->vertices[1]].pos(),
+                m_owner->m_vpos[c->vertices[2]].pos(),
+                p);
+        }
+
+        auto baryWeight(const btVector3& w, int boneIdx) -> float final { return w[boneIdx / 4]; }
+
+        auto finishBuild() -> void override;
+        auto markUsedVertices(bool* flags) -> void override;
+        auto markUsedVertices(std::vector<bool>& flags) -> void override;
+        auto remapVertices(UINT* map) -> void override;
+
+        auto addTriangle(int p0, int p1, int p2) -> void;
+
+        struct ShapeProp
+        {
+            float margin = 1.0f;
+            float penetration = 1.f;
+        } m_shapeProp;
+
+        RE::BSTSmartPointer<PerVertexShape> m_verticesCollision;
+    };
 }

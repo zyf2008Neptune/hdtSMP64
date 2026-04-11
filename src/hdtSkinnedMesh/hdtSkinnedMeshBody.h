@@ -9,104 +9,108 @@
 
 namespace hdt
 {
-	class SkinnedMeshShape;
+    class SkinnedMeshShape;
 
-	class SkinnedMeshBody :
-		public btCollisionObject,
-		public RE::BSIntrusiveRefCounted
-	{
-	public:
-		using btCollisionObject::operator new;
-		using btCollisionObject::operator delete;
-		using btCollisionObject::operator new[];
-		using btCollisionObject::operator delete[];
+    class SkinnedMeshBody :
+        public btCollisionObject,
+        public RE::BSIntrusiveRefCounted
+    {
+    public:
+        using btCollisionObject::operator new;
+        using btCollisionObject::operator delete;
+        using btCollisionObject::operator new[];
+        using btCollisionObject::operator delete[];
 
-	public:
-		SkinnedMeshBody();
-		virtual ~SkinnedMeshBody();
+    public:
+        SkinnedMeshBody();
+        ~SkinnedMeshBody() override;
 
-		struct CollisionShape : public btCollisionShape  // a shape only used for markout
-		{
-			CollisionShape() :
-				m_aabb(_mm_setzero_ps(), _mm_setzero_ps()) { m_shapeType = CUSTOM_CONCAVE_SHAPE_TYPE; }
+        struct CollisionShape : btCollisionShape // a shape only used for markout
+        {
+            CollisionShape() :
+                m_aabb(_mm_setzero_ps(), _mm_setzero_ps()) { m_shapeType = CUSTOM_CONCAVE_SHAPE_TYPE; }
 
-			Aabb m_aabb;
+            Aabb m_aabb;
 
-			void getAabb([[maybe_unused]] const btTransform& t, btVector3& aabbMin, btVector3& aabbMax) const override
-			{
-				aabbMin = m_aabb.m_min;
-				aabbMax = m_aabb.m_max;
-			}
+            auto getAabb([[maybe_unused]] const btTransform& t, btVector3& aabbMin,
+                         btVector3& aabbMax) const -> void override
+            {
+                aabbMin = m_aabb.m_min;
+                aabbMax = m_aabb.m_max;
+            }
 
-			void setLocalScaling([[maybe_unused]] const btVector3& scaling) override
-			{
-			}
+            auto setLocalScaling([[maybe_unused]] const btVector3& scaling) -> void override
+            {
+            }
 
-			const btVector3& getLocalScaling() const override
-			{
-				static const btVector3 ret(1, 1, 1);
-				return ret;
-			}
+            auto getLocalScaling() const -> const btVector3& override
+            {
+                static const btVector3 ret(1, 1, 1);
+                return ret;
+            }
 
-			void calculateLocalInertia([[maybe_unused]] btScalar mass, [[maybe_unused]] btVector3& inertia) const override
-			{
-			}
+            auto calculateLocalInertia([[maybe_unused]] btScalar mass,
+                                       [[maybe_unused]] btVector3& inertia) const -> void override
+            {
+            }
 
-			const char* getName() const override { return "btSkinnedMeshBody"; }
-			btScalar getMargin() const override { return 0; }
+            auto getName() const -> const char* override { return "btSkinnedMeshBody"; }
+            auto getMargin() const -> btScalar override { return 0; }
 
-			void setMargin([[maybe_unused]] btScalar m) override
-			{
-			}
-		} m_bulletShape;
+            auto setMargin([[maybe_unused]] btScalar m) -> void override
+            {
+            }
+        } m_bulletShape;
 
-		struct SkinnedBone
-		{
-			btMatrix4x3T vertexToBone;
-			BoundingSphere localBoundingSphere;
-			BoundingSphere worldBoundingSphere;
-			SkinnedMeshBone* ptr = nullptr;
-			float weightThreshold;
-			bool isKinematic;
-		};
+        struct SkinnedBone
+        {
+            btMatrix4x3T vertexToBone;
+            BoundingSphere localBoundingSphere;
+            BoundingSphere worldBoundingSphere;
+            SkinnedMeshBone* ptr = nullptr;
+            float weightThreshold;
+            bool isKinematic;
+        };
 
-		RE::BSFixedString m_name;
+        RE::BSFixedString m_name;
 
-		//		int m_priority;
-		bool m_isKinematic;
-		bool m_useBoundingSphere;
-		RE::BSTSmartPointer<SkinnedMeshShape> m_shape;
+        //		int m_priority;
+        bool m_isKinematic = false;
+        bool m_useBoundingSphere = false;
+        RE::BSTSmartPointer<SkinnedMeshShape> m_shape;
 
-		int addBone(SkinnedMeshBone* bone, const btQsTransform& verticesToBone, const BoundingSphere& boundingSphere);
+        auto addBone(SkinnedMeshBone* bone, const btQsTransform& verticesToBone,
+                     const BoundingSphere& boundingSphere) -> int;
 
-		void finishBuild();
-		virtual void internalUpdate();
+        auto finishBuild() -> void;
+        virtual auto internalUpdate() -> void;
 
-		std::vector<SkinnedBone> m_skinnedBones;
-		std::vector<Bone> m_bones;
+        std::vector<SkinnedBone> m_skinnedBones;
+        std::vector<Bone> m_bones;
 
-		std::vector<Vertex> m_vertices;
-		std::vector<VertexPos> m_vpos;
+        std::vector<Vertex> m_vertices;
+        std::vector<VertexPos> m_vpos;
 
-		std::vector<RE::BSFixedString> m_tags;
-		std::unordered_set<RE::BSFixedString> m_canCollideWithTags;
-		std::unordered_set<RE::BSFixedString> m_noCollideWithTags;
-		std::unordered_set<SkinnedMeshBone*> m_canCollideWithBones;
-		std::unordered_set<SkinnedMeshBone*> m_noCollideWithBones;
+        std::vector<RE::BSFixedString> m_tags;
+        std::unordered_set<RE::BSFixedString> m_canCollideWithTags;
+        std::unordered_set<RE::BSFixedString> m_noCollideWithTags;
+        std::unordered_set<SkinnedMeshBone*> m_canCollideWithBones;
+        std::unordered_set<SkinnedMeshBone*> m_noCollideWithBones;
 
-		float flexible(const Vertex& v);
+        auto flexible(const Vertex& v) const -> float;
 
-		bool canCollideWith(const SkinnedMeshBone* bone) const
-		{
-			if (!m_canCollideWithBones.empty()) {
-				return m_canCollideWithBones.contains(const_cast<SkinnedMeshBone*>(bone));
-			}
-			return !m_noCollideWithBones.contains(const_cast<SkinnedMeshBone*>(bone));
-		}
+        auto canCollideWith(const SkinnedMeshBone* bone) const -> bool
+        {
+            if (!m_canCollideWithBones.empty())
+            {
+                return m_canCollideWithBones.contains(const_cast<SkinnedMeshBone*>(bone));
+            }
+            return !m_noCollideWithBones.contains(const_cast<SkinnedMeshBone*>(bone));
+        }
 
-		virtual bool canCollideWith(const SkinnedMeshBody* body) const;
+        virtual auto canCollideWith(const SkinnedMeshBody* body) const -> bool;
 
-		void updateBoundingSphereAabb();
-		bool isBoundingSphereCollided(SkinnedMeshBody* rhs);
-	};
+        auto updateBoundingSphereAabb() -> void;
+        auto isBoundingSphereCollided(SkinnedMeshBody* rhs) const -> bool;
+    };
 }
