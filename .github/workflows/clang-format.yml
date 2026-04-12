@@ -1,0 +1,21 @@
+name: Clang Format Fixer
+on: [push]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      
+      - name: Run Clang-Format
+        uses: RafikFarhad/clang-format-github-action@v6
+        with:
+          sources: "src/**/*.cpp,src/**/*.h"
+          style: file # Uses your project's .clang-format file
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: apply clang-format fixes"
