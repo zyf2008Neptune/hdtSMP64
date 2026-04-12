@@ -10,42 +10,31 @@ namespace hdt
         m_owner->m_shape = hdt::make_smart(this);
     }
 
-    SkinnedMeshShape::~SkinnedMeshShape()
-    {
-        //m_aabbGridLink.discard_data();
-        //m_aabbGridBuffer.discard_data();
-    }
-
     auto SkinnedMeshShape::clipColliders() -> void
     {
-        m_tree.clipCollider([&, this](const Collider& n) -> bool
-        {
-            bool flg = false;
-            for (int i = 0; i < getBonePerCollider() && !flg; ++i)
+        m_tree.clipCollider(
+            [&, this](const Collider& n) -> bool
             {
-                const float weight = getColliderBoneWeight(&n, i);
-                if (weight > FLT_EPSILON && weight > m_owner->m_skinnedBones[getColliderBoneIndex(&n, i)].
-                    weightThreshold)
+                bool flg = false;
+                for (int i = 0; i < getBonePerCollider() && !flg; ++i)
                 {
-                    flg = true;
+                    const float weight = getColliderBoneWeight(&n, i);
+                    if (weight > FLT_EPSILON &&
+                        weight > m_owner->m_skinnedBones[getColliderBoneIndex(&n, i)].weightThreshold)
+                    {
+                        flg = true;
+                    }
                 }
-            }
-            return !flg;
-        });
+                return !flg;
+            });
     }
 
-    PerVertexShape::PerVertexShape(SkinnedMeshBody* body) :
-        SkinnedMeshShape(body)
-    {
-    }
+    PerVertexShape::PerVertexShape(SkinnedMeshBody* body) : SkinnedMeshShape(body) {}
 
     auto PerVertexShape::finishBuild() -> void
     {
         m_tree.optimize();
-        m_tree.updateKinematic([this](const Collider* n)
-        {
-            return m_owner->flexible(m_owner->m_vertices[n->vertex]);
-        });
+        m_tree.updateKinematic([this](const Collider* n) { return m_owner->flexible(m_owner->m_vertices[n->vertex]); });
 
         m_owner->setCollisionFlags(m_tree.isKinematic ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
 
@@ -121,10 +110,7 @@ namespace hdt
         }
     }
 
-    PerTriangleShape::PerTriangleShape(SkinnedMeshBody* body) :
-        SkinnedMeshShape(body)
-    {
-    }
+    PerTriangleShape::PerTriangleShape(SkinnedMeshBody* body) : SkinnedMeshShape(body) {}
 
     // Note: Don't waste your time trying to optimize this...
     // 1: The compiler auto-vertorizes, unrolls, and broadcasts W already (Very sensitive to changes)
@@ -162,13 +148,14 @@ namespace hdt
     auto PerTriangleShape::finishBuild() -> void
     {
         m_tree.optimize();
-        m_tree.updateKinematic([this](const Collider* c)
-        {
-            float k = m_owner->flexible(m_owner->m_vertices[c->vertices[0]]);
-            k += m_owner->flexible(m_owner->m_vertices[c->vertices[1]]);
-            k += m_owner->flexible(m_owner->m_vertices[c->vertices[2]]);
-            return k / 3;
-        });
+        m_tree.updateKinematic(
+            [this](const Collider* c)
+            {
+                float k = m_owner->flexible(m_owner->m_vertices[c->vertices[0]]);
+                k += m_owner->flexible(m_owner->m_vertices[c->vertices[1]]);
+                k += m_owner->flexible(m_owner->m_vertices[c->vertices[2]]);
+                return k / 3;
+            });
 
         m_owner->setCollisionFlags(m_tree.isKinematic ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
 
@@ -289,4 +276,4 @@ namespace hdt
 
         m_tree.insertCollider(keys, count, collider);
     }
-}
+} // namespace hdt

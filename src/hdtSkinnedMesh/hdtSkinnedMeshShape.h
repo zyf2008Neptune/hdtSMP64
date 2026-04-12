@@ -9,14 +9,13 @@ namespace hdt
     class PerVertexShape;
     class PerTriangleShape;
 
-    class SkinnedMeshShape :
-        public RE::BSIntrusiveRefCounted
+    class SkinnedMeshShape : public RE::BSIntrusiveRefCounted
     {
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR()
 
         SkinnedMeshShape(SkinnedMeshBody* body);
-        virtual ~SkinnedMeshShape();
+        virtual ~SkinnedMeshShape() = default;
 
         virtual auto asPerVertexShape() -> PerVertexShape* { return nullptr; }
         virtual auto asPerTriangleShape() -> PerTriangleShape* { return nullptr; }
@@ -40,7 +39,7 @@ namespace hdt
         vectorA16<Aabb> m_aabb;
         vectorA16<Collider> m_colliders;
         ColliderTree m_tree;
-        float m_windEffect = 0.f; //effect from xml m_windEffect
+        float m_windEffect = 0.f; // effect from xml m_windEffect
     };
 
     class PerVertexShape : public SkinnedMeshShape
@@ -69,10 +68,7 @@ namespace hdt
             return {1, 1, 1};
         }
 
-        auto baryWeight([[maybe_unused]] const btVector3& w, [[maybe_unused]] int boneIdx) -> float final
-        {
-            return 1;
-        }
+        auto baryWeight([[maybe_unused]] const btVector3& w, [[maybe_unused]] int boneIdx) -> float final { return 1; }
 
         auto finishBuild() -> void override;
         auto markUsedVertices(bool* flags) -> void override;
@@ -110,11 +106,8 @@ namespace hdt
 
         auto baryCoord(const Collider* c, const btVector3& p) -> btVector3 final
         {
-            return BaryCoord(
-                m_owner->m_vpos[c->vertices[0]].pos(),
-                m_owner->m_vpos[c->vertices[1]].pos(),
-                m_owner->m_vpos[c->vertices[2]].pos(),
-                p);
+            return BaryCoord(m_owner->m_vpos[c->vertices[0]].pos(), m_owner->m_vpos[c->vertices[1]].pos(),
+                             m_owner->m_vpos[c->vertices[2]].pos(), p);
         }
 
         auto baryWeight(const btVector3& w, int boneIdx) -> float final { return w[boneIdx / 4]; }
@@ -134,4 +127,4 @@ namespace hdt
 
         RE::BSTSmartPointer<PerVertexShape> m_verticesCollision;
     };
-}
+} // namespace hdt

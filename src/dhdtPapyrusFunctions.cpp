@@ -5,17 +5,20 @@
 #include "dhdtOverrideManager.h"
 #include "hdtSkyrimPhysicsWorld.h"
 
-auto RegisterFuncs(RE::BSScript::IVirtualMachine* registry) -> bool
+namespace
 {
-    //
-    registry->RegisterFunction("ReloadPhysicsFile", "DynamicHDT", hdt::papyrus::ReloadPhysicsFile);
-    registry->RegisterFunction("SwapPhysicsFile", "DynamicHDT", hdt::papyrus::SwapPhysicsFile);
-    registry->RegisterFunction("QueryCurrentPhysicsFile", "DynamicHDT", hdt::papyrus::QueryCurrentPhysicsFile);
-    registry->RegisterFunction("TogglePhysics", "DynamicHDT", hdt::papyrus::TogglePhysics);
-    registry->RegisterFunction("ResetPhysics", "DynamicHDT", hdt::papyrus::ResetPhysics);
-    //
-    return true;
-}
+    auto RegisterFuncs(RE::BSScript::IVirtualMachine* registry) -> bool
+    {
+        //
+        registry->RegisterFunction("ReloadPhysicsFile", "DynamicHDT", hdt::papyrus::ReloadPhysicsFile);
+        registry->RegisterFunction("SwapPhysicsFile", "DynamicHDT", hdt::papyrus::SwapPhysicsFile);
+        registry->RegisterFunction("QueryCurrentPhysicsFile", "DynamicHDT", hdt::papyrus::QueryCurrentPhysicsFile);
+        registry->RegisterFunction("TogglePhysics", "DynamicHDT", hdt::papyrus::TogglePhysics);
+        registry->RegisterFunction("ResetPhysics", "DynamicHDT", hdt::papyrus::ResetPhysics);
+        //
+        return true;
+    }
+} // namespace
 
 auto hdt::papyrus::RegisterAllFunctions(const SKSE::PapyrusInterface* a_papy_intfc) -> bool
 {
@@ -81,12 +84,12 @@ auto hdt::papyrus::QueryCurrentPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on
     return impl::QueryCurrentPhysicsFileImpl(on_actor->formID, on_item->formID, verbose_log).c_str();
 }
 
-auto hdt::papyrus::TogglePhysics(RE::StaticFunctionTag*, RE::Actor* actor, std::vector<RE::BSFixedString> boneNames,
-                                 const bool on) -> std::vector<bool>
+auto hdt::papyrus::TogglePhysics(RE::StaticFunctionTag*, const RE::Actor* actor,
+                                 std::vector<RE::BSFixedString> boneNames, const bool on) -> std::vector<bool>
 {
     if (!actor || boneNames.empty())
     {
-        return std::vector<bool>();
+        return {};
     }
     return impl::TogglePhysicsImpl(actor, boneNames, on);
 }
@@ -94,7 +97,7 @@ auto hdt::papyrus::TogglePhysics(RE::StaticFunctionTag*, RE::Actor* actor, std::
 auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::vector<RE::BSFixedString>& boneNames,
                                            const bool on) -> std::vector<bool>
 {
-    std::vector<bool> result(boneNames.size(), false);
+    std::vector result(boneNames.size(), false);
 
     const auto AM = ActorManager::instance();
     auto guard = AM->lockGuard();
@@ -119,7 +122,7 @@ auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::ve
 
             for (size_t i = 0; i < boneNames.size(); ++i)
             {
-                bool foundAny = false;
+                auto foundAny = false;
 
                 auto processBone = [&](SkinnedMeshBone* bone)
                 {
@@ -271,7 +274,7 @@ auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, u
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
-    bool character_found = false, armor_addon_found = false, succeeded = false;
+    auto character_found = false, armor_addon_found = false, succeeded = false;
 
     std::string old_physics_file_path;
 
@@ -419,7 +422,7 @@ auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID,
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
-    bool character_found = false, armor_addon_found = false, succeeded = false;
+    auto character_found = false, armor_addon_found = false, succeeded = false;
 
     for (auto& skeleton : skeletons)
     {
@@ -546,7 +549,9 @@ auto hdt::papyrus::impl::QueryCurrentPhysicsFileImpl(const uint32_t on_actor_for
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
-    bool character_found = false, armor_addon_found = false, succeeded = false;
+    auto character_found = false;
+    auto armor_addon_found = false;
+    auto succeeded = false;
 
     std::string physics_file_path;
 

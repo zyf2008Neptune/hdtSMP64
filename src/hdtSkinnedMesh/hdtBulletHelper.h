@@ -140,11 +140,9 @@ namespace hdt
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR()
 
-        btQsTransform() :
-            m_basis(btQuaternion::getIdentity()), m_originScale(0, 0, 0, 1) {}
+        btQsTransform() : m_basis(btQuaternion::getIdentity()), m_originScale(0, 0, 0, 1) {}
 
-        btQsTransform(const btQuaternion& r, const btVector3& t, const float s = 1.0f) :
-            m_basis(r)
+        btQsTransform(const btQuaternion& r, const btVector3& t, const float s = 1.0f) : m_basis(r)
         {
 #ifdef BT_ALLOW_SSE4
             // 0x30 inserts the 0th element of _mm_set_ss into the 3rd (W) element of t
@@ -155,8 +153,7 @@ namespace hdt
 #endif
         }
 
-        btQsTransform(const btTransform& t, const float s = 1.0f) :
-            m_basis(t.getRotation())
+        btQsTransform(const btTransform& t, const float s = 1.0f) : m_basis(t.getRotation())
         {
 #ifdef BT_ALLOW_SSE4
             m_originScale.mVec128 = _mm_insert_ps(t.getOrigin().get128(), _mm_set_ss(s), 0x30);
@@ -168,8 +165,8 @@ namespace hdt
 
         btQsTransform(const btQsTransform&) = default;
         btQsTransform(btQsTransform&&) = default;
-        auto operator=(const btQsTransform&) -> btQsTransform& = default;
-        auto operator=(btQsTransform&&) -> btQsTransform& = default;
+        auto operator=(const btQsTransform&)->btQsTransform& = default;
+        auto operator=(btQsTransform&&)->btQsTransform& = default;
 
         [[nodiscard]] auto isValid() const -> bool { return getScale() > 0; }
 
@@ -211,18 +208,18 @@ namespace hdt
             m_originScale[2] = z;
         }
 
-        [[nodiscard]] auto operator*(const btQsTransform& rhs) const -> btQsTransform
+        [[nodiscard]] auto operator*(const btQsTransform& rhs) const->btQsTransform
         {
             return btQsTransform{m_basis * rhs.m_basis, getOrigin() + quatRotate(m_basis, rhs.getOrigin() * getScale()),
                                  getScale() * rhs.getScale()};
         }
 
-        [[nodiscard]] auto operator*(const btVector3& rhs) const -> btVector3
+        [[nodiscard]] auto operator*(const btVector3& rhs) const->btVector3
         {
             return getOrigin() + quatRotate(m_basis, rhs * getScale());
         }
 
-        auto operator*=(const btQsTransform& rhs) -> void
+        auto operator*=(const btQsTransform& rhs)->void
         {
             const float s = getScale();
             const float newScale = s * rhs.getScale();
@@ -269,7 +266,7 @@ namespace hdt
             m_row[2].m128_f32[3] = t.getOrigin()[2];
         }
 
-        auto operator*(const btVector3& rhs) const -> btVector3
+        auto operator*(const btVector3& rhs) const->btVector3
         {
 #ifdef BT_ALLOW_SSE4
             const auto v = _mm_blend_ps(rhs.get128(), _mm_set_ps1(1), 0x8);
@@ -339,12 +336,12 @@ namespace hdt
             m_col[3] = t.getOrigin().get128();
         }
 
-        auto operator*(const btVector3& rhs) const -> btVector3
+        auto operator*(const btVector3& rhs) const->btVector3
         {
             return m_col[0] * rhs[0] + m_col[1] * rhs[1] + m_col[2] * rhs[2] + m_col[3];
         }
 
-        auto operator*(const btMatrix4x3T& r) const -> btMatrix4x3T
+        auto operator*(const btMatrix4x3T& r) const->btMatrix4x3T
         {
             btMatrix4x3T ret;
             ret.m_col[0] = m_col[0] * r.m_col[0][0] + m_col[1] * r.m_col[0][1] + m_col[2] * r.m_col[0][2];
@@ -366,8 +363,7 @@ namespace hdt
     class RefObject
     {
     public:
-        RefObject() :
-            m_refCount(0) {}
+        RefObject() : m_refCount(0) {}
 
         virtual ~RefObject() = default;
 

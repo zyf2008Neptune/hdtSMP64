@@ -6,13 +6,9 @@ namespace hdt
 {
     struct alignas(16) Vertex
     {
-        Vertex()
-        {
-            ZeroMemory(this, sizeof(*this));
-        }
+        Vertex() { ZeroMemory(this, sizeof(*this)); }
 
-        Vertex(const float x, const float y, const float z) :
-            Vertex() { m_skinPos.setValue(x, y, z); }
+        Vertex(const float x, const float y, const float z) : Vertex() { m_skinPos.setValue(x, y, z); }
 
         // skin info;
         btVector3 m_skinPos;
@@ -21,10 +17,7 @@ namespace hdt
 
         [[nodiscard]] auto getBoneIdx(const int i) const -> U32 { return m_boneIdx[i]; }
 
-        auto setBoneIdx(const int i, const U32 idx) -> void
-        {
-            m_boneIdx[i] = idx;
-        }
+        auto setBoneIdx(const int i, const U32 idx) -> void { m_boneIdx[i] = idx; }
 
         auto sortWeight() -> void;
     };
@@ -39,10 +32,7 @@ namespace hdt
             m_data.m128_f32[3] = m;
         }
 
-        auto set(const btVector4& pm) -> void
-        {
-            m_data = pm.get128();
-        }
+        auto set(const btVector4& pm) -> void { m_data = pm.get128(); }
 
         [[nodiscard]] auto pos() const -> btVector3 { return m_data; }
         [[nodiscard]] auto marginMultiplier4() const -> __m128 { return pshufd<0xFF>(m_data); }
@@ -50,4 +40,4 @@ namespace hdt
 
         __m128 m_data;
     };
-}
+} // namespace hdt

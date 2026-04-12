@@ -2,8 +2,8 @@
 #include "hdtSkinnedMeshAlgorithm.h"
 #include "hdtSkinnedMeshBody.h"
 
-#include <algorithm>
 #include <LinearMath/btPoolAllocator.h>
+#include <algorithm>
 
 namespace hdt
 {

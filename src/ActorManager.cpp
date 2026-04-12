@@ -23,26 +23,29 @@ namespace hdt
     REL::Relocation<_NiStream_deconstructor> NiStream_deconstructor{REL::VariantID(68972, 70325, 0x0C9EEA0)};
     // 0xC598F0
 
-    static auto IsHair(RE::TESBoundObject* a_ref) -> bool
+    namespace
     {
-        if (a_ref)
+        auto IsHair(RE::TESBoundObject* a_ref) -> bool
         {
-            if (const auto bipedForm = skyrim_cast<RE::BGSBipedObjectForm*>(a_ref))
+            if (a_ref)
             {
-                return bipedForm->bipedModelData.bipedObjectSlots.any(RE::BIPED_MODEL::BipedObjectSlot::kHair,
-                                                                      RE::BIPED_MODEL::BipedObjectSlot::kLongHair);
+                if (const auto bipedForm = skyrim_cast<RE::BGSBipedObjectForm*>(a_ref))
+                {
+                    return bipedForm->bipedModelData.bipedObjectSlots.any(RE::BIPED_MODEL::BipedObjectSlot::kHair,
+                                                                          RE::BIPED_MODEL::BipedObjectSlot::kLongHair);
+                }
             }
-        }
 
-        return false;
-    };
+            return false;
+        }
+    } // namespace
 
     class HairVisitor // public RE::InventoryChanges::IItemChangeVisitor
     {
     public:
         HairVisitor(RE::TESBoundObject*& a_dstObject) : _object(a_dstObject) {}
 
-        ~HairVisitor() {}
+        ~HairVisitor() = default;
 
         auto Visit(const RE::InventoryEntryData* a_entryData) const -> RE::BSContainer::ForEachResult
         {
@@ -69,34 +72,41 @@ namespace hdt
         RE::TESBoundObject*& _object;
     };
 
-    auto isFirstPersonSkeleton(RE::NiNode* npc) -> bool
+    namespace
     {
-        if (!npc)
+        auto isFirstPersonSkeleton(RE::NiNode* npc) -> bool
         {
-            return false;
-        }
-
-        return findNode(npc, "Camera1st [Cam1]") ? true : false;
-    }
-
-    auto getNpcNode(RE::NiNode* skeleton) -> RE::NiNode*
-    {
-        // TODO: replace this with a generic skeleton fixing configuration option
-        // hardcode an exception for lurker skeletons because they are made incorrectly
-        auto shouldFix = false;
-        if (skeleton->GetUserData() && skeleton->GetUserData()->GetObjectReference())
-        {
-            const auto npcForm = skyrim_cast<RE::TESNPC*>(skeleton->GetUserData()->GetObjectReference());
-            if (npcForm && npcForm->race &&
-                !strcmp(npcForm->race->skeletonModels[0].GetModel(),
-                        "Actors\\DLC02\\BenthicLurker\\Character Assets\\skeleton.nif"))
+            if (!npc)
             {
-                shouldFix = true;
+                return false;
             }
-        }
 
-        return findNode(skeleton, shouldFix ? "NPC Root [Root]" : "NPC");
-    }
+            return findNode(npc, "Camera1st [Cam1]") ? true : false;
+        }
+    } // namespace
+
+    namespace
+    {
+        auto getNpcNode(RE::NiNode* skeleton) -> RE::NiNode*
+        {
+            // TODO: replace this with a generic skeleton fixing configuration option
+            // hardcode an exception for lurker skeletons because they are made incorrectly
+            auto shouldFix = false;
+            if (skeleton->GetUserData() && skeleton->GetUserData()->GetObjectReference())
+            {
+                const auto npcForm = skyrim_cast<RE::TESNPC*>(skeleton->GetUserData()->GetObjectReference());
+                // TODO: refactor this
+                if (npcForm && npcForm->race &&
+                    !strcmp(npcForm->race->skeletonModels[0].GetModel(),
+                            "Actors\\DLC02\\BenthicLurker\\Character Assets\\skeleton.nif"))
+                {
+                    shouldFix = true;
+                }
+            }
+
+            return findNode(skeleton, shouldFix ? "NPC Root [Root]" : "NPC");
+        }
+    } // namespace
 
     auto ActorManager::instance() -> ActorManager*
     {
@@ -113,7 +123,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -158,7 +168,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -177,7 +187,7 @@ namespace hdt
         -> RE::BSEventNotifyControl
     {
         // The ActorManager members are protected from parallel events by ActorManager.m_lock.
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -200,7 +210,7 @@ namespace hdt
     auto ActorManager::ProcessEvent(const Events::FrameEvent*, RE::BSTEventSource<Events::FrameEvent>*)
         -> RE::BSEventNotifyControl
     {
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
 
         fixArmorNameMaps();
 
@@ -213,7 +223,7 @@ namespace hdt
         -> RE::BSEventNotifyControl
     {
         m_shutdown = true;
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
 
         m_skeletons.clear();
 
@@ -231,7 +241,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -256,8 +266,7 @@ namespace hdt
                 for (auto& entry : skeleton.head.renameMap)
                 {
                     // This case never happens to a lurker skeleton, thus we don't need to test.
-                    const auto node = findNode(headPartIter->origPartRootNode.get(), entry.second);
-                    if (node)
+                    if (const auto node = findNode(headPartIter->origPartRootNode.get(), entry.second))
                     {
                         logger::debug("Rename node {} -> {}.", entry.second.c_str(), entry.first.c_str());
                         node->name = entry.first;
@@ -285,7 +294,7 @@ namespace hdt
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        std::lock_guard l(m_lock);
+        std::scoped_lock l(m_lock);
         if (m_shutdown)
         {
             return RE::BSEventNotifyControl::kContinue;
@@ -342,18 +351,17 @@ namespace hdt
                     {
                         if (armor.armorWorn)
                         {
-                            if (armor.armorWorn->name.size())
+                            if (!armor.armorWorn->name.empty())
                             {
                                 std::string armorNewMeshName(armor.armorWorn->name);
-                                if (!armorNewMeshName.empty() &&
-                                    armor.armorCurrentMeshName.compare(armorNewMeshName) != 0)
+                                if (!armorNewMeshName.empty() && armor.armorCurrentMeshName != armorNewMeshName)
                                 {
                                     auto& armorNameMap = armor.physicsFile.second;
                                     DefaultBBP::NameMap_t tempNameMap;
                                     for (auto& [setName, set] : armorNameMap)
                                     {
                                         // ... and we found the old mesh name in the armor nameMap,...
-                                        if (armor.armorCurrentMeshName.compare(setName) == 0)
+                                        if (armor.armorCurrentMeshName == setName)
                                         {
                                             // We add the new mesh name to the list of mesh names for the original mesh
                                             // name (sic).
@@ -445,7 +453,7 @@ namespace hdt
         // TODO Isn't there a more performing way to find the PC?? A singleton? And if it's the right way, why isn't it
         // in utils functions?
         const auto playerCharacter = std::ranges::find_if(m_skeletons, &Skeleton::isPlayerCharacter);
-        const auto playerCell = (playerCharacter != m_skeletons.end() && playerCharacter->skeleton->parent)
+        const auto playerCell = playerCharacter != m_skeletons.end() && playerCharacter->skeleton->parent
             ? playerCharacter->skeleton->parent->parent
             : nullptr;
 
@@ -756,7 +764,7 @@ namespace hdt
             }
         }
 
-        m_skeletons.push_back(Skeleton());
+        m_skeletons.emplace_back();
         m_skeletons.back().skeleton = hdt::make_nismart(skeleton);
         return m_skeletons.back();
     }
@@ -786,15 +794,15 @@ namespace hdt
     {
         const auto& children = src->GetChildren();
 
-        for (uint16_t i = 0; i < children.size(); ++i)
+        for (const auto& i : children)
         {
-            const auto srcChild = castNiNode(children[i].get());
+            const auto srcChild = castNiNode(i.get());
             if (!srcChild)
             {
                 continue;
             }
 
-            if (!srcChild->name.size())
+            if (srcChild->name.empty())
             {
                 doSkeletonMerge(dst, srcChild, prefix, map, dstRoot);
                 continue;
@@ -846,7 +854,7 @@ namespace hdt
     auto ActorManager::Skeleton::renameTree(RE::NiNode* root, const std::string_view prefix,
                                             std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map) -> void
     {
-        if (root->name.size())
+        if (!root->name.empty())
         {
             std::string newName{prefix};
             newName += root->name;
@@ -859,9 +867,9 @@ namespace hdt
         }
 
         auto& children = root->GetChildren();
-        for (uint16_t i = 0; i < children.size(); ++i)
+        for (const auto& i : children)
         {
-            if (const auto child = castNiNode(children[static_cast<std::uint16_t>(i)].get()))
+            if (const auto child = castNiNode(i.get()))
             {
                 renameTree(child, prefix, map);
             }
@@ -887,9 +895,9 @@ namespace hdt
                 auto* rawChild = childPtr.get();
 
                 const char* cname = rawChild->name.c_str();
-                std::string_view childName = (cname && cname[0]) ? std::string_view(cname) : std::string_view{};
+                std::string_view childName = cname && cname[0] ? std::string_view(cname) : std::string_view{};
 
-                if (childName.size() >= prefix.size() && childName.substr(0, prefix.size()) == prefix)
+                if (childName.size() >= prefix.size() && childName.starts_with(prefix))
                 {
                     toDetach.emplace_back(node, rawChild);
                 }
@@ -927,49 +935,53 @@ namespace hdt
 
     // Logs a warning once per NIF path when VR NiStream Type B stubs are found.
     // Uses a static set to avoid duplicate warnings for the same NIF across frames.
-    static auto logBrokenNifOnce(const char* nifPath, RE::NiAVObject* root) -> void
+    namespace
     {
-        if (!REL::Module::IsVR() || !nifPath || !root)
+        auto logBrokenNifOnce(const char* nifPath, RE::NiAVObject* root) -> void
         {
-            return;
-        }
-        static std::mutex warnedMutex;
-        static std::unordered_set<std::string> warned;
-        std::lock_guard lock(warnedMutex);
-        if (warned.contains(nifPath))
-        {
-            return;
-        }
-        std::vector stack = {root};
-        while (!stack.empty())
-        {
-            const auto obj = stack.back();
-            stack.pop_back();
-            if (!obj || !isValidNiObject(obj))
+            if (!REL::Module::IsVR() || !nifPath || !root)
             {
-                continue;
-            }
-            if (isVRNiStreamStub(obj))
-            {
-                warned.insert(nifPath);
-                logger::warn(
-                    "[VR NiStream] NIF '{}' contains SE-format blocks VR cannot fully instantiate "
-                    "(Type B stubs, broken vtable[43]). Run through Cathedral Assets Optimizer (CAO) for Skyrim VR.",
-                    nifPath);
                 return;
             }
-            if (const auto node = obj->AsNode())
+            static std::mutex warnedMutex;
+            static std::unordered_set<std::string> warned;
+            std::scoped_lock lock(warnedMutex);
+            if (warned.contains(nifPath))
             {
-                for (auto& c : node->GetChildren())
+                return;
+            }
+            std::vector stack = {root};
+            while (!stack.empty())
+            {
+                const auto obj = stack.back();
+                stack.pop_back();
+                if (!obj || !isValidNiObject(obj))
                 {
-                    if (c)
+                    continue;
+                }
+                if (isVRNiStreamStub(obj))
+                {
+                    warned.insert(nifPath);
+                    logger::warn(
+                        "[VR NiStream] NIF '{}' contains SE-format blocks VR cannot fully instantiate "
+                        "(Type B stubs, broken vtable[43]). Run through Cathedral Assets Optimizer (CAO) for Skyrim "
+                        "VR.",
+                        nifPath);
+                    return;
+                }
+                if (const auto node = obj->AsNode())
+                {
+                    for (auto& c : node->GetChildren())
                     {
-                        stack.push_back(c.get());
+                        if (c)
+                        {
+                            stack.push_back(c.get());
+                        }
                     }
                 }
             }
         }
-    }
+    } // namespace
 
     auto ActorManager::Skeleton::addArmor(RE::NiNode* armorModel) -> void
     {
@@ -978,14 +990,14 @@ namespace hdt
             logBrokenNifOnce(armorModel->name.c_str(), armorModel);
         }
 
-        const IDType id = armors.size() ? armors.back().id + 1 : 0;
+        const IDType id = !armors.empty() ? armors.back().id + 1 : 0;
         const auto prefix = armorPrefix(id);
         // FIXME we probably could simplify this by using findNode as surely we don't merge Armors with lurkers
         // skeleton?
         npc = hdt::make_nismart(getNpcNode(skeleton.get()));
         const auto physicsFile = DefaultBBP::instance()->scanBBP(armorModel);
 
-        armors.push_back(Armor());
+        armors.emplace_back();
         armors.back().id = id;
         armors.back().prefix = prefix;
         armors.back().physicsFile = physicsFile;
@@ -996,7 +1008,7 @@ namespace hdt
     auto ActorManager::Skeleton::attachArmor([[maybe_unused]] RE::NiNode* armorModel, RE::NiAVObject* attachedNode)
         -> void
     {
-        if (armors.size() == 0 || armors.back().hasPhysics())
+        if (armors.empty() || armors.back().hasPhysics())
         {
             logger::trace("Not attaching armor - no record or physics already exists");
         }
@@ -1009,7 +1021,7 @@ namespace hdt
         // That's why we set here the need to fix this armor in fixArmorNameMaps() (see its comment)
         // to avoid this name change breaking processes like 'smp reset' when looking for the armor name in the armor
         // nameMap.
-        armor.armorCurrentMeshName = attachedNode->name.size() ? attachedNode->name : "";
+        armor.armorCurrentMeshName = !attachedNode->name.empty() ? attachedNode->name : "";
         armor.mustFixNameMap = true;
         mustFixOneArmorMap = true;
 
@@ -1167,7 +1179,7 @@ namespace hdt
     {
         hasPhysics = false;
         std::ranges::for_each(armors,
-                              [=](const Armor& armor)
+                              [this](const Armor& armor)
                               {
                                   if (armor.state() != ItemState::e_NoPhysics)
                                   {
@@ -1178,7 +1190,7 @@ namespace hdt
         if (!hasPhysics)
         {
             std::ranges::for_each(head.headParts,
-                                  [=](const Head::HeadPart& headPart)
+                                  [this](const Head::HeadPart& headPart)
                                   {
                                       if (headPart.state() != ItemState::e_NoPhysics)
                                       {
@@ -1253,11 +1265,11 @@ namespace hdt
             // This works for lurker skeletons.
             if (const auto rootNode = findNode(npc.get(), "NPC Root [Root]"))
             {
-                return std::optional(rootNode->world.translate);
+                return {rootNode->world.translate};
             }
         }
 
-        return std::optional<RE::NiPoint3>();
+        return {};
     }
 
     auto ActorManager::Skeleton::updateWindFactor(const float a_windFactor) -> void
@@ -1316,10 +1328,10 @@ namespace hdt
         // We update the activity state of armors and head parts, and add and remove SkinnedMeshSystems to these parts
         // in consequence. We set headparts as not active if the head isn't active (for example because it's hidden by a
         // wig).
-        std::ranges::for_each(armors, [=](const Armor& armor) { armor.updateActive(isActive); });
+        std::ranges::for_each(armors, [this](const Armor& armor) { armor.updateActive(isActive); });
         const bool isHeadActive = head.isActive;
-        std::ranges::for_each(head.headParts,
-                              [=](const Head::HeadPart& headPart) { headPart.updateActive(isHeadActive && isActive); });
+        std::ranges::for_each(head.headParts, [isHeadActive, this](const Head::HeadPart& headPart)
+                              { headPart.updateActive(isHeadActive && isActive); });
         return isActive;
     }
 
@@ -1536,11 +1548,11 @@ namespace hdt
             head.headParts.back().origPartRootNode = hdt::make_nismart(origRootNode);
 
             auto& children = origRootNode->GetChildren();
-            for (uint16_t i = 0; i < children.size(); i++)
+            for (const auto& i : children)
             {
-                if (children[i])
+                if (i)
                 {
-                    if (const auto geo = children[i]->AsGeometry())
+                    if (const auto geo = i->AsGeometry())
                     {
                         origGeom = geo;
                         break;
@@ -1588,9 +1600,9 @@ namespace hdt
                                         if (REL::Module::IsVR())
                                         {
                                             auto& ch = rootFadeNode->GetChildren();
-                                            for (std::uint16_t ci = 0; ci < ch.size(); ++ci)
+                                            for (const auto& ci : ch)
                                             {
-                                                const auto faceChild = ch[ci].get();
+                                                const auto faceChild = ci.get();
                                                 if (!faceChild || !isValidNiObject(faceChild))
                                                 {
                                                     continue;

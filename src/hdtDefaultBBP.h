@@ -31,4 +31,4 @@ namespace hdt
         auto getNameMap(RE::NiNode* armor) -> NameMap_t;
         static auto defaultNameMap(RE::NiNode* armor) -> NameMap_t;
     };
-}
+} // namespace hdt

@@ -3,8 +3,8 @@
 #include <ppl.h>
 #include <ppltasks.h>
 #include <vector>
-#include "hdtBulletHelper.h"
 #include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
+#include "hdtBulletHelper.h"
 
 namespace hdt
 {
@@ -14,10 +14,8 @@ namespace hdt
     {
     public:
         CollisionDispatcher(btCollisionConfiguration* collisionConfiguration) :
-            btCollisionDispatcherMt(
-                collisionConfiguration)
-        {
-        }
+            btCollisionDispatcherMt(collisionConfiguration)
+        {}
 
         auto getNewManifold(const btCollisionObject* b0, const btCollisionObject* b1) -> btPersistentManifold* override
         {
@@ -45,4 +43,4 @@ namespace hdt
         SpinLock m_lock;
         std::vector<std::pair<SkinnedMeshBody*, SkinnedMeshBody*>> m_pairs;
     };
-}
+} // namespace hdt

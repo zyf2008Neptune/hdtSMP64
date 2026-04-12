@@ -3,9 +3,9 @@
 #include <bit>
 
 #include "HavokUtils.h"
-#include "hdtSkyrimPhysicsWorld.h"
 #include "XmlReader.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshShape.h"
+#include "hdtSkyrimPhysicsWorld.h"
 
 // F16C isn't supported on super old processors. AVX2+ (AVX processors can have it, but not guaranteed)
 #if defined(__AVX2__) || defined(__AVX512F__)
@@ -84,8 +84,7 @@ namespace hdt
         return -1;
     }
 
-    SkyrimSystem::SkyrimSystem(RE::NiNode* skeleton) :
-        m_skeleton(skeleton), m_oldRoot(nullptr)
+    SkyrimSystem::SkyrimSystem(RE::NiNode* skeleton) : m_skeleton(skeleton), m_oldRoot(nullptr)
     {
         m_oldRoot = m_skeleton;
     }
@@ -127,7 +126,7 @@ namespace hdt
                 m_lastRootRotation = convertNi(m_skeleton->world.rotate);
             }
             else if (!RE::PlayerCamera::GetSingleton()->GetRuntimeData2().isWeapSheathed ||
-                RE::PlayerCamera::GetSingleton()->currentState->id == RE::CameraState::kFirstPerson)
+                     RE::PlayerCamera::GetSingleton()->currentState->id == RE::CameraState::kFirstPerson)
             // isWeaponSheathed or potentially isCameraFree || cameraState is first person
             {
                 m_lastRootRotation = convertNi(m_skeleton->world.rotate);
@@ -276,7 +275,7 @@ namespace hdt
                     for (auto i = 0; i < havokSkel->bones.size(); ++i)
                     {
                         if (auto boneNode =
-                            skeleton->GetObjectByName(RE::BSFixedString(havokSkel->bones[i].name.data())))
+                                skeleton->GetObjectByName(RE::BSFixedString(havokSkel->bones[i].name.data())))
                         {
                             savedPoses.emplace_back(boneNode, boneNode->local);
 
@@ -457,9 +456,7 @@ namespace hdt
         m_mesh->m_shapeRefs.swap(m_shapeRefs);
         std::ranges::sort(
             m_mesh->m_bones, [](const auto& a, const auto& b)
-            {
-                return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->m_depth;
-            });
+            { return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->m_depth; });
 
         // Restore the original pose to avoid a visual 1 Havok tick T-pose (only for visual reasons, it won't break
         // anything otherwise)

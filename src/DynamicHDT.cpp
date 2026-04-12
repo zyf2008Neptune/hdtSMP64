@@ -1,6 +1,6 @@
 #include "DynamicHDT.h"
-#include "hdtSkyrimSystem.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
+#include "hdtSkyrimSystem.h"
 
 auto hdt::util::splitArmorAddonFormID(const std::string& nodeName) -> uint32_t
 {
@@ -14,12 +14,9 @@ auto hdt::util::splitArmorAddonFormID(const std::string& nodeName) -> uint32_t
     }
 }
 
-auto hdt::util::UInt32toString(uint32_t formID) -> std::string
-{
-    return fmt::format("{:08X}", formID);
-}
+auto hdt::util::UInt32toString(uint32_t formID) -> std::string { return fmt::format("{:08X}", formID); }
 
-auto _deprefix(std::string_view str_with_prefix) -> std::string
+auto _deprefix(const std::string_view str_with_prefix) -> std::string
 {
     std::string str_no_prefix{str_with_prefix};
     std::string_view autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;

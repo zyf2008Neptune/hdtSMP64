@@ -23,7 +23,7 @@ namespace hdt
         }
 
 #ifdef __AVX2__
-        __m128 calcVertexStateFMA(__m128 skinPos, const Bone& bone, __m128 w)
+        auto calcVertexStateFMA(__m128 skinPos, const Bone& bone, __m128 w) -> __m128
         {
             __m128 px = pshufd<0x00>(skinPos);
             __m128 py = pshufd<0x55>(skinPos);
@@ -257,6 +257,11 @@ namespace hdt
 
     auto SkinnedMeshBody::canCollideWith(const SkinnedMeshBody* body) const -> bool
     {
+        if (!body)
+        {
+            return false;
+        }
+
         if (m_isKinematic && body->m_isKinematic)
         {
             return false;

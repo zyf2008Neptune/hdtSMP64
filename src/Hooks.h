@@ -37,11 +37,11 @@ namespace Hooks
             // Todo: Get the VR offset(s)/ID
             if (!REL::Module::IsVR())
             {
-                // Skyrim patch: This fixes facial morphs from getting broken by some SMP meshes (Commonly hairs, but also bodies)
-                // [BSFaceGenNiNode::sub, the producer that enqueues faces for morph updates]
-                // children[0] validation bails if the first child isn't a valid facegen BSDynamicTriShape
-                // Patch: redirect the failure JZ to skip the child dependent section
-                // and fall through to node checks instead of early bailing
+                // Skyrim patch: This fixes facial morphs from getting broken by some SMP meshes (Commonly hairs, but
+                // also bodies) [BSFaceGenNiNode::sub, the producer that enqueues faces for morph updates] children[0]
+                // validation bails if the first child isn't a valid facegen BSDynamicTriShape Patch: redirect the
+                // failure JZ to skip the child dependent section and fall through to node checks instead of early
+                // bailing
                 //
                 // 1404332c0: 0F 84 8F 00 00 00  JZ 0x8F  140433355 (early bail)
                 // to: 0F 84 22 00 00 00  JZ 0x22   1404332e8 (actual node checks)
@@ -137,9 +137,8 @@ namespace Hooks
             logger::debug("...success");
         }
 
-        static auto func(RE::ActorEquipManager*, RE::Actor*, RE::TESBoundObject*, RE::ExtraDataList*,
-                         std::uint32_t, const RE::BGSEquipSlot*, bool, bool, bool, bool,
-                         const RE::BGSEquipSlot*) -> bool;
+        static auto func(RE::ActorEquipManager*, RE::Actor*, RE::TESBoundObject*, RE::ExtraDataList*, std::uint32_t,
+                         const RE::BGSEquipSlot*, bool, bool, bool, bool, const RE::BGSEquipSlot*) -> bool;
 
     protected:
         using func_t = decltype(func);
@@ -166,8 +165,8 @@ namespace Hooks
             logger::debug("...success");
         }
 
-        static auto func(RE::BipedAnim*, RE::NiNode*, RE::BSFadeNode*, uint32_t, void*, void*,
-                         void*) -> RE::NiAVObject*;
+        static auto func(RE::BipedAnim*, RE::NiNode*, RE::BSFadeNode*, uint32_t, void*, void*, void*)
+            -> RE::NiAVObject*;
 
     protected:
         using func_t = decltype(func);
@@ -178,4 +177,4 @@ namespace Hooks
     };
 
     auto Install() -> void;
-}
+} // namespace Hooks

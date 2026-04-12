@@ -25,10 +25,7 @@ namespace hdt
         return scanDefaultBBP(scan);
     }
 
-    DefaultBBP::DefaultBBP()
-    {
-        loadDefaultBBPs();
-    }
+    DefaultBBP::DefaultBBP() { loadDefaultBBPs(); }
 
     auto DefaultBBP::loadDefaultBBPs() -> void
     {
@@ -87,7 +84,8 @@ namespace hdt
                                 {
                                     priority = reader.getAttributeAsInt("priority");
                                 }
-                                catch (...) {}
+                                catch (...)
+                                {}
                                 auto source = reader.readText();
                                 remap.entries.insert({priority, source});
                             }
@@ -129,7 +127,7 @@ namespace hdt
     auto DefaultBBP::scanDefaultBBP(RE::NiNode* armor) -> PhysicsFile_t
     {
         static std::mutex s_lock;
-        std::lock_guard l(s_lock);
+        std::scoped_lock l(s_lock);
 
         if (bbpFileList.empty())
         {
@@ -138,10 +136,8 @@ namespace hdt
 
         auto remappedNames = instance()->getNameMap(armor);
 
-        const auto it = std::ranges::find_if(bbpFileList, [&](const std::pair<std::string, std::string>& e)
-        {
-            return remappedNames.contains(e.first);
-        });
+        const auto it = std::ranges::find_if(
+            bbpFileList, [&](const std::pair<std::string, std::string>& e) { return remappedNames.contains(e.first); });
         return {it == bbpFileList.end() ? "" : it->second, remappedNames};
     }
 
@@ -162,28 +158,23 @@ namespace hdt
 
             if (doRemap)
             {
-                auto start = std::find_if(remap.entries.rbegin(), remap.entries.rend(), [&](const auto& e)
-                {
-                    return nameMap.contains(e.second);
-                });
-                const auto end = std::find_if(start, remap.entries.rend(), [&](const auto& e)
-                {
-                    return e.first != start->first;
-                });
+                auto start = std::find_if(remap.entries.rbegin(), remap.entries.rend(),
+                                          [&](const auto& e) { return nameMap.contains(e.second); });
+                const auto end =
+                    std::find_if(start, remap.entries.rend(), [&](const auto& e) { return e.first != start->first; });
                 if (start != remap.entries.rend())
                 {
                     auto&& s = nameMap.insert({remap.name, {}}).first;
-                    std::for_each(start, end, [&](const auto& e)
-                    {
-                        auto it = nameMap.find(e.second);
-                        if (it != nameMap.end())
-                        {
-                            std::for_each(it->second.begin(), it->second.end(), [&](const std::string& name)
-                            {
-                                s->second.insert(name);
-                            });
-                        }
-                    });
+                    std::for_each(start, end,
+                                  [&](const auto& e)
+                                  {
+                                      auto it = nameMap.find(e.second);
+                                      if (it != nameMap.end())
+                                      {
+                                          std::for_each(it->second.begin(), it->second.end(),
+                                                        [&](const std::string& name) { s->second.insert(name); });
+                                      }
+                                  });
                 }
             }
         }
@@ -234,4 +225,4 @@ namespace hdt
 
         return nameMap;
     }
-}
+} // namespace hdt

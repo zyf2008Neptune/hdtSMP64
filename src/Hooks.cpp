@@ -1,7 +1,7 @@
 #include "ActorManager.h"
 
-#include "Hooks.h"
 #include "Events.h"
+#include "Hooks.h"
 
 //
 #include <xbyak/xbyak.h>
@@ -103,9 +103,8 @@ namespace Hooks
         //
         logger::debug("SkinSingleGeometry {} {} - {}, {}, (formid {:08x} base form {:08x} head template form {:08x})",
                       a_skeleton->name.c_str(), a_skeleton->GetChildren().size(), a_triShape->name.c_str(), name,
-                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->formID : 0x0, a_skeleton->GetUserData()
-                      ? a_skeleton->GetUserData()->GetBaseObject()->formID
-                      : 0x0, formId);
+                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->formID : 0x0,
+                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->GetBaseObject()->formID : 0x0, formId);
 
         //
         Events::SkinSingleHeadGeometryEvent e;
@@ -142,9 +141,8 @@ namespace Hooks
         //
         logger::debug("SkinAllGeometry {} {}, {}, (formid {:08x} base form {:08x} head template form {:08x})",
                       a_skeleton->name.c_str(), a_skeleton->GetChildren().size(), name,
-                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->formID : 0x0, a_skeleton->GetUserData()
-                      ? a_skeleton->GetUserData()->GetBaseObject()->formID
-                      : 0x0, formId);
+                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->formID : 0x0,
+                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->GetBaseObject()->formID : 0x0, formId);
 
         //
         Events::SkinAllHeadGeometryEvent e;
@@ -197,11 +195,9 @@ namespace Hooks
         const REL::Relocation<uintptr_t> GeometrySkinningBoneFix{REL::VariantID(24330, 24836, 0x37ADD0),
                                                                  REL::VariantOffset(0x58, 0x75, 0x58)};
 
-        struct BoneLimitFix :
-            Xbyak::CodeGenerator
+        struct BoneLimitFix : Xbyak::CodeGenerator
         {
-            BoneLimitFix(const uintptr_t a_returnAddr) :
-                Xbyak::CodeGenerator()
+            BoneLimitFix(const uintptr_t a_returnAddr) : Xbyak::CodeGenerator()
             {
                 Xbyak::Label ret;
 
@@ -264,18 +260,11 @@ namespace Hooks
         Events::Sources::FrameSyncEventSource::GetSingleton()->SendEvent(&framesyncEvent);
     }
 
-    auto ActorEquipManagerHooks::func(
-        RE::ActorEquipManager* const a_this,
-        RE::Actor* a_actor,
-        RE::TESBoundObject* a_object,
-        RE::ExtraDataList* a_extraData,
-        const std::uint32_t a_count,
-        const RE::BGSEquipSlot* a_slot,
-        const bool a_queueEquip,
-        const bool a_forceEquip,
-        const bool a_playSounds,
-        const bool a_applyNow,
-        const RE::BGSEquipSlot* a_slotToReplace) -> bool
+    auto ActorEquipManagerHooks::func(RE::ActorEquipManager* const a_this, RE::Actor* a_actor,
+                                      RE::TESBoundObject* a_object, RE::ExtraDataList* a_extraData,
+                                      const std::uint32_t a_count, const RE::BGSEquipSlot* a_slot,
+                                      const bool a_queueEquip, const bool a_forceEquip, const bool a_playSounds,
+                                      const bool a_applyNow, const RE::BGSEquipSlot* a_slotToReplace) -> bool
     {
         Events::ArmorDetachEvent event;
         event.actor = a_actor;
@@ -300,8 +289,7 @@ namespace Hooks
     }
 
     auto BipedAnimHooks::func(RE::BipedAnim* const a_this, RE::NiNode* armor, RE::BSFadeNode* skeleton,
-                              const uint32_t a_unk1,
-                              void* a_unk2, void* a_unk3, void* a_unk4) -> RE::NiAVObject*
+                              const uint32_t a_unk1, void* a_unk2, void* a_unk3, void* a_unk4) -> RE::NiAVObject*
     {
         Events::ArmorAttachEvent armorAtachEvent;
 
@@ -364,8 +352,8 @@ namespace Hooks
                         {
                             if (backupBones.contains(NodeName))
                             {
-                                bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx] = backupBones[
-                                    NodeName][idx].get();
+                                bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx] =
+                                    backupBones[NodeName][idx].get();
                             }
                         }
                     }
@@ -428,4 +416,4 @@ namespace Hooks
         //
         logger::trace("...success");
     }
-}
+} // namespace Hooks

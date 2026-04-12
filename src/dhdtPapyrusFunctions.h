@@ -19,8 +19,8 @@ namespace hdt::papyrus
     // Returns array of bools, each entry is the PREVIOUS state of that bone index:
     // - true  = bone was dynamic (physics was ON)
     // - false = bone was kinematic (physics was OFF / not found)
-    auto TogglePhysics(RE::StaticFunctionTag* base, RE::Actor* actor, std::vector<RE::BSFixedString> boneNames, bool on)
-        -> std::vector<bool>;
+    auto TogglePhysics(RE::StaticFunctionTag* base, const RE::Actor* actor, std::vector<RE::BSFixedString> boneNames,
+                       bool on) -> std::vector<bool>;
 
     // Reset an actor's SMP physics systems
     // - full = true  -> complete reset, bones snap to reference pose

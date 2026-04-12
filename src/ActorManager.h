@@ -18,7 +18,7 @@ namespace hdt
         using IDType = uint32_t;
 
     public:
-        enum class ItemState
+        enum class ItemState : uint8_t
         {
             e_NoPhysics,
             e_Inactive,
@@ -26,7 +26,7 @@ namespace hdt
         };
 
         // Overall skeleton state, purely for console debug info
-        enum class SkeletonState
+        enum class SkeletonState : uint8_t
         {
             // Note order: inactive states must come before e_SkeletonActive, and active states after
             e_InactiveNotInScene,

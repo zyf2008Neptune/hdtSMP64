@@ -2,12 +2,12 @@
 
 #include "hdtConvertNi.h"
 #include "hdtDefaultBBP.h"
-#include "hdtSkyrimBody.h"
-#include "hdtSkyrimBone.h"
 #include "hdtSkinnedMesh/hdtConeTwistConstraint.h"
 #include "hdtSkinnedMesh/hdtGeneric6DofConstraint.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
 #include "hdtSkinnedMesh/hdtStiffSpringConstraint.h"
+#include "hdtSkyrimBody.h"
+#include "hdtSkyrimBone.h"
 
 namespace hdt
 {
@@ -85,8 +85,7 @@ namespace hdt
         {
             static btEmptyShape emptyShape[1];
 
-            BoneTemplate() :
-                btRigidBodyConstructionInfo(0, nullptr, emptyShape)
+            BoneTemplate() : btRigidBodyConstructionInfo(0, nullptr, emptyShape)
             {
                 m_centerOfMassTransform = btTransform::getIdentity();
                 m_marginMultipler = 1.f;
