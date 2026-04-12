@@ -25,7 +25,7 @@ namespace hdt
         auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
         auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
         auto removeSystemByNode(void* root) -> void;
-
+        using SkinnedMeshWorld::updateConstraintsForBone;
         auto resetTransformsToOriginal() -> void;
         auto resetSystems() -> void;
 
@@ -56,8 +56,9 @@ namespace hdt
             }
         }
 
-        auto suspendSimulationUntilFinished(const std::function<void()>& process) -> void;
-        std::atomic_bool m_isStasis = false;
+        // This is used for when you want to mutate some physics objects without causing problems
+        // Bullet is VERY sensitive to changes during simulation!
+        auto lockSimulation() -> std::unique_lock<std::mutex>;
 
         auto applyTranslationOffset() -> btVector3;
         auto restoreTranslationOffset(const btVector3&) -> void;

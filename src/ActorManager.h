@@ -8,13 +8,12 @@
 
 namespace hdt
 {
-    class ActorManager :
-        public RE::BSTEventSink<Events::ArmorAttachEvent>,
-        public RE::BSTEventSink<Events::ArmorDetachEvent>,
-        public RE::BSTEventSink<Events::SkinSingleHeadGeometryEvent>,
-        public RE::BSTEventSink<Events::SkinAllHeadGeometryEvent>,
-        public RE::BSTEventSink<Events::FrameEvent>,
-        public RE::BSTEventSink<Events::ShutdownEvent>
+    class ActorManager : public RE::BSTEventSink<Events::ArmorAttachEvent>,
+                         public RE::BSTEventSink<Events::ArmorDetachEvent>,
+                         public RE::BSTEventSink<Events::SkinSingleHeadGeometryEvent>,
+                         public RE::BSTEventSink<Events::SkinAllHeadGeometryEvent>,
+                         public RE::BSTEventSink<Events::FrameEvent>,
+                         public RE::BSTEventSink<Events::ShutdownEvent>
     {
         using IDType = uint32_t;
 
@@ -94,11 +93,11 @@ namespace hdt
             std::string prefix;
             RE::NiPointer<RE::NiAVObject> armorWorn;
             std::unordered_map<RE::BSFixedString, RE::BSFixedString> renameMap;
-            // @brief This bool is set to true when the first name for the NiAVObject armor is attributed by the Skyrim executable,
-            // and set back to false the name map is fixed (see fixArmorNameMaps()),
+            // @brief This bool is set to true when the first name for the NiAVObject armor is attributed by the Skyrim
+            // executable, and set back to false the name map is fixed (see fixArmorNameMaps()),
             bool mustFixNameMap = false;
             // @brief The string is the first name attributed by the Skyrim executable, to be able to detect the change.
-            std::string armorCurrentMeshName = "";
+            std::string armorCurrentMeshName;
         };
 
         struct Skeleton
@@ -145,7 +144,7 @@ namespace hdt
 
             // bool deactivate(); // FIXME useless?
             auto reloadMeshes() -> void;
-
+            auto softReloadMeshes() -> void;
             auto scanHead() -> void;
             auto processGeometry(RE::BSFaceGenNiNode* head, RE::BSGeometry* geometry) -> void;
 
@@ -198,52 +197,55 @@ namespace hdt
         fix: take into account the unexpected armors names changes done by the Skyrim executable.
 
         We add smp physics to armors on the ArmorAttachEvent.
-        But when a smp reset happens, we can't go through the ArmorAttachEvent processing: no event is sent by the skyrim executable.
-        So for each known skeleton, and each of its known armors meshes, we reapply the related xml file.
+        But when a smp reset happens, we can't go through the ArmorAttachEvent processing: no event is sent by the
+        skyrim executable. So for each known skeleton, and each of its known armors meshes, we reapply the related xml
+        file.
 
         Each Armor has in .physicsFile the applied xml file, the names of the meshes of the armor in the xml file / nif,
         and for each mesh name the name(s) of the NiAVObject attached through the ArmorAttachEvent hook processing.
 
-        So by looking for the recorded NiAVObject names in the related skyrim models, we can find back the NiAVObject and reapply the related xml file to it.
+        So by looking for the recorded NiAVObject names in the related skyrim models, we can find back the NiAVObject
+        and reapply the related xml file to it.
 
-        But! The skyrim executable changes later the name of the NiAVObject passed as attachedNode through the ArmorAttachEvent hook.
-        So, when trying to find the recorded name in the existing objects, we don't find it anymore.
+        But! The skyrim executable changes later the name of the NiAVObject passed as attachedNode through the
+        ArmorAttachEvent hook. So, when trying to find the recorded name in the existing objects, we don't find it
+        anymore.
 
         This bug happens for armors, but not for headparts, which names aren't changed by Skyrim on the fly.
         https://github.com/DaymareOn/hdtSMP64/issues/84
-        This bug has happened since the original HDT-SMP, for all versions of Skyrim (well, I haven't checked on the VR version).
+        This bug has happened since the original HDT-SMP, for all versions of Skyrim (well, I haven't checked on the VR
+        version).
 
-        The implemented solution is to 1) when attaching an armor, record that the fix will need to be applied on this armor,
-        2) save the original name,
-        3) to be able to detect on following events when that the name has changed (ArmorAttachEvent, ItemUnequipEvent, FrameEvent, OpenMenuEvent)
-           (checking that the fix needs to be applied is quick, and introducing the fix in all events allows to have it fixed asap),
-        4) and then add in.physicsfile the new name;
-        5) finally remove the information that a fix must be applied for this armor.
+        The implemented solution is to 1) when attaching an armor, record that the fix will need to be applied on this
+        armor, 2) save the original name, 3) to be able to detect on following events when that the name has changed
+        (ArmorAttachEvent, ItemUnequipEvent, FrameEvent, OpenMenuEvent) (checking that the fix needs to be applied is
+        quick, and introducing the fix in all events allows to have it fixed asap), 4) and then add in.physicsfile the
+        new name; 5) finally remove the information that a fix must be applied for this armor.
         */
         static auto fixArmorNameMaps() -> void;
 
-        auto ProcessEvent(const Events::ArmorAttachEvent* e,
-                          RE::BSTEventSource<Events::ArmorAttachEvent>*) -> RE::BSEventNotifyControl override;
-        auto ProcessEvent(const Events::ArmorDetachEvent* e,
-                          RE::BSTEventSource<Events::ArmorDetachEvent>*) -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::ArmorAttachEvent* e, RE::BSTEventSource<Events::ArmorAttachEvent>*)
+            -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::ArmorDetachEvent* e, RE::BSTEventSource<Events::ArmorDetachEvent>*)
+            -> RE::BSEventNotifyControl override;
 
         // @brief On this event, we decide which skeletons will be active for physics this frame.
-        auto ProcessEvent(const Events::FrameEvent* e,
-                          RE::BSTEventSource<Events::FrameEvent>*) -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const Events::FrameEvent* e, RE::BSTEventSource<Events::FrameEvent>*)
+            -> RE::BSEventNotifyControl override;
 
-        auto ProcessEvent(const RE::MenuOpenCloseEvent*,
-                          RE::BSTEventSource<RE::MenuOpenCloseEvent>*) -> RE::BSEventNotifyControl;
-        auto ProcessEvent(const Events::ShutdownEvent*,
-                          RE::BSTEventSource<Events::ShutdownEvent>*) -> RE::BSEventNotifyControl override;
+        auto ProcessEvent(const RE::MenuOpenCloseEvent*, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
+            -> RE::BSEventNotifyControl;
+        auto ProcessEvent(const Events::ShutdownEvent*, RE::BSTEventSource<Events::ShutdownEvent>*)
+            -> RE::BSEventNotifyControl override;
         auto ProcessEvent(const Events::SkinSingleHeadGeometryEvent*,
-                          RE::BSTEventSource<Events::SkinSingleHeadGeometryEvent>*) ->
-            RE::BSEventNotifyControl override;
+                          RE::BSTEventSource<Events::SkinSingleHeadGeometryEvent>*)
+            -> RE::BSEventNotifyControl override;
         auto ProcessEvent(const Events::SkinAllHeadGeometryEvent*,
                           RE::BSTEventSource<Events::SkinAllHeadGeometryEvent>*) -> RE::BSEventNotifyControl override;
 
         static auto skeletonNeedsParts(RE::NiNode* skeleton) -> bool;
-        auto getSkeletons() -> std::vector<Skeleton>&; //Altered by Dynamic HDT
-
+        auto getSkeletons() -> std::vector<Skeleton>&; // Altered by Dynamic HDT
+        auto lockGuard() -> std::unique_lock<std::recursive_mutex> { return std::unique_lock(m_lock); }
         bool m_skinNPCFaceParts = true;
         bool m_disableSMPHairWhenWigEquipped = false;
         bool m_autoAdjustMaxSkeletons = true;
@@ -260,4 +262,4 @@ namespace hdt
 
         auto setSkeletonsActive(bool updateMetrics = false) -> void;
     };
-}
+} // namespace hdt

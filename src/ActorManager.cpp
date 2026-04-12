@@ -1,8 +1,8 @@
 #include "ActorManager.h"
+#include "WeatherManager.h"
 #include "dhdtOverrideManager.h"
 #include "hdtDefaultBBP.h"
 #include "hdtSkyrimPhysicsWorld.h"
-#include "WeatherManager.h"
 
 namespace hdt
 {
@@ -10,7 +10,7 @@ namespace hdt
     // float aViewCone) Used to ray cast from the actor. Will return nonNull if it hits something with position at
     // aTargetPosition. Pass in 2pi to aViewCone to ignore LOS of actor.
 
-    using _Actor_CalculateLOS = RE::NiAVObject* (*)(RE::Actor* aActor, RE::NiPoint3* aTargetPosition,
+    using _Actor_CalculateLOS = RE::NiAVObject* (*)(RE::Actor * aActor, RE::NiPoint3* aTargetPosition,
                                                     RE::NiPoint3* aRayHitPosition, float aViewCone);
     using _TESNPC_GetFaceGeomPath = bool (*)(RE::TESNPC* a_npc, char* a_buf);
     using _NiStream_constructor = RE::NiStream* (*)(RE::NiStream*);
@@ -40,8 +40,7 @@ namespace hdt
     class HairVisitor // public RE::InventoryChanges::IItemChangeVisitor
     {
     public:
-        HairVisitor(RE::TESBoundObject*& a_dstObject) :
-            _object(a_dstObject) {}
+        HairVisitor(RE::TESBoundObject*& a_dstObject) : _object(a_dstObject) {}
 
         ~HairVisitor() {}
 
@@ -398,7 +397,7 @@ namespace hdt
         if (extraContainerchanges && extraContainerchanges->changes && extraContainerchanges->changes->entryList)
         {
             //
-            HairVisitor visitor(ref);
+            const HairVisitor visitor(ref);
 
             //
             for (const auto it : *extraContainerchanges->changes->entryList)
@@ -523,14 +522,10 @@ namespace hdt
             }
 
             const auto armorReacts = [](const auto& armor)
-            {
-                return armor.m_hasDynamicPhysics && armor.state() == ItemState::e_Active;
-            };
+            { return armor.m_hasDynamicPhysics && armor.state() == ItemState::e_Active; };
 
             const auto headReacts = [](const auto& headPart)
-            {
-                return headPart.m_hasDynamicPhysics && headPart.state() == ItemState::e_Active;
-            };
+            { return headPart.m_hasDynamicPhysics && headPart.state() == ItemState::e_Active; };
 
             // Does this actor have anything visible and active that can be blown in the wind?
             if (!std::ranges::any_of(i.getArmors(), armorReacts) && !std::ranges::any_of(i.head.headParts, headReacts))
@@ -1023,8 +1018,8 @@ namespace hdt
             // FIXME we probably could simplify this by using findNode as surely we don't attach Armors to lurkers
             // skeleton?
             auto renameMap = armor.renameMap;
-            auto system = SkyrimSystemCreator().createOrUpdateSystem(getNpcNode(skeleton.get()), attachedNode,
-                                                                     &armor.physicsFile, std::move(renameMap), nullptr);
+            const auto system = SkyrimSystemCreator().createOrUpdateSystem(
+                getNpcNode(skeleton.get()), attachedNode, &armor.physicsFile, std::move(renameMap), nullptr);
             if (system)
             {
                 armor.setPhysics(system, isActive);
@@ -1299,8 +1294,8 @@ namespace hdt
                 // That setting defines whether we don't set the PC skeleton as active
                 // when it is in 1st person view, to avoid calculating physics uselessly.
                 if (!(instance()->m_disable1stPersonViewPhysics // disabling?
-                    && RE::PlayerCamera::GetSingleton()->currentState ==
-                    RE::PlayerCamera::GetSingleton()->GetRuntimeData().cameraStates[0]))
+                      && RE::PlayerCamera::GetSingleton()->currentState ==
+                          RE::PlayerCamera::GetSingleton()->GetRuntimeData().cameraStates[0]))
                 // 1st person view
                 {
                     isActive = true;
@@ -1346,6 +1341,69 @@ namespace hdt
             }
         }
         scanHead();
+    }
+
+    // Reload meshes without entirely wiping their physics
+    auto ActorManager::Skeleton::softReloadMeshes() -> void
+    {
+        auto reloadPhysicsItem = [&](auto& item, RE::NiAVObject* model, const auto& renameMapSrc, bool itemActive)
+        {
+            const RE::BSTSmartPointer<SkyrimSystem> oldSystem = item.m_physics;
+            item.clearPhysics();
+
+            if (!model || isFirstPersonSkeleton(skeleton.get()) || item.physicsFile.first.empty())
+            {
+                return;
+            }
+
+            auto renameMap = renameMapSrc;
+            auto system = SkyrimSystemCreator().createOrUpdateSystem(npc.get(), model, &item.physicsFile,
+                                                                     std::move(renameMap), nullptr);
+
+            if (system)
+            {
+                system->block_resetting = true;
+                if (oldSystem)
+                {
+                    util::transferCurrentPosesBetweenSystems(oldSystem.get(), system.get());
+                }
+
+                item.setPhysics(system, itemActive);
+                hasPhysics = true;
+                system->block_resetting = false;
+            }
+        };
+
+        for (auto& armor : armors)
+        {
+            reloadPhysicsItem(armor, armor.armorWorn.get(), armor.renameMap, isActive);
+        }
+
+        if (isFirstPersonSkeleton(skeleton.get()) || !head.headNode)
+        {
+            return;
+        }
+
+        if (instance()->m_disableSMPHairWhenWigEquipped && skeleton && skeleton->GetUserData())
+        {
+            if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(skeleton->GetUserData()->formID))
+            {
+                setHeadActiveIfNoHairArmor(actor, this);
+            }
+        }
+
+        std::unordered_set<std::string> physicsDupes;
+        for (auto& headPart : head.headParts)
+        {
+            // Skip duplicate physics files, but ensure we clear their old physics
+            if (!headPart.physicsFile.first.empty() && !physicsDupes.insert(headPart.physicsFile.first).second)
+            {
+                headPart.clearPhysics();
+                continue;
+            }
+
+            reloadPhysicsItem(headPart, head.headNode.get(), head.renameMap, isActive && head.isActive);
+        }
     }
 
     auto ActorManager::Skeleton::scanHead() -> void
@@ -1806,7 +1864,7 @@ namespace hdt
             for (const auto& key : head.renameMap | std::views::keys)
             {
                 if ((this->head.headParts.back().origPartRootNode &&
-                        findObject(this->head.headParts.back().origPartRootNode.get(), key)) ||
+                     findObject(this->head.headParts.back().origPartRootNode.get(), key)) ||
                     (this->head.npcFaceGeomNode && findObject(this->head.npcFaceGeomNode.get(), key)))
                 {
                     auto findNode = this->head.nodeUseCount.find(key);

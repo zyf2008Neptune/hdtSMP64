@@ -16,6 +16,8 @@ namespace hdt
         virtual auto addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
         virtual auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void;
 
+        virtual auto updateConstraintsForBone(SkinnedMeshBone* bone) -> void;
+
         auto stepSimulation(btScalar remainingTimeStep, int maxSubSteps = 1,
                             btScalar fixedTimeStep = static_cast<btScalar>(1.) / static_cast<btScalar>(60.))
             -> int override;
