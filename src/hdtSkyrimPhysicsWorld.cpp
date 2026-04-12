@@ -141,15 +141,16 @@ namespace hdt
             startTime = ticks.QuadPart;
         }
 
-        g_pluginInterface.onPreStep({getCollisionObjectArray(), remainingTimeStep});
+        g_pluginInterface.onPreStep({.objects = getCollisionObjectArray(), .timeStep = remainingTimeStep});
 
         updateActiveState();
         const auto offset = applyTranslationOffset();
         stepSimulation(remainingTimeStep, 0, tick);
         restoreTranslationOffset(offset);
         m_accumulatedInterval = 0;
+        m_pendingTransformUpdate = true;
 
-        g_pluginInterface.onPostStep({getCollisionObjectArray(), remainingTimeStep});
+        g_pluginInterface.onPostStep({.objects = getCollisionObjectArray(), .timeStep = remainingTimeStep});
 
         if (m_doMetrics)
         {
@@ -252,7 +253,7 @@ namespace hdt
             auto& map = maps[system->m_skeleton.get()];
             for (auto& j : system->meshes())
             {
-                auto shape = dynamic_cast<SkyrimBody*>(j.get());
+                auto shape = static_cast<SkyrimBody*>(j.get()); // use downcast is safety here
                 if (!shape)
                 {
                     continue;
@@ -308,7 +309,7 @@ namespace hdt
     auto SkyrimPhysicsWorld::addSkinnedMeshSystem(SkinnedMeshSystem* system) -> void
     {
         std::scoped_lock l(m_lock);
-        const auto s = dynamic_cast<SkyrimSystem*>(system);
+        const auto s = static_cast<SkyrimSystem*>(system); // use downcast is safety here
         if (!s)
         {
             return;
@@ -331,7 +332,8 @@ namespace hdt
 
         for (int i = 0; i < m_systems.size();)
         {
-            RE::BSTSmartPointer<SkyrimSystem> s = hdt::make_smart(dynamic_cast<SkyrimSystem*>(m_systems[i].get()));
+            RE::BSTSmartPointer<SkyrimSystem> s =
+                hdt::make_smart(static_cast<SkyrimSystem*>(m_systems[i].get())); // use downcast is safety here
             if (s && s->m_skeleton == root)
             {
                 SkinnedMeshWorld::removeSkinnedMeshSystem(s.get());
@@ -426,10 +428,11 @@ namespace hdt
 
             QueryPerformanceCounter(&ticks);
             const int64_t t1 = ticks.QuadPart;
-
+            if (m_pendingTransformUpdate)
             {
                 std::scoped_lock l(m_lock);
                 writeTransform();
+                m_pendingTransformUpdate = false;
             }
 
             QueryPerformanceCounter(&ticks);
@@ -472,9 +475,11 @@ namespace hdt
         else
         {
             m_tasks.wait();
+            if (m_pendingTransformUpdate)
             {
                 std::scoped_lock l(m_lock);
                 writeTransform();
+                m_pendingTransformUpdate = false;
             }
         }
 
