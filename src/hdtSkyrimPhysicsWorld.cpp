@@ -480,8 +480,8 @@ namespace hdt
     auto SkyrimPhysicsWorld::ProcessEvent(const Events::ShutdownEvent*, RE::BSTEventSource<Events::ShutdownEvent>*)
         -> RE::BSEventNotifyControl
     {
-        m_tasks.wait();
-        std::scoped_lock l(m_lock);
+        // m_tasks.wait();
+        // std::scoped_lock l(m_lock);
 
         while (!m_systems.empty())
         {
