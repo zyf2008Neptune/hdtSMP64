@@ -1784,7 +1784,8 @@ namespace hdt
                     if (skinData && reinterpret_cast<uintptr_t>(skinData) <= kCanonicalUserSpaceMax &&
                         boneIdx < skinData->bones)
                     {
-                        if (activeSkin->bones)
+                        if (activeSkin->bones &&
+                            reinterpret_cast<uintptr_t>(activeSkin->bones) <= kCanonicalUserSpaceMax)
                         {
                             auto bone = activeSkin->bones[boneIdx];
                             if (isValidNiObject(bone))
@@ -1809,7 +1810,8 @@ namespace hdt
                         if (skinData && reinterpret_cast<uintptr_t>(skinData) <= kCanonicalUserSpaceMax &&
                             boneIdx < skinData->bones)
                         {
-                            if (rd.skinInstance->bones)
+                            if (rd.skinInstance->bones &&
+                                reinterpret_cast<uintptr_t>(rd.skinInstance->bones) <= kCanonicalUserSpaceMax)
                             {
                                 auto bone = rd.skinInstance->bones[boneIdx];
                                 if (isValidNiObject(bone))
@@ -1836,7 +1838,7 @@ namespace hdt
                         if (skinData && reinterpret_cast<uintptr_t>(skinData) <= kCanonicalUserSpaceMax &&
                             boneIdx < skinData->bones)
                         {
-                            if (spSkin->bones)
+                            if (spSkin->bones && reinterpret_cast<uintptr_t>(spSkin->bones) <= kCanonicalUserSpaceMax)
                             {
                                 auto bone = spSkin->bones[boneIdx];
                                 if (isValidNiObject(bone))
