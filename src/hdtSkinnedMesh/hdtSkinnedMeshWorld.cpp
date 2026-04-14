@@ -159,14 +159,14 @@ namespace hdt
             return;
         }
 
-        int numConstraints = m_constraints.size();
-        for (int i = 0; i < numConstraints; i++)
+        const int numConstraints = m_constraints.size();
+        for (auto i = 0; i < numConstraints; i++)
         {
             btTypedConstraint* constraint = m_constraints[i];
 
             if (&constraint->getRigidBodyA() == &bone->m_rig || &constraint->getRigidBodyB() == &bone->m_rig)
             {
-                bool bothKinematic = constraint->getRigidBodyA().isStaticOrKinematicObject() &&
+                const bool bothKinematic = constraint->getRigidBodyA().isStaticOrKinematicObject() &&
                     constraint->getRigidBodyB().isStaticOrKinematicObject();
 
                 constraint->setEnabled(!bothKinematic);
@@ -207,6 +207,12 @@ namespace hdt
         return 0;
     }
 
+    // --Todo: This, and the systems related to it, can be optimized a bit more. I WILL BE BACK...
+    // This optimizes Bullet's broadphase by removing tons of redudent work. We don't use persistent manifolds,
+    // we don't have static objects, etc..
+    // HOWEVER: If we ever add non-skinned Bullet collision objects, or make (0,0) bodies participate in
+    // broadphase queries/collision, this optimization must be revisited.
+
     auto SkinnedMeshWorld::performDiscreteCollisionDetection() -> void
     {
         for (const auto& system : m_systems)
@@ -214,7 +220,32 @@ namespace hdt
             system->internalUpdate();
         }
 
-        btDiscreteDynamicsWorldMt::performDiscreteCollisionDetection();
+        const btDispatcherInfo& dispatchInfo = getDispatchInfo();
+
+        for (auto i = 0; i < m_collisionObjects.size(); i++)
+        {
+            btCollisionObject* colObj = m_collisionObjects[i];
+            btBroadphaseProxy* proxy = colObj->getBroadphaseHandle();
+
+            if (proxy->m_collisionFilterGroup == 0 && proxy->m_collisionFilterMask == 0)
+            {
+                continue;
+            }
+
+            btVector3 minAabb;
+            btVector3 maxAabb;
+            colObj->getCollisionShape()->getAabb(colObj->getWorldTransform(), minAabb, maxAabb);
+
+            m_broadphasePairCache->setAabb(proxy, minAabb, maxAabb, m_dispatcher1);
+        }
+
+        m_broadphasePairCache->calculateOverlappingPairs(m_dispatcher1);
+
+        if (m_dispatcher1)
+        {
+            m_dispatcher1->dispatchAllCollisionPairs(m_broadphasePairCache->getOverlappingPairCache(), dispatchInfo,
+                                                     m_dispatcher1);
+        }
     }
 
     auto SkinnedMeshWorld::applyGravity() -> void
@@ -257,27 +288,42 @@ namespace hdt
 
     auto SkinnedMeshWorld::predictUnconstraintMotion(const btScalar timeStep) -> void
     {
-        concurrency::parallel_for(
-            0, m_nonStaticRigidBodies.size(),
-            [&](const int i)
+        struct UpdaterPredictUnconstraintMotion : btIParallelForBody
+        {
+            btScalar timeStep;
+            btRigidBody** rigidBodies;
+
+            auto forLoop(const int iBegin, const int iEnd) const -> void BT_OVERRIDE
             {
-                btRigidBody* body = m_nonStaticRigidBodies[i];
-                if (!body->isStaticOrKinematicObject())
+                for (int i = iBegin; i < iEnd; ++i)
                 {
+                    btRigidBody* body = rigidBodies[i];
+
                     // not realistic, just an approximate
-                    body->applyDamping(timeStep);
+                    if (!body->isStaticOrKinematicObject())
+                    {
+                        body->applyDamping(timeStep);
+                    }
+
                     body->predictIntegratedTransform(timeStep, body->getInterpolationWorldTransform());
                 }
-                else
-                {
-                    body->predictIntegratedTransform(timeStep, body->getInterpolationWorldTransform());
-                }
-            });
+            }
+        };
+
+        if (m_nonStaticRigidBodies.size() > 0)
+        {
+            UpdaterPredictUnconstraintMotion update;
+            update.timeStep = timeStep;
+            update.rigidBodies = &m_nonStaticRigidBodies[0];
+
+            static constexpr auto grainSize = 100;
+            btParallelFor(0, m_nonStaticRigidBodies.size(), grainSize, update);
+        }
     }
 
     auto SkinnedMeshWorld::integrateTransforms(const btScalar timeStep) -> void
     {
-        for (int i = 0; i < m_collisionObjects.size(); ++i)
+        for (auto i = 0; i < m_collisionObjects.size(); ++i)
         {
             const auto body = m_collisionObjects[i];
             if (body->isKinematicObject())
@@ -291,7 +337,7 @@ namespace hdt
 
         const btVector3 limitMin(-1e+9f, -1e+9f, -1e+9f);
         const btVector3 limitMax(1e+9f, 1e+9f, 1e+9f);
-        for (int i = 0; i < m_nonStaticRigidBodies.size(); i++)
+        for (auto i = 0; i < m_nonStaticRigidBodies.size(); i++)
         {
             btRigidBody* body = m_nonStaticRigidBodies[i];
             auto lv = body->getLinearVelocity();
@@ -315,7 +361,7 @@ namespace hdt
 
         const auto unionFind = &getSimulationIslandManager()->getUnionFind();
 
-        for (int i = 0; i < m_predictiveManifolds.size(); i++)
+        for (auto i = 0; i < m_predictiveManifolds.size(); i++)
         {
             const btPersistentManifold* manifold = m_predictiveManifolds[i];
             const btCollisionObject* colObj0 = manifold->getBody0();
@@ -327,7 +373,7 @@ namespace hdt
         }
 
         const int numConstraints = m_constraints.size();
-        for (int i = 0; i < numConstraints; i++)
+        for (auto i = 0; i < numConstraints; i++)
         {
             btTypedConstraint* constraint = m_constraints[i];
             if (constraint->isEnabled())
@@ -346,7 +392,7 @@ namespace hdt
         // cause an EXCEPTION_ACCESS_VIOLATION reading m_tmpSolverBodyPool :(
         btDispatcher* dispatcher = getCollisionWorld()->getDispatcher();
         const int numManifolds = dispatcher->getNumManifolds();
-        for (int i = 0; i < numManifolds; i++)
+        for (auto i = 0; i < numManifolds; i++)
         {
             const btPersistentManifold* manifold = dispatcher->getManifoldByIndexInternal(i);
 
@@ -380,7 +426,7 @@ namespace hdt
 
         // Kinematic objects should never be able to collide, or move. Because: They're kinematic?
         // This avoids broken configs, API misuse - etc. Better to check it every cycle for safety
-        for (int i = 0; i < m_constraints.size(); i++)
+        for (auto i = 0; i < m_constraints.size(); i++)
         {
             btTypedConstraint* constraint = m_constraints[i];
             if (constraint->isEnabled())
