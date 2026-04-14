@@ -14,7 +14,7 @@ namespace hdt
             if (f == p->children.end())
             {
                 p->children.emplace_back(keys[i]);
-                p = &p->children.back();
+                p = std::addressof(p->children.back());
             }
             else
             {

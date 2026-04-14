@@ -47,8 +47,7 @@ namespace hdt
             aabbMe.invalidate();
         }
 
-        ColliderTree(const U32 k) :
-            key(k)
+        ColliderTree(const U32 k) : key(k)
         {
             aabbAll.invalidate();
             aabbMe.invalidate();
