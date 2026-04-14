@@ -323,7 +323,7 @@ namespace hdt
                     else if (name == "per-vertex-shape")
                     {
                         auto shape = readPerVertexShape(meshNameMap);
-                        if (shape && shape->m_vertices.size())
+                        if (shape && !shape->m_vertices.empty())
                         {
                             m_mesh->m_meshes.emplace_back(shape);
                             shape->m_mesh = m_mesh.get();
@@ -332,7 +332,7 @@ namespace hdt
                     else if (name == "per-triangle-shape")
                     {
                         auto shape = readPerTriangleShape(&meshNameMap);
-                        if (shape && shape->m_vertices.size())
+                        if (shape && !shape->m_vertices.empty())
                         {
                             m_mesh->m_meshes.emplace_back(shape);
                             shape->m_mesh = m_mesh.get();
@@ -969,6 +969,10 @@ namespace hdt
             for (uint32_t boneIdx = 0; boneIdx < skinData->bones; ++boneIdx)
             {
                 auto node = skinInstance->bones[boneIdx];
+                if (!node)
+                {
+                    continue;
+                }
                 auto boneData = &skinData->boneData[boneIdx];
                 auto boundingSphere = BoundingSphere(convertNi(boneData->bound.center), boneData->bound.radius);
                 const RE::BSFixedString& boneName = node->name;
@@ -1235,6 +1239,10 @@ namespace hdt
         for (const auto& entry : vertexOffsetMap)
         {
             auto* g = castBSTriShape(findObject(m_model, entry.first.c_str()));
+            if (!g)
+            {
+                continue;
+            }
             if (g->GetGeometryRuntimeData().skinInstance)
             {
                 int offset = entry.second;
