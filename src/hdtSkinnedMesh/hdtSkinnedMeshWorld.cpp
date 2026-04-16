@@ -277,7 +277,7 @@ namespace hdt
             for (const auto& j : i->m_bones)
             {
                 const auto body = &j->m_rig;
-                if (!body->isStaticOrKinematicObject() &&
+                if (!body->isStaticOrKinematicObject() && j->m_windFactor != 0.0f &&
                     rand() % 5) // apply randomly 80% of the time to desync wind across bones
                 {
                     body->applyCentralForce(m_windSpeed * j->m_windFactor * system->m_windFactor);
