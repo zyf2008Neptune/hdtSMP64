@@ -1875,13 +1875,28 @@ namespace hdt
 
         if (hasRenames)
         {
-            for (const auto& key : head.renameMap | std::views::keys)
+            for (auto& entry : head.renameMap)
             {
-                if ((this->head.headParts.back().origPartRootNode &&
-                     findObject(this->head.headParts.back().origPartRootNode.get(), key)) ||
-                    (this->head.npcFaceGeomNode && findObject(this->head.npcFaceGeomNode.get(), key)))
+                auto inUse = false;
+
+                auto origPartRoot = this->head.headParts.back().origPartRootNode.get();
+                auto npcFaceGeom = this->head.npcFaceGeomNode.get();
+
+                // we must check for BOTH entry.first (original name) and entry.second (renamed name)
+                // If this geometry performed the skeleton merge, renameTree altered the names in the source tree to
+                // entry.second. If another geometry did the merge, the names remain entry.first
+                if (origPartRoot && (findObject(origPartRoot, entry.first) || findObject(origPartRoot, entry.second)))
                 {
-                    auto findNode = this->head.nodeUseCount.find(key);
+                    inUse = true;
+                }
+                else if (npcFaceGeom && (findObject(npcFaceGeom, entry.first) || findObject(npcFaceGeom, entry.second)))
+                {
+                    inUse = true;
+                }
+
+                if (inUse)
+                {
+                    auto findNode = this->head.nodeUseCount.find(entry.first);
                     if (findNode != this->head.nodeUseCount.end())
                     {
                         findNode->second += 1;
@@ -1889,10 +1904,10 @@ namespace hdt
                     }
                     else
                     {
-                        this->head.nodeUseCount.insert(std::make_pair(key, static_cast<uint8_t>(1)));
+                        this->head.nodeUseCount.insert(std::make_pair(entry.first, static_cast<uint8_t>(1)));
                         logger::debug("First use of bone, count 1.");
                     }
-                    head.headParts.back().renamedBonesInUse.insert(key);
+                    head.headParts.back().renamedBonesInUse.insert(entry.first);
                 }
             }
         }
