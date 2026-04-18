@@ -149,10 +149,12 @@ namespace hdt
             auto processGeometry(RE::BSFaceGenNiNode* head, RE::BSGeometry* geometry) -> void;
 
             static auto doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, std::string_view prefix,
-                                        std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map) -> void;
+                                        std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map,
+                                        bool renameSource = true) -> void;
             static auto doSkeletonClean(RE::NiNode* dst, std::string_view prefix) -> void;
             static auto cloneNodeTree(RE::NiNode* src, std::string_view prefix,
-                                      std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map) -> RE::NiNode*;
+                                      std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map, bool renameSource)
+                -> RE::NiNode*;
             static auto renameTree(RE::NiNode* root, std::string_view prefix,
                                    std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map) -> void;
 
@@ -169,7 +171,7 @@ namespace hdt
             auto checkPhysics() -> bool;
             static auto doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, std::string_view prefix,
                                         std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map,
-                                        RE::NiNode* dstRoot) -> void;
+                                        RE::NiNode* dstRoot, bool renameSource) -> void;
 
             bool isActive = false;
             float currentWindFactor = 0.f;

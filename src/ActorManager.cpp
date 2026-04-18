@@ -790,18 +790,19 @@ namespace hdt
                 return &i;
             }
         }
-        return 0;
-    }
-
-    auto ActorManager::Skeleton::doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, const std::string_view prefix,
-                                                 std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map) -> void
-    {
-        doSkeletonMerge(dst, src, prefix, map, dst);
+        return nullptr;
     }
 
     auto ActorManager::Skeleton::doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, const std::string_view prefix,
                                                  std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map,
-                                                 RE::NiNode* dstRoot) -> void
+                                                 const bool renameSource) -> void
+    {
+        doSkeletonMerge(dst, src, prefix, map, dst, renameSource);
+    }
+
+    auto ActorManager::Skeleton::doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, const std::string_view prefix,
+                                                 std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map,
+                                                 RE::NiNode* dstRoot, const bool renameSource) -> void
     {
         const auto& children = src->GetChildren();
 
@@ -815,7 +816,7 @@ namespace hdt
 
             if (srcChild->name.empty())
             {
-                doSkeletonMerge(dst, srcChild, prefix, map, dstRoot);
+                doSkeletonMerge(dst, srcChild, prefix, map, dstRoot, renameSource);
                 continue;
             }
 
@@ -830,18 +831,18 @@ namespace hdt
             // TODO check it's not a lurker skeleton
             if (const auto dstChild = findNode(dstRoot, srcChild->name))
             {
-                doSkeletonMerge(dstChild, srcChild, prefix, map, dstRoot);
+                doSkeletonMerge(dstChild, srcChild, prefix, map, dstRoot, renameSource);
             }
             else
             {
-                dst->AttachChild(cloneNodeTree(srcChild, prefix, map), false);
+                dst->AttachChild(cloneNodeTree(srcChild, prefix, map, renameSource), false);
             }
         }
     }
 
     auto ActorManager::Skeleton::cloneNodeTree(RE::NiNode* src, const std::string_view prefix,
-                                               std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map)
-        -> RE::NiNode*
+                                               std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map,
+                                               const bool renameSource) -> RE::NiNode*
     {
         //
         RE::NiCloningProcess c;
@@ -854,9 +855,12 @@ namespace hdt
         const auto ret = static_cast<RE::NiNode*>(src->CreateClone(c));
         src->ProcessClone(c);
 
-        // FIXME: cloneHeadNodeTree just did this for ret, not both. Don't know if that matters. Armor parts need it on
-        // both.
-        renameTree(src, prefix, map);
+        // Renaming the source tree for Head parts corrupts the shared npcFaceGeomNode cache,
+        // so only rename the source for armor merges where the source is a per-attachment tree
+        if (renameSource)
+        {
+            renameTree(src, prefix, map);
+        }
         renameTree(ret, prefix, map);
 
         return ret;
@@ -1824,7 +1828,7 @@ namespace hdt
                 if (this->head.headParts.back().origPartRootNode)
                 {
                     doSkeletonMerge(npc.get(), head.headParts.back().origPartRootNode.get(), head.prefix,
-                                    head.renameMap);
+                                    head.renameMap, false);
                 }
                 else if (this->head.npcFaceGeomNode)
                 {
@@ -1850,7 +1854,7 @@ namespace hdt
                             }
                         }
                     }
-                    doSkeletonMerge(npc.get(), this->head.npcFaceGeomNode.get(), head.prefix, head.renameMap);
+                    doSkeletonMerge(npc.get(), this->head.npcFaceGeomNode.get(), head.prefix, head.renameMap, false);
                 }
 
                 hasMerged = true;
