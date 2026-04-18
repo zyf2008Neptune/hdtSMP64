@@ -235,18 +235,17 @@ namespace Hooks
         //
         _Update(a_this);
 
-        // why doesn't this class have a GetRuntimeData() helper? the offsets are borked with VR support enabled.
+        const auto& runtimeData = a_this->GetRuntimeData();
 
-        //
-        if (auto quitGame = REL::RelocateMember<bool>(a_this, 0x10, 0x8))
+        if (runtimeData.quitGame)
         {
-            const Events::ShutdownEvent e;
+            static constexpr Events::ShutdownEvent e;
             Events::Sources::ShutdownEventEventSource::GetSingleton()->SendEvent(&e);
         }
         else
         {
             Events::FrameEvent e;
-            e.gamePaused = a_this->freezeTime;
+            e.gamePaused = runtimeData.freezeTime;
             Events::Sources::FrameEventSource::GetSingleton()->SendEvent(&e);
         }
     }
@@ -256,7 +255,7 @@ namespace Hooks
         _Unk_sub(a_this);
 
         //
-        const Events::FrameSyncEvent framesyncEvent;
+        static constexpr Events::FrameSyncEvent framesyncEvent;
         Events::Sources::FrameSyncEventSource::GetSingleton()->SendEvent(&framesyncEvent);
     }
 
@@ -314,8 +313,7 @@ namespace Hooks
 
                 //
                 RE::NiAVObject* object = armor->GetObjectByName(NodeName);
-                RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr;
-                if (triShape)
+                if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->bones;
                     for (uint32_t idx = 0; idx < size; idx++) // all good here
@@ -341,8 +339,7 @@ namespace Hooks
             for (auto& NodeName : BackupNodes)
             {
                 RE::NiAVObject* object = ret->GetObjectByName(NodeName);
-                RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr;
-                if (triShape)
+                if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->bones;
                     for (uint32_t idx = 0; idx < size; idx++)
