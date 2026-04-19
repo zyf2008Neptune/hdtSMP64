@@ -176,7 +176,7 @@ namespace Hooks
             const auto& children = a_this->GetChildren();
             if (!children.empty())
             {
-                for (auto child : children)
+                for (const auto& child : children)
                 {
                     if (child)
                     {
@@ -402,6 +402,10 @@ namespace Hooks
         DetourUpdateThread(GetCurrentThread());
         ActorEquipManagerHooks::Hook();
         BSFaceGenNiNodeHooks::HookSetBoneName();
+        // We use a detour on this instead of modifying the vtable to avoid breaking compatibility with other mods like
+        // Mu Joint Fix
+        DetourAttach(reinterpret_cast<PVOID*>(&BSFaceGenNiNodeHooks::_SkinAllGeometry_Orig),
+                     PVOID(BSFaceGenNiNodeHooks::SkinAllGeometry__Hook));
         DetourTransactionCommit();
 
         //
