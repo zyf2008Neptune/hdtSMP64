@@ -2,50 +2,58 @@
 
 hdt::PluginInterfaceImpl hdt::g_pluginInterface;
 
-void hdt::PluginInterfaceImpl::addListener(IPreStepListener* l)
+auto hdt::PluginInterfaceImpl::addListener(IPreStepListener* l) -> void
 {
-	if (l) {
-		m_preStepDispatcher.AddEventSink(l);
-	}
+    if (l)
+    {
+        m_preStepDispatcher.AddEventSink(l);
+    }
 }
 
-void hdt::PluginInterfaceImpl::removeListener(IPreStepListener* l)
+auto hdt::PluginInterfaceImpl::removeListener(IPreStepListener* l) -> void
 {
-	if (l) {
-		m_preStepDispatcher.RemoveEventSink(l);
-	}
+    if (l)
+    {
+        m_preStepDispatcher.RemoveEventSink(l);
+    }
 }
 
-void hdt::PluginInterfaceImpl::addListener(IPostStepListener* l)
+auto hdt::PluginInterfaceImpl::addListener(IPostStepListener* l) -> void
 {
-	if (l) {
-		m_postStepDispatcher.AddEventSink(l);
-	}
+    if (l)
+    {
+        m_postStepDispatcher.AddEventSink(l);
+    }
 }
 
-void hdt::PluginInterfaceImpl::removeListener(IPostStepListener* l)
+auto hdt::PluginInterfaceImpl::removeListener(IPostStepListener* l) -> void
 {
-	if (l) {
-		m_postStepDispatcher.RemoveEventSink(l);
-	}
+    if (l)
+    {
+        m_postStepDispatcher.RemoveEventSink(l);
+    }
 }
 
-void hdt::PluginInterfaceImpl::onPostPostLoad()
+auto hdt::PluginInterfaceImpl::onPostPostLoad() -> void
 {
-	// Send ourselves to any plugin that registered during the PostLoad event
-	if (m_skseMessagingInterface) {
-		m_skseMessagingInterface->Dispatch(PluginInterface::MSG_STARTUP, static_cast<PluginInterface*>(this), 0, nullptr);
-	}
+    // Send ourselves to any plugin that registered during the PostLoad event
+    if (m_skseMessagingInterface)
+    {
+        m_skseMessagingInterface->Dispatch(MSG_STARTUP, this, 0, nullptr);
+    }
 }
 
-void hdt::PluginInterfaceImpl::init(const SKSE::LoadInterface* skse)
+auto hdt::PluginInterfaceImpl::init(const SKSE::LoadInterface* skse) -> void
 {
-	//We need to have our SKSE plugin handle and the messaging interface in order to reach our plugins later
-	if (skse) {
-		m_sksePluginHandle = skse->GetPluginHandle();
-		m_skseMessagingInterface = reinterpret_cast<SKSE::MessagingInterface*>(skse->QueryInterface(SKSE::LoadInterface::kMessaging));
-	}
-	if (!m_skseMessagingInterface) {
-		logger::warn("Failed to get a messaging interface. Plugins will not work.");
-	}
+    // We need to have our SKSE plugin handle and the messaging interface in order to reach our plugins later
+    if (skse)
+    {
+        m_sksePluginHandle = skse->GetPluginHandle();
+        m_skseMessagingInterface =
+            static_cast<SKSE::MessagingInterface*>(skse->QueryInterface(SKSE::LoadInterface::kMessaging));
+    }
+    if (!m_skseMessagingInterface)
+    {
+        logger::warn("Failed to get a messaging interface. Plugins will not work.");
+    }
 }

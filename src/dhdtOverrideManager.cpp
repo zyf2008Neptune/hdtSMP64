@@ -24,15 +24,15 @@ auto checkPapyrusExtension() -> bool
     return true;
 }
 
-auto OverrideManager::queryOverrideData() -> std::string
+auto OverrideManager::queryOverrideData() const -> std::string
 {
     std::string console_print("[DynamicHDT] -- Querying existing override data...\n");
 
-    for (auto i : m_ActorPhysicsFileSwapList)
+    for (const auto& i : m_ActorPhysicsFileSwapList)
     {
-        console_print += "Actor formID: " + util::UInt32toString(i.first) + "\t" + std::to_string(i.second.size()) +
-            "\n";
-        for (auto j : i.second)
+        console_print +=
+            "Actor formID: " + util::UInt32toString(i.first) + "\t" + std::to_string(i.second.size()) + "\n";
+        for (const auto& j : i.second)
         {
             console_print += "\tOriginal file: " + j.first + "\n\t\t| Override: " + j.second + "\n";
         }
@@ -42,8 +42,8 @@ auto OverrideManager::queryOverrideData() -> std::string
     return console_print;
 }
 
-auto OverrideManager::registerOverride(uint32_t actor_formID, std::string old_file_path,
-                                       std::string new_file_path) -> bool
+auto OverrideManager::registerOverride(const uint32_t actor_formID, std::string old_file_path,
+                                       const std::string_view new_file_path) -> bool
 {
     if (old_file_path.empty())
     {
@@ -56,22 +56,22 @@ auto OverrideManager::registerOverride(uint32_t actor_formID, std::string old_fi
             old_file_path = e.first;
         }
     }
-    m_ActorPhysicsFileSwapList[actor_formID][old_file_path] = new_file_path;
+    m_ActorPhysicsFileSwapList[actor_formID][old_file_path] = std::string(new_file_path);
     return true;
 }
 
-auto OverrideManager::checkOverride(uint32_t actor_formID, std::string old_file_path) -> std::string
+auto OverrideManager::checkOverride(const uint32_t actor_formID, const std::string_view old_file_path) -> std::string
 {
     auto iter1 = m_ActorPhysicsFileSwapList.find(actor_formID);
     if (iter1 != m_ActorPhysicsFileSwapList.end())
     {
-        auto iter2 = iter1->second.find(old_file_path);
+        auto iter2 = iter1->second.find(std::string(old_file_path));
         if (iter2 != iter1->second.end())
         {
             return iter2->second;
         }
     }
-    return std::string();
+    return {};
 }
 
 auto OverrideManager::Serialize() -> std::stringstream
@@ -100,7 +100,7 @@ auto OverrideManager::Serialize() -> std::stringstream
                 continue;
             }
 
-            data_stream << orig << "\t" << override_path << std::endl;
+            data_stream << orig << "\t" << override_path << '\n';
         }
     }
 
