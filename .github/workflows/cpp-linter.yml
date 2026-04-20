@@ -13,7 +13,8 @@ jobs:
         uses: cpp-linter/cpp-linter-action@v2
         id:   linter
         continue-on-error: true
-        env: ${{ secrets.GITHUB_TOKEN }}
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           sources: "src/**/*.cpp,src/**/*.h"
           style: file # Uses your project's .clang-format file
