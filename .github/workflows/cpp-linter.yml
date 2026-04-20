@@ -1,19 +1,24 @@
-name: Clang Format Fixer
+name: cpp-linter
 on: [push]
 
 jobs:
-  format:
+  cpp-linter:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
       
-      - name: Run Clang-Format
-        uses: RafikFarhad/clang-format-github-action@v6
+      - name: Run cpp-linter
+        uses: cpp-linter/cpp-linter-action@v2
+        id:   linter
+        continue-on-error: true
+        env: ${{ secrets.GITHUB_TOKEN }}
         with:
           sources: "src/**/*.cpp,src/**/*.h"
           style: file # Uses your project's .clang-format file
+          files-changed-only: false
+          thread-comments: true
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
