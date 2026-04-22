@@ -170,7 +170,7 @@ namespace
             }
         }
 
-        if (auto niNode = node->AsNode())
+        if (auto niNode = node->AsNode() && niNode != nullptr)
         {
             auto& children = niNode->GetChildren();
             if (!children.empty())
