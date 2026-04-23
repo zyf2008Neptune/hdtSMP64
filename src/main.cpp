@@ -169,8 +169,8 @@ namespace
                 logger::info("{} {}", node->extra[i]->GetRTTI()->name, node->extra[i]->name);
             }
         }
-
-        if (auto niNode = node->AsNode() && niNode != nullptr)
+        auto niNode = node->AsNode();
+        if (niNode != nullptr)
         {
             auto& children = niNode->GetChildren();
             if (!children.empty())
