@@ -547,7 +547,6 @@ namespace
         {
             hdt::g_pluginInterface.onPostPostLoad();
             checkOldPlugins();
-            Hooks::Install();
         }
         break;
         }
@@ -656,6 +655,9 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
     //
     SKSE::GetCameraEventSource()->AddEventSink(hdt::SkyrimPhysicsWorld::get());
+
+    //
+    Hooks::Install();
 
     //
     hdt::g_pluginInterface.init(a_skse);
