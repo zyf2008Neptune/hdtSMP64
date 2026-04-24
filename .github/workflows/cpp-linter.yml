@@ -16,7 +16,6 @@ jobs:
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          sources: "src/**/*.cpp,src/**/*.h"
           style: file # Uses your project's .clang-format file
           files-changed-only: false
           thread-comments: true

@@ -1,8 +1,7 @@
 #pragma once
 
-#include <ppl.h>
-#include <ppltasks.h>
 #include <vector>
+
 #include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 #include "hdtBulletHelper.h"
 

@@ -73,7 +73,7 @@ namespace hdt
         auto setWind(const RE::NiPoint3& a_direction, float a_scale = scaleSkyrim, uint32_t a_smoothingSamples = 8)
             -> void;
 
-        concurrency::task_group m_tasks;
+        tbb::task_group m_tasks;
 
         bool m_pendingTransformUpdate = false;
         bool m_useRealTime = false;
@@ -102,7 +102,7 @@ namespace hdt
 
     private:
         SkyrimPhysicsWorld();
-        ~SkyrimPhysicsWorld() override = default;
+        ~SkyrimPhysicsWorld() noexcept override = default;
 
         std::mutex m_lock;
 

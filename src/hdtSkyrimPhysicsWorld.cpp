@@ -488,6 +488,8 @@ namespace hdt
             SkinnedMeshWorld::removeSkinnedMeshSystem(m_systems.back().get());
         }
 
+        m_tasks.wait();
+
         return RE::BSEventNotifyControl::kContinue;
     }
 
