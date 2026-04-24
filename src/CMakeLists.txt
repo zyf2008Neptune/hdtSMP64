@@ -1,91 +1,18 @@
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
-add_compile_definitions(_SILENCE_AMP_DEPRECATION_WARNINGS)
+add_compile_definitions(_SILENCE_AMP_DEPRECATION_WARNINGS NOMINMAX)
 
 set(SOURCE_DIR "${ROOT_DIR}/src")
 
-set(SOURCE_FILES
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtAABB.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtBone.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtBoneScaleConstraint.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtBoneScaleConstraint.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtBulletHelper.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtCollider.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtCollider.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtCollisionAlgorithm.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtCollisionAlgorithm.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtConeTwistConstraint.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtConeTwistConstraint.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtConstraintGroup.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtDispatcher.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtDispatcher.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtGeneric6DofConstraint.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtGeneric6DofConstraint.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshAlgorithm.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshAlgorithm.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshBody.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshBody.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshBone.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshBone.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshShape.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshShape.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshSystem.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshSystem.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshWorld.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtSkinnedMeshWorld.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtStiffSpringConstraint.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtStiffSpringConstraint.h"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtVertex.cpp"
-	"${SOURCE_DIR}/hdtSkinnedMesh/hdtVertex.h"
-	"${SOURCE_DIR}/Events.h"
-	"${SOURCE_DIR}/Events.cpp"
-	"${SOURCE_DIR}/HavokUtils.h"
-	"${SOURCE_DIR}/Hooks.cpp"
-	"${SOURCE_DIR}/Hooks.h"
-	"${SOURCE_DIR}/dhdtPapyrusFunctions.cpp"
-	"${SOURCE_DIR}/dhdtPapyrusFunctions.h"
-	"${SOURCE_DIR}/EventDebugLogger.cpp"
-	"${SOURCE_DIR}/EventDebugLogger.h"
-	"${SOURCE_DIR}/Events.cpp"
-	"${SOURCE_DIR}/Events.h"
-	"${SOURCE_DIR}/dhdtOverrideManager.cpp"
-	"${SOURCE_DIR}/dhdtOverrideManager.h"
-	"${SOURCE_DIR}/hdtForceUpdateList.cpp"
-	"${SOURCE_DIR}/hdtForceUpdateList.h"
-	"${SOURCE_DIR}/config.cpp"
-	"${SOURCE_DIR}/config.h"
-	"${SOURCE_DIR}/hdtSerialization.cpp"
-	"${SOURCE_DIR}/hdtSerialization.h"
-	"${SOURCE_DIR}/PluginAPI.h"
-	"${SOURCE_DIR}/PluginInterfaceImpl.cpp"
-	"${SOURCE_DIR}/PluginInterfaceImpl.h"
-	"${SOURCE_DIR}/DynamicHDT.cpp"
-	"${SOURCE_DIR}/DynamicHDT.h"
-	"${SOURCE_DIR}/WeatherManager.cpp"
-	"${SOURCE_DIR}/WeatherManager.h"
-	"${SOURCE_DIR}/ActorManager.cpp"
-	"${SOURCE_DIR}/ActorManager.h"
-	"${SOURCE_DIR}/hdtSkyrimPhysicsWorld.cpp"
-	"${SOURCE_DIR}/hdtSkyrimPhysicsWorld.h"
-	"${SOURCE_DIR}/hdtDefaultBBP.cpp"
-	"${SOURCE_DIR}/hdtDefaultBBP.h"
-	"${SOURCE_DIR}/hdtSkyrimBody.cpp"
-	"${SOURCE_DIR}/hdtSkyrimBody.h"
-	"${SOURCE_DIR}/hdtSkyrimBone.cpp"
-	"${SOURCE_DIR}/hdtSkyrimBone.h"
-	"${SOURCE_DIR}/hdtConvertNi.cpp"
-	"${SOURCE_DIR}/hdtConvertNi.h"
-	"${SOURCE_DIR}/hdtSkyrimSystem.cpp"
-	"${SOURCE_DIR}/hdtSkyrimSystem.h"
-	"${SOURCE_DIR}/XmlInspector/CharactersReader.hpp"
-	"${SOURCE_DIR}/XmlInspector/CharactersWriter.hpp"
-	"${SOURCE_DIR}/XmlInspector/XmlInspector.hpp"
-	"${SOURCE_DIR}/XmlReader.h"
-	"${SOURCE_DIR}/XmlReader.cpp"
-	"${SOURCE_DIR}/NetImmerseUtils.h"
-	"${SOURCE_DIR}/main.h"
-	"${SOURCE_DIR}/main.cpp"
-	"${SOURCE_DIR}/PCH.h")
+file(GLOB_RECURSE headers
+	${SOURCE_DIR}/*.h	
+)
+
+file(GLOB_RECURSE sources
+   ${SOURCE_DIR}/*.cpp
+)
+
+set(SOURCE_FILES ${headers} ${sources})
 source_group(TREE "${ROOT_DIR}" FILES ${SOURCE_FILES})
 
 set(VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/src/Plugin.h")
@@ -190,6 +117,8 @@ endif()
 find_package(Bullet CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(xbyak REQUIRED CONFIG)
+find_package(TBB CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 include_directories(${BULLET_INCLUDE_DIRS})
 
@@ -202,7 +131,9 @@ target_link_libraries(
 			${DETOURS_LIBRARY_RELEASE}
 			debug
 			${DETOURS_LIBRARY_DEBUG}
-			${BULLET_LIBRARIES})
+			${BULLET_LIBRARIES}
+			TBB::tbb
+)
 
 target_precompile_headers("${PROJECT_NAME}" PRIVATE "${SOURCE_DIR}/PCH.h")
 
@@ -220,9 +151,9 @@ if("${COPY_OUTPUT}")
 	add_custom_command(
 		TARGET "${PROJECT_NAME}"
 		POST_BUILD
-		COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:${PROJECT_NAME}>"
+		COMMAND "${CMAKE_COMMAND}" -E copy "$<TARGET_FILE:${PROJECT_NAME}>"
 				"${CompiledPluginsPath}/SKSE/Plugins/"
-		COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_PDB_FILE:${PROJECT_NAME}>"
+		COMMAND "${CMAKE_COMMAND}" -E copy "$<TARGET_PDB_FILE:${PROJECT_NAME}>"
 				"${CompiledPluginsPath}/SKSE/Plugins/"
 		VERBATIM)
 endif()

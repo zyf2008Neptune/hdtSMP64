@@ -169,8 +169,8 @@ namespace
                 logger::info("{} {}", node->extra[i]->GetRTTI()->name, node->extra[i]->name);
             }
         }
-
-        if (auto niNode = node->AsNode())
+        auto niNode = node->AsNode();
+        if (niNode != nullptr)
         {
             auto& children = niNode->GetChildren();
             if (!children.empty())
@@ -495,11 +495,9 @@ namespace
         auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
 #endif
 
-        const auto level = static_cast<spdlog::level::level_enum>(hdt::g_logLevel);
-
         auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
-        log->set_level(level);
-        log->flush_on(level);
+        log->set_level(spdlog::level::level_enum::info);
+        log->flush_on(spdlog::level::level_enum::info);
 
         spdlog::set_default_logger(std::move(log));
         spdlog::set_pattern("[%H:%M:%S.%e] [%L] %v"s);
@@ -547,7 +545,6 @@ namespace
         {
             hdt::g_pluginInterface.onPostPostLoad();
             checkOldPlugins();
-            Hooks::Install();
         }
         break;
         }
@@ -609,8 +606,6 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
     SKSE::Init(a_skse);
 
-    hdt::loadConfig();
-
     InitializeLog();
 
     if constexpr (Plugin::BUILD_INFO.empty())
@@ -623,6 +618,7 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
                          Plugin::AVX_VARIANT);
     }
 
+    hdt::loadConfig();
     hdt::logConfig();
 
     const auto messaging = SKSE::GetMessagingInterface();
@@ -656,6 +652,9 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
     //
     SKSE::GetCameraEventSource()->AddEventSink(hdt::SkyrimPhysicsWorld::get());
+
+    //
+    Hooks::Install();
 
     //
     hdt::g_pluginInterface.init(a_skse);

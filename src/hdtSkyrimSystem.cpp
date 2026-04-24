@@ -419,17 +419,17 @@ namespace hdt
 
         if (m_deferredBuilds.size() > 2)
         {
-            concurrency::parallel_for_each(m_deferredBuilds.begin(), m_deferredBuilds.end(),
-                                           [](const DeferredBuild& db)
-                                           {
-                                               if (db.vertexShape)
-                                               {
-                                                   db.vertexShape->autoGen();
-                                               }
-                                               db.body->finishBuild();
-                                           });
+            tbb::parallel_for_each(m_deferredBuilds.begin(), m_deferredBuilds.end(),
+                                   [](const DeferredBuild& db)
+                                   {
+                                       if (db.vertexShape)
+                                       {
+                                           db.vertexShape->autoGen();
+                                       }
+                                       db.body->finishBuild();
+                                   });
         }
-        else if (!m_deferredBuilds.empty())
+        else if (!m_deferredBuilds.empty() && m_deferredBuilds.size() <= 2)
         {
             for (const auto& db : m_deferredBuilds)
             {

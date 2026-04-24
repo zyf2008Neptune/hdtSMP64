@@ -1,6 +1,7 @@
 #pragma once
 
-#include <ppltasks.h>
+#include <tbb/tbb.h>
+
 #include "hdtBulletHelper.h"
 #include "hdtConstraintGroup.h"
 
@@ -14,7 +15,7 @@ namespace hdt
 
     class SkinnedMeshSystem : public RE::BSIntrusiveRefCounted
     {
-        friend class hdt::SkinnedMeshWorld;
+        friend class SkinnedMeshWorld;
 
     public:
         virtual ~SkinnedMeshSystem() = default;
@@ -43,7 +44,6 @@ namespace hdt
         std::vector<RE::BSTSmartPointer<ConstraintGroup>> m_constraintGroups;
 
     private:
-        using task = concurrency::task<void>;
-        using task_group = concurrency::task_group;
+        using task_group = tbb::task_group;
     };
 } // namespace hdt

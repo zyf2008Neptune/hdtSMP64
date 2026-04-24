@@ -424,3 +424,5 @@ FodyWeavers.xsd
 /build
 /out
 CMakeUserPresets.json
+.cpp_linter_cache/
+/.cpp-linter_cache/comments-pg2.json
