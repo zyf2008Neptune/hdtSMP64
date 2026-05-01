@@ -22,7 +22,7 @@ macro(set_from_environment VARIABLE)
 endmacro()
 set_from_environment(CompiledPluginsPath)
 if(NOT DEFINED CompiledPluginsPath)
-	set(CompiledPluginsPath "${PROJECT_SOURCE_DIR}/build")
+	message(FATAL_ERROR "CompiledPluginsPath is not set")
 endif()
 
 option(COPY_OUTPUT "Copy the output of build operations to the game directory" ON)
