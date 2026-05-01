@@ -41,7 +41,6 @@ static auto __float32(float* __restrict out, const uint16_t in) -> void
 namespace hdt
 {
     [[maybe_unused]] static constexpr auto PI = std::numbers::pi_v<float>;
-    ;
 
     btEmptyShape SkyrimSystemCreator::BoneTemplate::emptyShape[1];
 

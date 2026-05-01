@@ -228,6 +228,8 @@ namespace hdt
 
     auto SkinnedMeshWorld::performDiscreteCollisionDetection() -> void
     {
+        BT_PROFILE("performDiscreteCollisionDetection");
+
         for (const auto& system : m_systems)
         {
             system->internalUpdate();
