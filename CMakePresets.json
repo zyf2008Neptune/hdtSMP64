@@ -1,7 +1,7 @@
 {
   "configurePresets": [
     {
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": {
           "type": "STRING",
