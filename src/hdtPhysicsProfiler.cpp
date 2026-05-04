@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -20,6 +21,16 @@ namespace hdt::physicsprofiler
 
     namespace
     {
+        struct DumpOptions
+        {
+            double m_minScopeMs = 0.001;
+            std::uint32_t m_maxDepth = 64;
+            std::uint32_t m_flatLimit = 32;
+            bool m_logTree = true;
+            bool m_logFlat = true;
+            bool m_logThreads = true;
+        };
+
         struct Node
         {
             std::string m_name;
@@ -31,8 +42,8 @@ namespace hdt::physicsprofiler
 
             auto child(std::string_view a_name) -> Node&
             {
-                if (auto it = std::ranges::find_if(m_children,
-                                                   [&](const auto& a_entry) { return a_entry->m_name == a_name; });
+                if (const auto it = std::ranges::find_if(
+                        m_children, [&](const auto& a_entry) { return a_entry->m_name == a_name; });
                     it != m_children.end())
                 {
                     return **it;
@@ -47,37 +58,28 @@ namespace hdt::physicsprofiler
                 m_totalNs = 0;
                 m_calls = 0;
 
-                for (auto& child : m_children)
+                for (const auto& child : m_children)
                 {
                     child->resetStats();
                 }
             }
         };
-    } // namespace
 
-    namespace
-    {
         struct Frame
         {
             Node* m_node{};
             Clock::time_point m_start{};
         };
-    } // namespace
 
-    namespace
-    {
         struct ThreadState
         {
             std::uint32_t m_index{};
             Node m_root{"Root"};
             std::vector<Frame> m_stack;
 
-            explicit ThreadState(std::uint32_t a_index) : m_index(a_index) {}
+            explicit ThreadState(const std::uint32_t a_index) : m_index(a_index) {}
         };
-    } // namespace
 
-    namespace
-    {
         struct AggregateNode
         {
             std::string m_name;
@@ -89,8 +91,8 @@ namespace hdt::physicsprofiler
 
             auto child(std::string_view a_name) -> AggregateNode&
             {
-                if (auto it = std::ranges::find_if(m_children,
-                                                   [&](const auto& a_entry) { return a_entry->m_name == a_name; });
+                if (const auto it = std::ranges::find_if(
+                        m_children, [&](const auto& a_entry) { return a_entry->m_name == a_name; });
                     it != m_children.end())
                 {
                     return **it;
@@ -100,20 +102,14 @@ namespace hdt::physicsprofiler
                 return *m_children.back();
             }
         };
-    } // namespace
 
-    namespace
-    {
         struct FlatRow
         {
             std::string m_name;
             std::uint64_t m_totalNs{};
             std::uint64_t m_calls{};
         };
-    } // namespace
 
-    namespace
-    {
         struct ThreadRow
         {
             std::uint32_t m_index{};
@@ -121,48 +117,34 @@ namespace hdt::physicsprofiler
             std::uint64_t m_calls{};
         };
 
-    } // namespace
-
-    namespace
-    {
         std::mutex g_threadsLock;
         std::vector<std::unique_ptr<ThreadState>> g_threads;
         std::atomic_uint32_t g_nextThreadIndex{0};
         std::atomic_uint32_t g_activeScopes{0};
-        std::atomic_uint64_t g_windowFrames{0};
-        std::atomic_uint64_t g_totalFrames{0};
-        std::atomic_uint64_t g_profileHistory{0};
+        std::uint64_t g_windowFrames{0};
+        std::uint64_t g_totalFrames{0};
+        std::uint64_t g_sampleWindowFrames{0};
+        bool g_captureEnabled = false;
+        std::uint64_t g_printIntervalFrames = 0;
         Clock::time_point g_windowStart = Clock::now();
 
         thread_local ThreadState* g_threadState = nullptr;
-    } // namespace
 
-    namespace
-    {
+        auto enter(const char* a_name) noexcept -> void;
+        auto leave() noexcept -> void;
+
         auto emptyEnter(const char*) noexcept -> void {}
-    } // namespace
 
-    namespace
-    {
         auto emptyLeave() noexcept -> void {}
-    } // namespace
 
-    namespace
-    {
-        auto nsToMs(std::uint64_t a_ns) -> double { return static_cast<double>(a_ns) / 1'000'000.0; }
-    } // namespace
+        auto nsToMs(const std::uint64_t a_ns) -> double { return static_cast<double>(a_ns) / 1'000'000.0; }
 
-    namespace
-    {
-        auto elapsedNs(Clock::time_point a_start, Clock::time_point a_end) -> std::uint64_t
+        auto elapsedNs(const Clock::time_point a_start, const Clock::time_point a_end) -> std::uint64_t
         {
             return static_cast<std::uint64_t>(
                 std::chrono::duration_cast<std::chrono::nanoseconds>(a_end - a_start).count());
         }
-    } // namespace
 
-    namespace
-    {
         auto getThreadState() -> ThreadState&
         {
             if (g_threadState)
@@ -178,10 +160,7 @@ namespace hdt::physicsprofiler
 
             return *g_threadState;
         }
-    } // namespace
 
-    namespace
-    {
         auto getChildTotal(const Node& a_node) -> std::uint64_t
         {
             std::uint64_t total = 0;
@@ -193,10 +172,7 @@ namespace hdt::physicsprofiler
 
             return total;
         }
-    } // namespace
 
-    namespace
-    {
         auto getChildCalls(const Node& a_node) -> std::uint64_t
         {
             std::uint64_t calls = 0;
@@ -208,10 +184,7 @@ namespace hdt::physicsprofiler
 
             return calls;
         }
-    } // namespace
 
-    namespace
-    {
         auto getChildTotal(const AggregateNode& a_node) -> std::uint64_t
         {
             std::uint64_t total = 0;
@@ -223,10 +196,7 @@ namespace hdt::physicsprofiler
 
             return total;
         }
-    } // namespace
 
-    namespace
-    {
         auto mergeNode(AggregateNode& a_dst, const Node& a_src) -> void
         {
             a_dst.m_totalNs += a_src.m_totalNs;
@@ -237,10 +207,7 @@ namespace hdt::physicsprofiler
                 mergeNode(a_dst.child(child->m_name), *child);
             }
         }
-    } // namespace
 
-    namespace
-    {
         auto mergeRoot(AggregateNode& a_dst, const Node& a_root) -> void
         {
             for (const auto& child : a_root.m_children)
@@ -248,10 +215,7 @@ namespace hdt::physicsprofiler
                 mergeNode(a_dst.child(child->m_name), *child);
             }
         }
-    } // namespace
 
-    namespace
-    {
         auto addFlatRows(std::unordered_map<std::string, FlatRow>& a_rows, const AggregateNode& a_node) -> void
         {
             if (a_node.m_name != "Recorded CPU")
@@ -267,12 +231,9 @@ namespace hdt::physicsprofiler
                 addFlatRows(a_rows, *child);
             }
         }
-    } // namespace
 
-    namespace
-    {
-        auto logRow(std::string_view a_scope, std::uint64_t a_ns, std::uint64_t a_parentNs, std::uint64_t a_calls,
-                    std::uint64_t a_frames) -> void
+        auto logRow(std::string_view a_scope, const std::uint64_t a_ns, const std::uint64_t a_parentNs,
+                    std::uint64_t a_calls, const std::uint64_t a_frames) -> void
         {
             const auto totalMs = nsToMs(a_ns);
             const auto msPerFrame = a_frames > 0 ? totalMs / static_cast<double>(a_frames) : 0.0;
@@ -290,12 +251,9 @@ namespace hdt::physicsprofiler
                              msPerFrame, "-", pct, "-");
             }
         }
-    } // namespace
 
-    namespace
-    {
-        auto logTreeRecursive(const AggregateNode& a_node, std::string a_prefix, std::uint32_t a_depth,
-                              std::uint64_t a_frames, const DumpOptions& a_options) -> void
+        auto logTreeRecursive(const AggregateNode& a_node, std::string a_prefix, const std::uint32_t a_depth,
+                              const std::uint64_t a_frames, const DumpOptions& a_options) -> void
         {
             if (a_depth >= a_options.m_maxDepth)
             {
@@ -343,11 +301,9 @@ namespace hdt::physicsprofiler
                 }
             }
         }
-    } // namespace
 
-    namespace
-    {
-        auto logTreeHeader(const AggregateNode& a_root, std::uint64_t a_frames, Clock::time_point a_windowStart) -> void
+        auto logTreeHeader(const AggregateNode& a_root, std::uint64_t a_frames, const Clock::time_point a_windowStart)
+            -> void
         {
             const auto wallNs = elapsedNs(a_windowStart, Clock::now());
             const auto wallMs = nsToMs(wallNs);
@@ -364,11 +320,9 @@ namespace hdt::physicsprofiler
 
             logRow("Recorded CPU", a_root.m_totalNs, a_root.m_totalNs, 0, a_frames);
         }
-    } // namespace
 
-    namespace
-    {
-        auto logFlatRows(const AggregateNode& a_root, std::uint64_t a_frames, const DumpOptions& a_options) -> void
+        auto logFlatRows(const AggregateNode& a_root, const std::uint64_t a_frames, const DumpOptions& a_options)
+            -> void
         {
             std::unordered_map<std::string, FlatRow> map;
             addFlatRows(map, a_root);
@@ -402,11 +356,8 @@ namespace hdt::physicsprofiler
                              msPerFrame, msPerCall, row.m_calls);
             }
         }
-    } // namespace
 
-    namespace
-    {
-        auto logThreads(std::vector<ThreadRow>& a_rows, std::uint64_t a_frames) -> void
+        auto logThreads(std::vector<ThreadRow>& a_rows, const std::uint64_t a_frames) -> void
         {
             std::ranges::sort(a_rows,
                               [](const auto& a_lhs, const auto& a_rhs) { return a_lhs.m_totalNs > a_rhs.m_totalNs; });
@@ -424,212 +375,214 @@ namespace hdt::physicsprofiler
                              row.m_calls);
             }
         }
-    } // namespace
 
-    namespace
-    {
-        auto resetUnlocked(bool a_resetTotalFrames) -> void
+        auto resetUnlocked(const bool a_resetTotalFrames) -> void
         {
-            for (auto& thread : g_threads)
+            for (const auto& thread : g_threads)
             {
                 thread->m_root.resetStats();
                 thread->m_stack.clear();
             }
 
-            g_windowFrames.store(0, std::memory_order_relaxed);
+            g_windowFrames = 0;
 
             if (a_resetTotalFrames)
             {
-                g_totalFrames.store(0, std::memory_order_relaxed);
+                g_totalFrames = 0;
             }
 
             g_windowStart = Clock::now();
         }
-    } // namespace
 
-    auto install() -> void
-    {
+        auto install() -> void
         {
-            std::scoped_lock lock(g_threadsLock);
-            resetUnlocked(true);
+            {
+                std::scoped_lock lock(g_threadsLock);
+                resetUnlocked(true);
+            }
+
+            btSetCustomEnterProfileZoneFunc(&enter);
+            btSetCustomLeaveProfileZoneFunc(&leave);
         }
 
-        btSetCustomEnterProfileZoneFunc(&enter);
-        btSetCustomLeaveProfileZoneFunc(&leave);
-    }
-
-    auto uninstall() -> void
-    {
-        btSetCustomEnterProfileZoneFunc(&emptyEnter);
-        btSetCustomLeaveProfileZoneFunc(&emptyLeave);
-    }
-
-    auto enter(const char* a_name) noexcept -> void
-    {
-        if (!a_name)
+        auto uninstall() -> void
         {
-            return;
+            btSetCustomEnterProfileZoneFunc(&emptyEnter);
+            btSetCustomLeaveProfileZoneFunc(&emptyLeave);
         }
 
-        g_activeScopes.fetch_add(1, std::memory_order_acq_rel);
-
-        try
+        auto enter(const char* a_name) noexcept -> void
         {
-            auto& thread = getThreadState();
-            auto& parent = thread.m_stack.empty() ? thread.m_root : *thread.m_stack.back().m_node;
-            auto& node = parent.child(a_name);
-
-            ++node.m_calls;
-            thread.m_stack.emplace_back(&node, Clock::now());
-        }
-        catch (...)
-        {
-            g_activeScopes.fetch_sub(1, std::memory_order_acq_rel);
-        }
-    }
-
-    auto leave() noexcept -> void
-    {
-        try
-        {
-            auto* thread = g_threadState;
-
-            if (!thread || thread->m_stack.empty())
+            if (!a_name)
             {
                 return;
             }
 
-            const auto now = Clock::now();
-            const auto frame = thread->m_stack.back();
+            g_activeScopes.fetch_add(1, std::memory_order_acq_rel);
 
-            thread->m_stack.pop_back();
-            frame.m_node->m_totalNs += elapsedNs(frame.m_start, now);
-
-            g_activeScopes.fetch_sub(1, std::memory_order_acq_rel);
-        }
-        catch (...)
-        {}
-    }
-
-    auto endFrame() -> void
-    {
-        g_windowFrames.fetch_add(1, std::memory_order_relaxed);
-        g_totalFrames.fetch_add(1, std::memory_order_relaxed);
-    }
-
-    auto frameCountSinceReset() -> std::uint64_t { return g_windowFrames.load(std::memory_order_relaxed); }
-
-    auto totalFrameCount() -> std::uint64_t { return g_totalFrames.load(std::memory_order_relaxed); }
-
-    auto setProfileHistory(std::uint64_t a_frames) -> void
-    {
-        g_profileHistory.store(a_frames, std::memory_order_relaxed);
-    }
-
-    auto getProfileHistory() -> std::uint64_t { return g_profileHistory.load(std::memory_order_relaxed); }
-
-    auto reset() -> bool
-    {
-        if (g_activeScopes.load(std::memory_order_acquire) != 0)
-        {
-            return false;
-        }
-
-        std::scoped_lock lock(g_threadsLock);
-        resetUnlocked(true);
-
-        return true;
-    }
-
-    auto dumpAndReset(const DumpOptions& a_options) -> bool
-    {
-        const auto activeScopes = g_activeScopes.load(std::memory_order_acquire);
-
-        if (activeScopes != 0)
-        { // Just debug in case we fucked up somewhere
-            logger::warn("Physics profile dump skipped because {} profile scopes are still active", activeScopes);
-            return false;
-        }
-
-        AggregateNode root{"Recorded CPU"};
-        std::vector<ThreadRow> threads;
-        std::uint64_t frames = 0;
-        Clock::time_point windowStart;
-
-        {
-            std::scoped_lock lock(g_threadsLock);
-
-            frames = std::max<std::uint64_t>(1, g_windowFrames.load(std::memory_order_relaxed));
-            windowStart = g_windowStart;
-
-            for (const auto& thread : g_threads)
+            try
             {
-                const auto total = getChildTotal(thread->m_root);
-                const auto calls = getChildCalls(thread->m_root);
+                auto& thread = getThreadState();
+                auto& parent = thread.m_stack.empty() ? thread.m_root : *thread.m_stack.back().m_node;
+                auto& node = parent.child(a_name);
 
-                if (total == 0 && calls == 0)
+                ++node.m_calls;
+                thread.m_stack.emplace_back(&node, Clock::now());
+            }
+            catch (...)
+            {
+                g_activeScopes.fetch_sub(1, std::memory_order_acq_rel);
+            }
+        }
+
+        auto leave() noexcept -> void
+        {
+            try
+            {
+                auto* thread = g_threadState;
+
+                if (!thread || thread->m_stack.empty())
                 {
-                    continue;
+                    return;
                 }
 
-                threads.emplace_back(thread->m_index, total, calls);
-                mergeRoot(root, thread->m_root);
-            }
+                const auto now = Clock::now();
+                const auto frame = thread->m_stack.back();
 
-            root.m_totalNs = getChildTotal(root);
-            resetUnlocked(false);
+                thread->m_stack.pop_back();
+                frame.m_node->m_totalNs += elapsedNs(frame.m_start, now);
+
+                g_activeScopes.fetch_sub(1, std::memory_order_acq_rel);
+            }
+            catch (...)
+            {}
         }
 
-        if (root.m_totalNs == 0)
+        auto dumpAndReset(const DumpOptions& a_options) -> bool
         {
-            logger::info("Physics profile had no recorded scopes");
+            const auto activeScopes = g_activeScopes.load(std::memory_order_acquire);
+
+            if (activeScopes != 0)
+            { // Just debug in case we fucked up somewhere
+                logger::warn("Physics profile dump skipped because {} profile scopes are still active", activeScopes);
+                return false;
+            }
+
+            AggregateNode root{"Recorded CPU"};
+            std::vector<ThreadRow> threads;
+            std::uint64_t frames = 0;
+            Clock::time_point windowStart;
+
+            {
+                std::scoped_lock lock(g_threadsLock);
+
+                frames = std::max<std::uint64_t>(1, g_windowFrames);
+                windowStart = g_windowStart;
+
+                for (const auto& thread : g_threads)
+                {
+                    const auto total = getChildTotal(thread->m_root);
+                    const auto calls = getChildCalls(thread->m_root);
+
+                    if (total == 0 && calls == 0)
+                    {
+                        continue;
+                    }
+
+                    threads.emplace_back(thread->m_index, total, calls);
+                    mergeRoot(root, thread->m_root);
+                }
+
+                root.m_totalNs = getChildTotal(root);
+                resetUnlocked(false);
+            }
+
+            if (root.m_totalNs == 0)
+            {
+                logger::info("Physics profile had no recorded scopes");
+                return true;
+            }
+
+            if (a_options.m_logTree)
+            {
+                logTreeHeader(root, frames, windowStart);
+                logTreeRecursive(root, "", 0, frames, a_options);
+            }
+
+            if (a_options.m_logFlat)
+            {
+                logFlatRows(root, frames, a_options);
+            }
+
+            if (a_options.m_logThreads)
+            {
+                logThreads(threads, frames);
+            }
+
             return true;
         }
 
-        if (a_options.m_logTree)
+        auto dumpEvery(const std::uint64_t a_printIntervalFrames, const DumpOptions& a_options) -> bool
         {
-            logTreeHeader(root, frames, windowStart);
-            logTreeRecursive(root, "", 0, frames, a_options);
-        }
+            if (a_printIntervalFrames == 0)
+            {
+                return false;
+            }
 
-        if (a_options.m_logFlat)
-        {
-            logFlatRows(root, frames, a_options);
-        }
+            if (g_totalFrames != 0 && g_totalFrames % a_printIntervalFrames == 0)
+            {
+                return dumpAndReset(a_options);
+            }
 
-        if (a_options.m_logThreads)
-        {
-            logThreads(threads, frames);
-        }
+            if (g_sampleWindowFrames != 0 && g_windowFrames >= g_sampleWindowFrames)
+            {
+                if (g_activeScopes.load(std::memory_order_acquire) == 0)
+                {
+                    std::scoped_lock lock(g_threadsLock);
+                    resetUnlocked(false);
+                }
+            }
 
-        return true;
-    }
-
-    auto dumpEvery(std::uint64_t a_frames, const DumpOptions& a_options) -> bool
-    {
-        if (a_frames == 0)
-        {
             return false;
         }
+    } // namespace
 
-        const auto totalFrames = totalFrameCount();
-
-        if (totalFrames != 0 && totalFrames % a_frames == 0)
+    auto setCapture(const bool a_enabled, const std::uint64_t a_sampleFrames, const std::uint64_t a_printFrames) -> void
+    {
+        if (a_enabled)
         {
-            return dumpAndReset(a_options);
+            const auto sampleFrames = std::max<std::uint64_t>(1, a_sampleFrames);
+            const auto printFrames = std::max<std::uint64_t>(1, a_printFrames);
+
+            btSetProfileEnabled(false);
+            g_sampleWindowFrames = sampleFrames;
+            g_printIntervalFrames = printFrames;
+            install();
+            g_captureEnabled = true;
+            btSetProfileEnabled(true);
+        }
+        else
+        {
+            btSetProfileEnabled(false);
+            g_captureEnabled = false;
+            g_printIntervalFrames = 0;
+            g_sampleWindowFrames = 0;
+            uninstall();
+
+            std::scoped_lock lock(g_threadsLock);
+            resetUnlocked(true);
+        }
+    }
+
+    auto advanceFrame() -> void
+    {
+        if (!g_captureEnabled)
+        {
+            return;
         }
 
-        const auto profileHistory = getProfileHistory();
-
-        if (profileHistory != 0 && frameCountSinceReset() >= profileHistory)
-        {
-            if (g_activeScopes.load(std::memory_order_acquire) == 0)
-            {
-                std::scoped_lock lock(g_threadsLock);
-                resetUnlocked(false);
-            }
-        }
-
-        return false;
+        ++g_windowFrames;
+        ++g_totalFrames;
+        dumpEvery(g_printIntervalFrames, {});
     }
 } // namespace hdt::physicsprofiler

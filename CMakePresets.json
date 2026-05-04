@@ -1,7 +1,7 @@
 {
   "configurePresets": [
     {
-      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": {
           "type": "STRING",
@@ -124,76 +124,52 @@
       "name": "windows-avx512"
     },
     {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4"
       },
-      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows",
         "skyrim-runtimes"
       ],
-      "name": "vs2022-windows",
-      "toolset": "v143"
+      "name": "vs2022-windows"
     },
     {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX"
       },
-      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows-avx",
         "skyrim-runtimes"
       ],
-      "name": "vs2022-windows-avx",
-      "toolset": "v143"
+      "name": "vs2022-windows-avx"
     },
     {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX2"
       },
-      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows-avx2",
         "skyrim-runtimes"
       ],
-      "name": "vs2022-windows-avx2",
-      "toolset": "v143"
+      "name": "vs2022-windows-avx2"
     },
     {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX512"
       },
-      "generator": "Visual Studio 17 2022",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows-avx512",
         "skyrim-runtimes"
       ],
-      "name": "vs2022-windows-avx512",
-      "toolset": "v143"
+      "name": "vs2022-windows-avx512"
     }
   ],
   "buildPresets": [
@@ -208,12 +184,6 @@
       "displayName": "Release",
       "configurePreset": "vs2022-windows-avx2",
       "configuration": "Release"
-    },
-    {
-      "name": "avx2-profile",
-      "displayName": "Profile",
-      "configurePreset": "vs2022-windows-avx2",
-      "configuration": "Profile"
     }
   ],
   "version": 3

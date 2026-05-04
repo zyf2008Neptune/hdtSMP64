@@ -168,6 +168,7 @@ jobs:
 
           # 3. Run the configuration
           cmake --preset ${{ matrix.preset }} `
+            -G Ninjia
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_MANIFEST_MODE=ON `
             -DCompiledPluginsPath="${{ github.workspace }}/out/build/${{ matrix.preset }}/plugins" `

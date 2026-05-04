@@ -22,7 +22,7 @@ macro(set_from_environment VARIABLE)
 endmacro()
 set_from_environment(CompiledPluginsPath)
 if(NOT DEFINED CompiledPluginsPath)
-	set(CompiledPluginsPath "${PROJECT_BINARY_DIR}/build")
+	set(CompiledPluginsPath "${PROJECT_BINARY_DIR}/build/${buildPresets}/plugins")
 endif()
 
 option(COPY_OUTPUT "Copy the output of build operations to the game directory" ON)
@@ -35,25 +35,6 @@ set(BUILD_TESTS OFF)
 
 # default definitions
 add_definitions(-DBT_USE_SSE_IN_API)
-
-if(CMAKE_CONFIGURATION_TYPES AND NOT "Profile" IN_LIST CMAKE_CONFIGURATION_TYPES)
-	list(APPEND CMAKE_CONFIGURATION_TYPES Profile)
-	set(CMAKE_CONFIGURATION_TYPES
-		"${CMAKE_CONFIGURATION_TYPES}"
-		CACHE STRING "" FORCE)
-endif()
-foreach(_lang IN ITEMS C CXX)
-	set(CMAKE_${_lang}_FLAGS_PROFILE
-		"${CMAKE_${_lang}_FLAGS_RELEASE}"
-		CACHE STRING "" FORCE)
-endforeach()
-foreach(_kind IN ITEMS EXE SHARED MODULE STATIC)
-	set(CMAKE_${_kind}_LINKER_FLAGS_PROFILE
-		"${CMAKE_${_kind}_LINKER_FLAGS_RELEASE}"
-		CACHE STRING "" FORCE)
-endforeach()
-set(CMAKE_MAP_IMPORTED_CONFIG_PROFILE Release RelWithDebInfo MinSizeRel "")
-add_compile_definitions("$<$<CONFIG:Profile>:BT_ENABLE_PROFILE>")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 

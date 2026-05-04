@@ -1,12 +1,10 @@
 #include "hdtSkyrimPhysicsWorld.h"
+
+#include <LinearMath/btQuickprof.h>
+
 #include "PluginInterfaceImpl.h"
 #include "WeatherManager.h"
-
-#ifdef BT_ENABLE_PROFILE
-#pragma message("BT_ENABLE_PROFILE is enabled.")
-#include <LinearMath/btQuickprof.h>
 #include "hdtPhysicsProfiler.h"
-#endif
 
 namespace hdt
 {
@@ -17,11 +15,6 @@ namespace hdt
 
     SkyrimPhysicsWorld::SkyrimPhysicsWorld()
     {
-#ifdef BT_ENABLE_PROFILE
-        physicsprofiler::install();
-        physicsprofiler::setProfileHistory(240);
-#endif
-
         gDisableDeactivation = true;
         btDiscreteDynamicsWorld::setGravity(btVector3(0, 0, -9.8f * scaleSkyrim));
 
@@ -59,6 +52,13 @@ namespace hdt
 
         m_averageInterval = m_timeTick;
         m_accumulatedInterval = 0;
+    }
+
+    auto SkyrimPhysicsWorld::setProfilerCapture(const bool a_enabled, const std::uint64_t a_sampleFrames,
+                                                const std::uint64_t a_printFrames) -> void
+    {
+        auto simulationLock = lockSimulation();
+        physicsprofiler::setCapture(a_enabled, a_sampleFrames, a_printFrames);
     }
 
     // void hdtSkyrimPhysicsWorld::suspend()
@@ -179,10 +179,7 @@ namespace hdt
             m_2ndStepAverageProcessingTime = (m_2ndStepAverageProcessingTime + lastProcessingTime) * 0.5f;
         }
 
-#ifdef BT_ENABLE_PROFILE
-        physicsprofiler::endFrame();
-        physicsprofiler::dumpEvery(240);
-#endif
+        physicsprofiler::advanceFrame();
     }
 
     auto SkyrimPhysicsWorld::lockSimulation() -> std::unique_lock<std::mutex>
@@ -230,7 +227,8 @@ namespace hdt
         }
     }
 
-    auto SkyrimPhysicsWorld::setWind(const RE::NiPoint3& a_point, float a_scale, uint32_t a_smoothingSamples) -> void
+    auto SkyrimPhysicsWorld::setWind(const RE::NiPoint3& a_point, const float a_scale, uint32_t a_smoothingSamples)
+        -> void
     {
         if (a_smoothingSamples == 0)
         {

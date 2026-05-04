@@ -1,4 +1,7 @@
+#include <charconv>
+#include <cstdint>
 #include <numeric>
+#include <string_view>
 
 #include "ActorManager.h"
 #include "Events.h"
@@ -9,6 +12,27 @@
 #include "dhdtOverrideManager.h"
 #include "dhdtPapyrusFunctions.h"
 #include "hdtSkyrimPhysicsWorld.h"
+
+namespace
+{
+    auto ParsePositiveDecimal(const std::string_view a_value, const std::uint64_t a_fallback) -> std::uint64_t
+    {
+        if (a_value.empty())
+        {
+            return a_fallback;
+        }
+
+        std::uint64_t parsed = 0;
+        const auto [end, error] = std::from_chars(a_value.data(), a_value.data() + a_value.size(), parsed);
+
+        if (error != std::errc{} || end != a_value.data() + a_value.size() || parsed == 0)
+        {
+            return a_fallback;
+        }
+
+        return static_cast<std::uint64_t>(parsed);
+    }
+} // namespace
 
 namespace
 {
@@ -349,14 +373,15 @@ namespace
     {
         char buffer[MAX_PATH] = {}; // TODO: refactor this
         char buffer2[MAX_PATH] = {};
+        char buffer3[MAX_PATH] = {};
 
         if (!RE::Script::ParseParameters(a_paramInfo, a_scriptData, a_opcodeOffsetPtr, a_thisObj, a_containingObj,
-                                         a_scriptObj, a_locals, buffer, buffer2))
+                                         a_scriptObj, a_locals, buffer, buffer2, buffer3))
         {
             return false;
         }
 
-        logger::debug("SMPCommand: {} {}"sv, buffer, buffer2);
+        logger::debug("SMPCommand: {} {} {}"sv, buffer, buffer2, buffer3);
 
         if (_strnicmp(buffer, "reset", MAX_PATH) == 0)
         {
@@ -395,6 +420,32 @@ namespace
         if (_strnicmp(buffer, "list", MAX_PATH) == 0)
         {
             SMPDebug_PrintDetailed(false);
+            return true;
+        }
+
+        if (_strnicmp(buffer, "profile", MAX_PATH) == 0)
+        {
+            static auto profilerCaptureRequested = false;
+
+            profilerCaptureRequested = !profilerCaptureRequested;
+
+            const auto sampleFrames = ParsePositiveDecimal(buffer2, 240);
+            const auto printFrames = ParsePositiveDecimal(buffer3, 240);
+
+            hdt::SkyrimPhysicsWorld::get()->setProfilerCapture(profilerCaptureRequested, sampleFrames, printFrames);
+
+            if (profilerCaptureRequested)
+            {
+                RE::ConsoleLog::GetSingleton()->Print(
+                    "HDT-SMP physics profiler enabled: sample %llu frames, print every %llu frames",
+                    static_cast<uint64_t>(sampleFrames), static_cast<uint64_t>(printFrames));
+                RE::ConsoleLog::GetSingleton()->Print("Check your hdtsmp64.log file for results.");
+            }
+            else
+            {
+                RE::ConsoleLog::GetSingleton()->Print("HDT-SMP physics profiler disabled");
+            }
+
             return true;
         }
 
@@ -662,16 +713,22 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
     //
     if (const auto unusedCommand = RE::SCRIPT_FUNCTION::LocateConsoleCommand("ShowRenderPasses"))
     {
-        static RE::SCRIPT_PARAMETER params[1];
+        static RE::SCRIPT_PARAMETER params[3];
         params[0].paramType = RE::SCRIPT_PARAM_TYPE::kChar;
         params[0].paramName = "String (optional)";
         params[0].optional = true;
+        params[1].paramType = RE::SCRIPT_PARAM_TYPE::kChar;
+        params[1].paramName = "String (optional)";
+        params[1].optional = true;
+        params[2].paramType = RE::SCRIPT_PARAM_TYPE::kChar;
+        params[2].paramName = "String (optional)";
+        params[2].optional = true;
 
         unusedCommand->functionName = "SMPDebug";
         unusedCommand->shortName = "smp";
         unusedCommand->helpString = "smp <reset>";
         unusedCommand->referenceFunction = false;
-        unusedCommand->numParams = 1;
+        unusedCommand->numParams = 3;
         unusedCommand->params = params;
         unusedCommand->executeFunction = SMPDebug_Execute;
         unusedCommand->editorFilter = false;
