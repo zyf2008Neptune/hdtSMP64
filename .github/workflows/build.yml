@@ -168,9 +168,6 @@ jobs:
 
           # 3. Run the configuration
           cmake --preset ${{ matrix.preset }} `
-            -G "Visual Studio 17 2022" `
-            -A x64 `
-            -T v143 `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_MANIFEST_MODE=ON `
             -DCompiledPluginsPath="${{ github.workspace }}/out/build/${{ matrix.preset }}/plugins" `
@@ -181,7 +178,7 @@ jobs:
         shell: bash
 
       - name: Build according to the preset
-        run: cmake --build out/build/${{ matrix.preset }} --config Release
+        run: cmake -G "Visual Studio 17 2022" -A x64 -T v143 --build out/build/${{ matrix.preset }} --config Release
 
       - name: Verify build info embedded in DLL
         if: needs.prepare.outputs.build_info != ''
