@@ -358,12 +358,6 @@ namespace hdt
         }
     }
 
-    auto SkyrimPhysicsWorld::resetTransformsToOriginal() -> void
-    {
-        std::scoped_lock l(m_lock);
-        SkinnedMeshWorld::resetTransformsToOriginal();
-    }
-
     auto SkyrimPhysicsWorld::resetSystems() -> void
     {
         std::scoped_lock l(m_lock);

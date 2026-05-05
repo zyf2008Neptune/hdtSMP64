@@ -18,7 +18,7 @@ namespace hdt
     public:
         static auto get() -> SkyrimPhysicsWorld*;
 
-        auto doUpdate(float delta) -> void;
+        auto doUpdate(float interval) -> void;
         auto doUpdate2ndStep(float delta, float tick, float remainingTimeStep) -> void;
         auto updateActiveState() const -> void;
         auto setProfilerCapture(bool a_enabled, std::uint64_t a_sampleFrames = 240, std::uint64_t a_printFrames = 240)
@@ -28,7 +28,7 @@ namespace hdt
         auto removeSkinnedMeshSystem(SkinnedMeshSystem* system) -> void override;
         auto removeSystemByNode(void* root) -> void;
         using SkinnedMeshWorld::updateConstraintsForBone;
-        auto resetTransformsToOriginal() -> void;
+
         auto resetSystems() -> void;
 
         auto ProcessEvent(const Events::FrameEvent* e, RE::BSTEventSource<Events::FrameEvent>*)
@@ -42,7 +42,7 @@ namespace hdt
 
         auto isSuspended() -> bool { return m_suspended; }
 
-        auto suspend(bool loading = false) -> void
+        auto suspend(const bool loading = false) -> void
         {
             m_suspended = true;
             m_loading = loading;

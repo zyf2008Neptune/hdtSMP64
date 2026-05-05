@@ -5,7 +5,7 @@
 namespace hdt
 {
     SkyrimBone::SkyrimBone(const RE::BSFixedString& name, RE::NiNode* node, RE::NiNode* skeleton,
-                           btRigidBody::btRigidBodyConstructionInfo& ci) :
+                           const btRigidBody::btRigidBodyConstructionInfo& ci) :
         SkinnedMeshBone(name, ci), m_node(node), m_skeleton(skeleton)
     {
         if (ci.m_mass)
@@ -24,16 +24,10 @@ namespace hdt
             ++m_depth;
         }
 
-        this->m_forceUpdateType = hdt::ForceUpdateList::GetSingleton()->isAmong(m_name);
+        this->m_forceUpdateType = ForceUpdateList::GetSingleton()->isAmong(m_name);
     }
 
-    auto SkyrimBone::resetTransformToOriginal() -> void
-    {
-        m_node->local = convertBt(m_origTransform);
-        updateTransformUpDown(m_node.get(), false);
-    }
-
-    auto SkyrimBone::readTransform(float timeStep) -> void
+    auto SkyrimBone::readTransform(const float timeStep) -> void
     {
         const auto oldScale = m_currentTransform.getScale();
 
@@ -67,8 +61,7 @@ namespace hdt
         if (timeStep <= RESET_PHYSICS)
         {
             static const btVector3 zero(0, 0, 0);
-            m_origToSkeletonTransform = convertNi(m_skeleton->world).inverse() * m_currentTransform;
-            m_origTransform = convertNi(m_node->local);
+
             m_rig.setWorldTransform(dest);
             m_rig.setInterpolationWorldTransform(dest);
             m_rig.setLinearVelocity(zero);
@@ -85,7 +78,8 @@ namespace hdt
         }
         else if (isStaticOrKinematic)
         {
-            btVector3 linVel, angVel;
+            btVector3 linVel;
+            btVector3 angVel;
             btTransformUtil::calculateVelocity(current, dest, timeStep, linVel, angVel);
             m_rig.setLinearVelocity(linVel);
             m_rig.setAngularVelocity(angVel);

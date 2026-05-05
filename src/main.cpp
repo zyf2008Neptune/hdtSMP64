@@ -390,8 +390,7 @@ namespace
             hdt::loadConfig();
             hdt::logConfig();
 
-            hdt::SkyrimPhysicsWorld::get()->resetTransformsToOriginal();
-            const RE::MenuOpenCloseEvent e{"", false};
+            const RE::MenuOpenCloseEvent e{.menuName = "", .opening = false};
             hdt::ActorManager::instance()->ProcessEvent(&e, nullptr);
             hdt::SkyrimPhysicsWorld::get()->resetSystems();
             return true;
