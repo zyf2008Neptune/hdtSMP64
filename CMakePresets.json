@@ -123,6 +123,7 @@
       ],
       "name": "windows-avx512"
     },
+
     {
       "architecture": {
         "strategy": "set",
@@ -194,19 +195,79 @@
       ],
       "name": "vs2022-windows-avx512",
       "toolset": "v143"
+    },
+    {
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "generator": "Ninja Multi-Config",
+      "inherits": [
+        "cmake-dev",
+        "vcpkg",
+        "windows",
+        "skyrim-runtimes"
+      ],
+      "name": "msvc-windows"
+    },
+    {
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "generator": "Ninja Multi-Config",
+      "inherits": [
+        "cmake-dev",
+        "vcpkg",
+        "windows-avx",
+        "skyrim-runtimes"
+      ],
+      "name": "msvc-windows-avx"
+    },
+    {
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX2",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "generator": "Ninja Multi-Config",
+      "inherits": [
+        "cmake-dev",
+        "vcpkg",
+        "windows-avx2",
+        "skyrim-runtimes"
+      ],
+      "name": "msvc-windows-avx2"
+    },
+    {
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX512",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "generator": "Ninja Multi-Config",
+      "inherits": [
+        "cmake-dev",
+        "vcpkg",
+        "windows-avx512",
+        "skyrim-runtimes"
+      ],
+      "name": "msvc-windows-avx512"
     }
   ],
   "buildPresets": [
     {
       "name": "avx2-debug",
       "displayName": "Debug",
-      "configurePreset": "vs2022-windows-avx2",
+      "configurePreset": "msvc-windows-avx2",
       "configuration": "Debug"
     },
     {
       "name": "avx2-release",
       "displayName": "Release",
-      "configurePreset": "vs2022-windows-avx2",
+      "configurePreset": "msvc-windows-avx2",
       "configuration": "Release"
     }
   ],

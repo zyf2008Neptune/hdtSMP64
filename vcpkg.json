@@ -1,8 +1,7 @@
 {
   "name": "hdtsmp64",
   "version": "1",
-  "dependencies": 
-  [
+  "dependencies": [
     "directxtk",
     "fmt",
     "rapidcsv",
@@ -11,7 +10,8 @@
     {
       "name": "bullet3",
       "features": [
-        "multithreading"
+        "multithreading",
+        "profile"
       ]
     },
     "xbyak",

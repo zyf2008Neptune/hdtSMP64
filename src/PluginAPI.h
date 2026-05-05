@@ -64,8 +64,8 @@ namespace hdt
         };
 
     public:
-        constexpr static Version INTERFACE_VERSION{.major = 2, .minor = 0, .patch = 0};
-        constexpr static Version BULLET_VERSION{.major = 3, .minor = 24, .patch = 0};
+        static constexpr Version INTERFACE_VERSION{.major = 2, .minor = 0, .patch = 0};
+        static constexpr Version BULLET_VERSION{.major = 3, .minor = 24, .patch = 0};
 
     public:
         virtual ~PluginInterface() = default;

@@ -6,15 +6,8 @@
 
 namespace hdt
 {
-    auto SkinnedMeshSystem::resetTransformsToOriginal() -> void
-    {
-        for (int i = 0; i < m_bones.size(); ++i)
-        {
-            m_bones[i]->resetTransformToOriginal();
-        }
-    }
 
-    auto SkinnedMeshSystem::readTransform(float timeStep) -> void
+    auto SkinnedMeshSystem::readTransform(const float timeStep) -> void
     {
         if (this->block_resetting)
         {
@@ -26,52 +19,52 @@ namespace hdt
             bone->readTransform(timeStep);
         }
 
-        for (const auto i : m_constraints)
+        for (const auto& constraint : m_constraints)
         {
-            i->scaleConstraint();
+            constraint->scaleConstraint();
         }
 
-        for (const auto i : m_constraintGroups)
+        for (const auto& constraintGroup : m_constraintGroups)
         {
-            i->scaleConstraint();
+            constraintGroup->scaleConstraint();
         }
     }
 
     auto SkinnedMeshSystem::writeTransform() -> void
     {
-        for (int i = 0; i < m_bones.size(); ++i)
+        for (const auto& m_bone : m_bones)
         {
-            if (m_bones[i]->m_rig.isKinematicObject())
+            if (m_bone->m_rig.isKinematicObject())
             {
                 continue;
             }
 
-            m_bones[i]->writeTransform();
+            m_bone->writeTransform();
         }
     }
 
     auto SkinnedMeshSystem::internalUpdate() const -> void
     {
-        for (const auto& i : m_bones)
+        for (const auto& bone : m_bones)
         {
-            i->internalUpdate();
+            bone->internalUpdate();
         }
 
-        for (const auto& i : m_meshes)
+        for (const auto& mesh : m_meshes)
         {
-            i->updateBoundingSphereAabb();
+            mesh->updateBoundingSphereAabb();
         }
     }
 
     auto SkinnedMeshSystem::gather(std::vector<SkinnedMeshBody*>& bodies, std::vector<SkinnedMeshShape*>& shapes) const
         -> void
     {
-        for (auto& i : m_meshes)
+        for (auto& mesh : m_meshes)
         {
-            bodies.push_back(i.get());
-            shapes.push_back(i->m_shape.get());
+            bodies.push_back(mesh.get());
+            shapes.push_back(mesh->m_shape.get());
 
-            if (const auto triShape = static_cast<PerTriangleShape*>(i->m_shape.get()))
+            if (const auto triShape = static_cast<PerTriangleShape*>(mesh->m_shape.get()))
             {
                 shapes.push_back(triShape->m_verticesCollision.get());
             }

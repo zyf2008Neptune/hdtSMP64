@@ -88,6 +88,8 @@ namespace hdt
                                                         [[maybe_unused]] const btDispatcherInfo& dispatchInfo,
                                                         [[maybe_unused]] btDispatcher* dispatcher) -> void
     {
+        BT_PROFILE("HDTSMP_dispatchAllCollisionPairs");
+
         const auto size = pairCache->getNumOverlappingPairs();
         if (!size)
         {
@@ -170,14 +172,23 @@ namespace hdt
                                    [](PerVertexShape* shape) { shape->internalUpdate(); });
         }
 
-        tbb::parallel_for_each(m_pairs.begin(), m_pairs.end(),
-                               [&, this](const std::pair<SkinnedMeshBody*, SkinnedMeshBody*>& i)
-                               {
-                                   if (i.first->m_shape->m_tree.collapseCollideL(&i.second->m_shape->m_tree))
+        {
+            BT_PROFILE("HDTSMP_collision_pair_checks");
+
+            tbb::parallel_for_each(m_pairs.begin(), m_pairs.end(),
+                                   [&, this](const std::pair<SkinnedMeshBody*, SkinnedMeshBody*>& i)
                                    {
-                                       SkinnedMeshAlgorithm::processCollision(i.first, i.second, this);
-                                   }
-                               });
+                                       // collapseCollideL is a candidate for optimizations since we'll re-traverse the
+                                       // tree in checkCollisionL. However,
+                                       // it's a bit tricky since collapse has an early-exit, and avoiding boilerplate
+                                       // is ideal. A traversal resume maybe?
+                                       if (i.first->m_shape->m_tree.collapseCollideL(&i.second->m_shape->m_tree))
+                                       {
+                                           BT_PROFILE("HDTSMP_processCollision");
+                                           SkinnedMeshAlgorithm::processCollision(i.first, i.second, this);
+                                       }
+                                   });
+        }
 
         m_pairs.clear();
     }

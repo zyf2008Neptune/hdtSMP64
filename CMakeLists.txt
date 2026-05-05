@@ -20,10 +20,9 @@ macro(set_from_environment VARIABLE)
 		set(${VARIABLE} $ENV{${VARIABLE}})
 	endif()
 endmacro()
-
 set_from_environment(CompiledPluginsPath)
 if(NOT DEFINED CompiledPluginsPath)
-	message(FATAL_ERROR "CompiledPluginsPath is not set")
+	set(CompiledPluginsPath "${PROJECT_BINARY_DIR}/build/${buildPresets}/plugins")
 endif()
 
 option(COPY_OUTPUT "Copy the output of build operations to the game directory" ON)
