@@ -137,6 +137,14 @@ jobs:
             avx_variant: avx2
           - preset: vs2022-windows-avx512
             avx_variant: avx512
+          - preset: msvc-windows
+            avx_variant: noavx
+          - preset: msvc-windows-avx
+            avx_variant: avx
+          - preset: msvc-windows-avx2
+            avx_variant: avx2
+          - preset: msvc-windows-avx512
+            avx_variant: avx512
 
     steps:
       - name: Checkout the repository

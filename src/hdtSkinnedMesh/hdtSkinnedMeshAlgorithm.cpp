@@ -233,9 +233,10 @@ namespace hdt
             CollisionCheckDispatcher(Ts&&... ts) : CollisionChecker<T, SwapResults>(std::forward<Ts>(ts)...)
             {}
 
-            // Modern Fast Dynamic 1D Sweep and Prune Algorithm eliminating O(N*M) tests
-            auto dispatch(ColliderTree* a, ColliderTree* b, std::vector<Aabb*>& listA, std::vector<Aabb*>& listB)
-                -> void
+            // We intentionally don't use a 'Dynamic 1D Sweep and Prune Algorithm' here.
+            // O(N*M) is nearly always faster or within a margin of error. Not worth the extra boilerplate code
+            auto dispatch(ColliderTree* a, ColliderTree* b, std::vector<Aabb*>& listA, std::vector<Aabb*>& listB,
+                          const Aabb& refinedBForPruningA) -> void
             {
                 CollisionResult result;
                 CollisionResult temp;
@@ -248,6 +249,10 @@ namespace hdt
                 {
                     for (auto i : listA)
                     {
+                        if (!i->collideWith(refinedBForPruningA))
+                        {
+                            continue;
+                        }
                         for (auto j : listB)
                         {
                             if (!i->collideWith(*j))
@@ -289,6 +294,13 @@ namespace hdt
                 pairs.reserve(this->c0->colliders.size() + this->c1->colliders.size());
                 this->c0->checkCollisionL(this->c1, pairs);
                 if (pairs.empty())
+                {
+                    return 0;
+                }
+
+                // The collision is just too complex to solve. We must quit before we explode the user's computer
+                // If this DOES solve, it seems to only cause the collision to become significantly more tangles up
+                if (pairs.size() > MaxCollisionPairs)
                 {
                     return 0;
                 }
@@ -347,24 +359,12 @@ namespace hdt
                         }
                     }
 
-                    // Remove any colliders from A that don't intersect the new bounding box for B
-                    if (!listB.empty())
-                    {
-                        listA.erase(std::remove_if(listA.begin(), listA.end(),
-                                                   [&](const Aabb* aabb) { return !aabb->collideWith(aabbB); }),
-                                    listA.end());
-                    }
-
                     // Now go through both lists and do the real collision (if needed).
-                    this->dispatch(a, b, listA, listB);
-
-                    listA.clear();
-                    listB.clear();
+                    this->dispatch(a, b, listA, listB, aabbB);
                 };
 
                 if (pairs.size() >= 32)
                 {
-                    // FIXME PROFILING This is the line where we spend the most time in the whole mod.
                     // isolate: thread parked here waiting for inner work must not steal an outer
                     // processCollision task — that would alias thread_local MergeBuffer/listA/listB.
                     tbb::this_task_arena::isolate([&] { tbb::parallel_for_each(pairs.begin(), pairs.end(), func); });
@@ -454,6 +454,17 @@ namespace hdt
                     }
 
                     const auto c = getAndTrack(boneIdx0, boneIdx1);
+
+                    // If we already have a primary direction (weight > 0),
+                    // and this new contact pushes in the opposite direction (dot < 0),
+                    // reject it entirely. This prevents the vector cancellation that creates
+                    // unpredictable movement, and preserves the depth/weight ratio
+                    // [If we get jitter, try removing this]
+                    if (c->weight > FLT_EPSILON && c->normal.dot(normScaled) < 0)
+                    {
+                        continue;
+                    }
+
                     c->weight += w2;
                     c->normal += normScaled;
                     c->pos[0] += posAScaled;

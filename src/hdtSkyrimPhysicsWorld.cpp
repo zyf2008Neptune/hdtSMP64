@@ -49,6 +49,7 @@ namespace hdt
         // SOLVER_RANDMIZE_ORDER is also possible, but I clocked a pretty heavy performance hit. Maybe make it a config
         // option
         getSolverInfo().m_solverMode = SOLVER_SIMD;
+        getSolverInfo().m_leastSquaresResidualThreshold = 0.0001f;
 
         m_averageInterval = m_timeTick;
         m_accumulatedInterval = 0;
@@ -160,7 +161,7 @@ namespace hdt
         {
             BT_PROFILE("HDTSMP_doUpdate2ndStep");
             updateActiveState();
-            auto offset = applyTranslationOffset();
+            const auto offset = applyTranslationOffset();
             stepSimulation(remainingTimeStep, 0, tick);
             restoreTranslationOffset(offset);
             m_accumulatedInterval = 0;
