@@ -945,23 +945,23 @@ namespace hdt
                 continue;
             }
 
-            RE::NiSkinInstance* skinInstance = triShape->GetGeometryRuntimeData().skinInstance.get();
-            RE::NiSkinData* skinData = skinInstance->skinData.get();
+            const RE::NiSkinInstance* skinInstance = triShape->GetGeometryRuntimeData().skinInstance.get();
+            const RE::NiSkinData* skinData = skinInstance->skinData.get();
             for (uint32_t boneIdx = 0; boneIdx < skinData->bones; ++boneIdx)
             {
-                auto node = skinInstance->bones[boneIdx];
+                const auto node = skinInstance->bones[boneIdx];
                 if (!node)
                 {
                     continue;
                 }
-                auto boneData = &skinData->boneData[boneIdx];
+                const auto boneData = &skinData->boneData[boneIdx];
                 auto boundingSphere = BoundingSphere(convertNi(boneData->bound.center), boneData->bound.radius);
                 const RE::BSFixedString& boneName = node->name;
                 auto bone = static_cast<SkinnedMeshBone*>(findBoneFromIndex(boneName));
                 if (!bone)
                 {
                     auto defaultBoneInfo = getBoneTemplate("");
-                    auto newBone = new SkyrimBone(boneName, node->AsNode(), this->m_skeleton, defaultBoneInfo);
+                    const auto newBone = new SkyrimBone(boneName, node->AsNode(), this->m_skeleton, defaultBoneInfo);
                     m_mesh->m_bones.emplace_back(hdt::make_smart(newBone));
                     indexBone(newBone);
                     bone = newBone;
@@ -976,10 +976,10 @@ namespace hdt
             body->m_vertices.resize(vertexStart + skinPartition->vertexCount);
 
             // vertices data are all the same in every partitions
-            auto partition = skinPartition->partitions.data();
-            auto vFlags = partition->vertexDesc.GetFlags();
-            auto vSize = partition->vertexDesc.GetSize();
-            auto vertexBlock = partition->buffData->rawVertexData;
+            const auto partition = skinPartition->partitions.data();
+            const auto vFlags = partition->vertexDesc.GetFlags();
+            const auto vSize = partition->vertexDesc.GetSize();
+            const auto vertexBlock = partition->buffData->rawVertexData;
 
             uint8_t* dynamicVData = nullptr;
             if (dynamicShape)
@@ -1023,7 +1023,7 @@ namespace hdt
             {
                 RE::NiPoint3* vertexPos;
 
-                if (dynamicShape)
+                if (dynamicShape && dynamicVData)
                 {
                     vertexPos = reinterpret_cast<RE::NiPoint3*>(&dynamicVData[j * 16]);
                 }
@@ -1034,7 +1034,7 @@ namespace hdt
 
                 body->m_vertices[j + vertexStart].m_skinPos = convertNi(*vertexPos);
 
-                auto boneData = reinterpret_cast<SkyrimSystem::BoneData*>(&vertexBlock[j * vSize + boneOffset]);
+                const auto boneData = reinterpret_cast<SkyrimSystem::BoneData*>(&vertexBlock[j * vSize + boneOffset]);
 
 #if defined(__AVX2__) || defined(__AVX512F__)
                 // batch convert all 4 bone weights FP16 to FP32 through F16C hardware instruction
@@ -1054,7 +1054,7 @@ namespace hdt
 
                 for (auto k = 0; std::cmp_less(k, partition->bonesPerVertex) && k < 4; ++k)
                 {
-                    auto localBoneIndex = boneData->boneIndices[k];
+                    const auto localBoneIndex = boneData->boneIndices[k];
                     assert(localBoneIndex < body->m_skinnedBones.size());
                     body->m_vertices[j + vertexStart].m_boneIdx[k] = localBoneIndex + boneStart;
                 }
