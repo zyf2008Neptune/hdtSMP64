@@ -28,15 +28,7 @@ namespace hdt
     protected:
         std::vector<float> m_timeSteps;
 
-        virtual auto resetTransformsToOriginal() -> void
-        {
-            for (const auto& m_system : m_systems)
-            {
-                m_system->resetTransformsToOriginal();
-            }
-        }
-
-        auto readTransform(float timeStep) -> void
+        auto readTransform(const float timeStep) -> void
         {
             const size_t n = m_systems.size();
             if (n == 0)
@@ -52,7 +44,7 @@ namespace hdt
                 m_timeSteps[i] = m_systems[i]->prepareForRead(timeStep);
             }
 
-            tbb::parallel_for(size_t{0}, n, [this](size_t i) { m_systems[i]->readTransform(m_timeSteps[i]); });
+            tbb::parallel_for(size_t{0}, n, [this](const size_t i) { m_systems[i]->readTransform(m_timeSteps[i]); });
         }
 
         auto writeTransform() const -> void

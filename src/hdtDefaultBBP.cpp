@@ -1,5 +1,9 @@
 #include "hdtDefaultBBP.h"
 
+#include <algorithm>
+
+#include <ranges>
+
 #include "NetImmerseUtils.h"
 #include "XmlReader.h"
 
@@ -72,7 +76,7 @@ namespace hdt
                 else if (reader.GetName() == "remap")
                 {
                     const auto target = reader.getAttribute("target");
-                    Remap remap = {target, {}, {}};
+                    Remap remap = {.name = target, .entries = {}, .required = {}};
                     while (reader.Inspect())
                     {
                         if (reader.GetInspected() == Xml::Inspected::StartTag)
@@ -148,7 +152,7 @@ namespace hdt
         for (auto remap : remaps)
         {
             bool doRemap = true;
-            for (auto req : remap.required)
+            for (const auto& req : remap.required)
             {
                 if (!nameMap.contains(req))
                 {
@@ -158,8 +162,8 @@ namespace hdt
 
             if (doRemap)
             {
-                auto start = std::find_if(remap.entries.rbegin(), remap.entries.rend(),
-                                          [&](const auto& e) { return nameMap.contains(e.second); });
+                auto start = std::ranges::find_if(std::views::reverse(remap.entries),
+                                                  [&](const auto& e) { return nameMap.contains(e.second); });
                 const auto end =
                     std::find_if(start, remap.entries.rend(), [&](const auto& e) { return e.first != start->first; });
                 if (start != remap.entries.rend())
@@ -197,7 +201,7 @@ namespace hdt
                 }
 
                 const auto tri = skinnedNodechildren[i]->AsTriShape();
-                if (!tri || !tri->name.size())
+                if (!tri || tri->name.empty())
                 {
                     continue;
                 }
@@ -215,7 +219,7 @@ namespace hdt
             }
 
             const auto tri = armorNodechildren[i]->AsTriShape();
-            if (!tri || !tri->name.size())
+            if (!tri || tri->name.empty())
             {
                 continue;
             }

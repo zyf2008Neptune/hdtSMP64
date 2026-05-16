@@ -97,8 +97,8 @@ namespace hdt
                 const auto npcForm = skyrim_cast<RE::TESNPC*>(skeleton->GetUserData()->GetObjectReference());
                 // TODO: refactor this
                 if (npcForm && npcForm->race &&
-                    !strcmp(npcForm->race->skeletonModels[0].GetModel(),
-                            "Actors\\DLC02\\BenthicLurker\\Character Assets\\skeleton.nif"))
+                    strcmp(npcForm->race->skeletonModels[0].GetModel(),
+                           R"(Actors\DLC02\BenthicLurker\Character Assets\skeleton.nif)") == 0)
                 {
                     shouldFix = true;
                 }

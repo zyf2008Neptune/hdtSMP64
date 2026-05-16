@@ -216,8 +216,8 @@ namespace hdt
         auto getConeTwistConstraintTemplate(const RE::BSFixedString& name) -> const ConeTwistConstraintTemplate&;
 
         auto createBoneFromNodeName(const RE::BSFixedString& bodyName, const RE::BSFixedString& templateName = "",
-                                    bool readTemplate = false, const SkyrimSystem* old_system = nullptr) -> SkyrimBone*;
-        auto readOrUpdateBone(const SkyrimSystem* old_system = nullptr) -> void;
+                                    bool readTemplate = false) -> SkyrimBone*;
+        auto readOrUpdateBone() -> void;
         auto readPerVertexShape(DefaultBBP::NameMap_t meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readPerTriangleShape(DefaultBBP::NameMap_t* meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readGenericConstraint() -> RE::BSTSmartPointer<Generic6DofConstraint>;

@@ -1,26 +1,40 @@
-name: cpp-linter
-on: [push]
+name: Run clang-format Linter
+
+on:
+  push:
+    branches:
+      - main
+  pull_request_target:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  cpp-linter:
+  format:
     runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # added or changed files to the repository.
+      contents: write
     steps:
       - uses: actions/checkout@v6
         with:
+          # check out HEAD on the branch
           ref: ${{ github.head_ref }}
-      
-      - name: Run cpp-linter
-        uses: cpp-linter/cpp-linter-action@v2
-        id:   linter
-        continue-on-error: true
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          # make sure the parent commit is grabbed as well, because
+          # that's what will get formatted (i.e. the most recent commit)
+          fetch-depth: 2
+      # format the latest commit
+      - uses: DoozyX/clang-format-lint-action@v0.20
         with:
-          style: file # Uses your project's .clang-format file
-          files-changed-only: false
-          thread-comments: true
-
+          source: "."
+          exclude: "extern"
+          extensions: "h,cpp,c"
+          clangFormatVersion: 16
+          inplace: True # commit the changes (if there are any)
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "style: apply clang-format fixes"
+          commit_message: "style: 🎨 apply clang-format changes"
+          branch: ${{ github.head_ref }}

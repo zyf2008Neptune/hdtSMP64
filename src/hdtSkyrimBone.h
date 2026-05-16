@@ -9,9 +9,8 @@ namespace hdt
     {
     public:
         SkyrimBone(const RE::BSFixedString& name, RE::NiNode* node, RE::NiNode* skeleton,
-                   btRigidBody::btRigidBodyConstructionInfo& ci);
+                   const btRigidBody::btRigidBodyConstructionInfo& ci);
 
-        auto resetTransformToOriginal() -> void override;
         auto readTransform(float timeStep) -> void override;
         auto writeTransform() -> void override;
 

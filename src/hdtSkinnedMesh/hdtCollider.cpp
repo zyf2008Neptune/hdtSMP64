@@ -48,6 +48,11 @@ namespace hdt
         stack.emplace_back(this, r, Mode::L);
         while (!stack.empty())
         {
+            if (stack.size() > MaxCollisionPairs)
+            {
+                break;
+            }
+
             auto e = stack.back();
             stack.pop_back();
 

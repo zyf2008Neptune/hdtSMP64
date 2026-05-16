@@ -20,8 +20,8 @@ namespace hdt
     public:
         virtual ~SkinnedMeshSystem() = default;
 
-        virtual auto prepareForRead(float timeStep) -> float { return timeStep; }
-        virtual auto resetTransformsToOriginal() -> void;
+        virtual auto prepareForRead(const float timeStep) -> float { return timeStep; }
+
         virtual auto readTransform(float timeStep) -> void;
         virtual auto writeTransform() -> void;
 
