@@ -30,7 +30,7 @@ namespace
             return a_fallback;
         }
 
-        return static_cast<std::uint64_t>(parsed);
+        return parsed;
     }
 } // namespace
 

@@ -24,7 +24,7 @@ namespace hdt
             ++m_depth;
         }
 
-        this->m_forceUpdateType = ForceUpdateList::GetSingleton()->isAmong(m_name);
+        this->m_forceUpdateType = GetForceUpdateTypeFromName(m_name);
     }
 
     auto SkyrimBone::readTransform(const float timeStep) -> void
