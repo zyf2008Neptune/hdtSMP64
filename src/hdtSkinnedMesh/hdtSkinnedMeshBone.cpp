@@ -3,7 +3,9 @@
 namespace hdt
 {
     SkinnedMeshBone::SkinnedMeshBone(const RE::BSFixedString& name,
-                                     const btRigidBody::btRigidBodyConstructionInfo& ci) : m_name(name), m_rig(ci)
+                                     const btRigidBody::btRigidBodyConstructionInfo& ci) :
+        m_name(name),
+        m_rig(ci)
     {
         m_rigToLocal.setIdentity();
         m_localToRig.setIdentity();

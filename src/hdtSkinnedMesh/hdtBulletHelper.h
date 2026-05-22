@@ -168,29 +168,29 @@ namespace hdt
         auto operator=(const btQsTransform&)->btQsTransform& = default;
         auto operator=(btQsTransform&&)->btQsTransform& = default;
 
-        [[nodiscard]] auto isValid() const -> bool { return getScale() > 0; }
+        [[nodiscard]] auto isValid() const->bool { return getScale() > 0; }
 
-        [[nodiscard]] auto getBasis() const -> btQuaternion { return m_basis; }
-        auto getBasis() -> btQuaternion& { return m_basis; }
+        [[nodiscard]] auto getBasis() const->btQuaternion { return m_basis; }
+        auto getBasis()->btQuaternion& { return m_basis; }
 
-        auto setBasis(const btQuaternion& q) -> void { m_basis = q; }
-        auto setBasis(const btMatrix3x3& m) -> void { m.getRotation(m_basis); }
+        auto setBasis(const btQuaternion& q)->void { m_basis = q; }
+        auto setBasis(const btMatrix3x3& m)->void { m.getRotation(m_basis); }
 
-        [[nodiscard]] auto getScale() const -> float { return m_originScale[3]; }
-        auto getScale() -> float& { return m_originScale[3]; }
+        [[nodiscard]] auto getScale() const->float { return m_originScale[3]; }
+        auto getScale()->float& { return m_originScale[3]; }
 
         // Deprecated: just use getScale(), the compiler will automatically optimize register extraction..
-        [[nodiscard]] auto getScaleReg() const -> float { return getScale(); }
+        [[nodiscard]] auto getScaleReg() const->float { return getScale(); }
 
-        auto setScale(const float s) -> void
+        auto setScale(const float s)->void
         {
             assert(s > 0);
             m_originScale[3] = s;
         }
 
-        [[nodiscard]] auto getOrigin() const -> btVector3 { return m_originScale; }
+        [[nodiscard]] auto getOrigin() const->btVector3 { return m_originScale; }
 
-        auto setOrigin(const btVector3& vec) -> void
+        auto setOrigin(const btVector3& vec)->void
         {
 #ifdef BT_ALLOW_SSE4
             m_originScale.mVec128 = _mm_blend_ps(vec.get128(), m_originScale.get128(), 0b1000);
@@ -201,7 +201,7 @@ namespace hdt
 #endif
         }
 
-        auto setOrigin(const float x, const float y, const float z) -> void
+        auto setOrigin(const float x, const float y, const float z)->void
         {
             m_originScale[0] = x;
             m_originScale[1] = y;
@@ -234,16 +234,16 @@ namespace hdt
 #endif
         }
 
-        [[nodiscard]] auto inverse() const -> btQsTransform
+        [[nodiscard]] auto inverse() const->btQsTransform
         {
             const btQuaternion r = m_basis.inverse();
             const float s = 1.0f / getScale();
             return {r, quatRotate(r, -getOrigin() * s), s};
         }
 
-        [[nodiscard]] auto asTransform() const -> btTransform { return btTransform(m_basis, m_originScale); }
+        [[nodiscard]] auto asTransform() const->btTransform { return btTransform(m_basis, m_originScale); }
 
-        [[nodiscard]] static auto getIdentity() -> btQsTransform
+        [[nodiscard]] static auto getIdentity()->btQsTransform
         {
             return {}; // Returns value utilizing XMM registers directly, skipping threadsafe static guards
         }
@@ -290,7 +290,7 @@ namespace hdt
             return xmm0;
         }
 
-        [[nodiscard]] auto mulPack(const btVector3& rhs, const float packW) const -> __m128
+        [[nodiscard]] auto mulPack(const btVector3& rhs, const float packW) const->__m128
         {
 #ifdef BT_ALLOW_SSE4
             const auto v = _mm_blend_ps(rhs.get128(), _mm_set_ps1(1), 0x8);
@@ -351,9 +351,9 @@ namespace hdt
             return ret;
         }
 
-        [[nodiscard]] auto basis() const -> btMatrix3x3 { return this->transpose(); }
+        [[nodiscard]] auto basis() const->btMatrix3x3 { return this->transpose(); }
 
-        [[nodiscard]] auto toTransform() const -> btTransform { return btTransform(this->transpose(), m_col[3]); }
+        [[nodiscard]] auto toTransform() const->btTransform { return btTransform(this->transpose(), m_col[3]); }
 
         btVector3 m_col[4];
     };

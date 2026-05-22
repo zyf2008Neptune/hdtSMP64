@@ -57,7 +57,8 @@ namespace hdt
             while (intfc->GetNextRecordInfo(type, version, length))
             {
                 auto record = std::ranges::find_if(
-                    g_SerializerList, [type, version](SerializerBase* a_srlzr)
+                    g_SerializerList,
+                    [type, version](SerializerBase* a_srlzr)
                     { return type == a_srlzr->StorageName() && version == a_srlzr->FormatVersion(); });
 
                 if (record == g_SerializerList.end())

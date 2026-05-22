@@ -32,7 +32,7 @@ namespace hdt
         /// override the default global value of a parameter (such as ERP or CFM), optionally provide the axis (0..5).
         /// If no axis is provided, it uses the default axis for this constraint.
         auto setParam([[maybe_unused]] int num, [[maybe_unused]] btScalar value, [[maybe_unused]] int axis = -1)
-            -> void override {};
+            -> void override{};
 
         /// return the local value of parameter
         auto getParam([[maybe_unused]] int num, [[maybe_unused]] int axis = -1) const -> btScalar override { return 0; }

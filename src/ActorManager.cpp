@@ -10,7 +10,7 @@ namespace hdt
     // float aViewCone) Used to ray cast from the actor. Will return nonNull if it hits something with position at
     // aTargetPosition. Pass in 2pi to aViewCone to ignore LOS of actor.
 
-    using _Actor_CalculateLOS = RE::NiAVObject* (*)(RE::Actor * aActor, RE::NiPoint3* aTargetPosition,
+    using _Actor_CalculateLOS = RE::NiAVObject* (*)(RE::Actor* aActor, RE::NiPoint3* aTargetPosition,
                                                     RE::NiPoint3* aRayHitPosition, float aViewCone);
     using _TESNPC_GetFaceGeomPath = bool (*)(RE::TESNPC* a_npc, char* a_buf);
     using _NiStream_constructor = RE::NiStream* (*)(RE::NiStream*);
@@ -1345,7 +1345,8 @@ namespace hdt
         // wig).
         std::ranges::for_each(armors, [this](const Armor& armor) { armor.updateActive(isActive); });
         const bool isHeadActive = head.isActive;
-        std::ranges::for_each(head.headParts, [isHeadActive, this](const Head::HeadPart& headPart)
+        std::ranges::for_each(head.headParts,
+                              [isHeadActive, this](const Head::HeadPart& headPart)
                               { headPart.updateActive(isHeadActive && isActive); });
         return isActive;
     }

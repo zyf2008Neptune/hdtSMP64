@@ -455,7 +455,8 @@ namespace hdt
         m_mesh->m_skeleton = hdt::make_nismart(m_skeleton);
         m_mesh->m_shapeRefs.swap(m_shapeRefs);
         std::ranges::sort(
-            m_mesh->m_bones, [](const auto& a, const auto& b)
+            m_mesh->m_bones,
+            [](const auto& a, const auto& b)
             { return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->m_depth; });
 
         // Restore the original pose to avoid a visual 1 Havok tick T-pose (only for visual reasons, it won't break
