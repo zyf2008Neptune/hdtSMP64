@@ -389,15 +389,21 @@ namespace Hooks
         DetourAttach(reinterpret_cast<PVOID*>(&_SetBoneName), (PVOID)SetBoneName_Hook);
     }
 
-    auto Install() -> void
+    auto InstallHighPriority() -> void
     {
-        logger::trace("Hooking...");
+        logger::trace("Installing high-priority hooks...");
 
-        // generic hooks
-        BSFaceGenNiNodeHooks::Hook();
         MainHooks::Hook();
 
-        //
+        logger::trace("...success");
+    }
+
+    auto InstallLowPriority() -> void
+    {
+        logger::trace("Installing low-priority hooks...");
+
+        BSFaceGenNiNodeHooks::Hook();
+
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         ActorEquipManagerHooks::Hook();
@@ -408,13 +414,11 @@ namespace Hooks
                      PVOID(BSFaceGenNiNodeHooks::SkinAllGeometry__Hook));
         DetourTransactionCommit();
 
-        //
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         BipedAnimHooks::Hook();
         DetourTransactionCommit();
 
-        //
         logger::trace("...success");
     }
 } // namespace Hooks
