@@ -56,7 +56,7 @@ namespace hdt
         }
 
         auto applyGravity() -> void override;
-        auto applyWind() const -> void;
+        auto applyWind(btScalar timeStep) -> void;
 
         auto predictUnconstraintMotion(btScalar timeStep) -> void override;
         auto integrateTransforms(btScalar timeStep) -> void override;
@@ -67,6 +67,7 @@ namespace hdt
         std::vector<RE::BSTSmartPointer<SkinnedMeshSystem>> m_systems;
 
         btVector3 m_windSpeed; // world windspeed
+        btScalar m_windTime = 0.0f; // wind simulation clock
 
     private:
         std::vector<SkinnedMeshBody*> _bodies;
