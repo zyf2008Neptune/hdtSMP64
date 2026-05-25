@@ -10,7 +10,7 @@ namespace hdt
     // float aViewCone) Used to ray cast from the actor. Will return nonNull if it hits something with position at
     // aTargetPosition. Pass in 2pi to aViewCone to ignore LOS of actor.
 
-    using _Actor_CalculateLOS = RE::NiAVObject* (*)(RE::Actor* aActor, RE::NiPoint3* aTargetPosition,
+    using _Actor_CalculateLOS = RE::NiAVObject* (*)(RE::Actor * aActor, RE::NiPoint3* aTargetPosition,
                                                     RE::NiPoint3* aRayHitPosition, float aViewCone);
     using _TESNPC_GetFaceGeomPath = bool (*)(RE::TESNPC* a_npc, char* a_buf);
     using _NiStream_constructor = RE::NiStream* (*)(RE::NiStream*);
@@ -154,6 +154,10 @@ namespace hdt
         }
         else
         {
+            if (e->armorModel == nullptr)
+            {
+                return RE::BSEventNotifyControl::kContinue;
+            }
             skeleton.addArmor(e->armorModel);
         }
 
@@ -469,6 +473,19 @@ namespace hdt
         const auto cameraOrientation = cameraTransform.rotate * RE::NiPoint3(0., 1., 0.);
         // The camera matrix is relative to the world.
         m_cameraPositionDuringFrame = cameraPosition;
+
+        m_screenSizeNearPlaneScale = 0.f;
+        m_screenSizeThresholdScale = 0.f;
+        if (m_minScreenSizeFraction > 0.f)
+        {
+            if (auto* cam = RE::Main::WorldRootCamera())
+            {
+                const auto& f = cam->GetRuntimeData2().viewFrustum;
+                const float screenH = f.fTop - f.fBottom; // near-plane total vertical span in world units
+                m_screenSizeNearPlaneScale = 4.f * f.fNear * f.fNear;
+                m_screenSizeThresholdScale = m_minScreenSizeFraction * m_minScreenSizeFraction * screenH * screenH;
+            }
+        }
 
         for (auto& skel : m_skeletons)
         {
@@ -1000,10 +1017,7 @@ namespace hdt
 
     auto ActorManager::Skeleton::addArmor(RE::NiNode* armorModel) -> void
     {
-        if (armorModel)
-        {
-            logBrokenNifOnce(armorModel->name.c_str(), armorModel);
-        }
+        logBrokenNifOnce(armorModel->name.c_str(), armorModel);
 
         const IDType id = !armors.empty() ? armors.back().id + 1 : 0;
         const auto prefix = armorPrefix(id);
@@ -1268,6 +1282,20 @@ namespace hdt
             return false;
         }
 
+        // Is the skeleton too small on screen?
+        // Ie, is the NPC's projected bounding sphere smaller than the allowed fraction of screen height?
+        // screenFraction < minFraction <=> 2r·fNear / (dist·screenH) < fr <=> 4r²·fNear² < fr²·dist²·screenH²
+        if (manager->m_screenSizeThresholdScale > 0.f)
+        {
+            const float r =
+                skeleton3D->worldBound.radius; // the radius of the bounding sphere of the skeleton in world units
+            if (manager->m_screenSizeNearPlaneScale * r * r <
+                manager->m_screenSizeThresholdScale * m_distanceFromCamera2)
+            {
+                return false;
+            }
+        }
+
         RE::NiPoint3 hitLocation;
         const auto* obstacle = Actor_CalculateLOS(owner, &manager->m_cameraPositionDuringFrame, &hitLocation, 6.28f);
         return !obstacle; // If obstacle, we hit something on the path
@@ -1329,6 +1357,11 @@ namespace hdt
                     state = SkeletonState::e_ActiveIsPlayer;
                 }
             }
+            else if (instance()->m_maxPhysicsDistance > 0.f &&
+                     m_distanceFromCamera2 > instance()->m_maxPhysicsDistance * instance()->m_maxPhysicsDistance)
+            {
+                state = SkeletonState::e_InactiveTooFar;
+            }
             else if (isInPlayerView())
             {
                 isActive = true;
@@ -1345,8 +1378,7 @@ namespace hdt
         // wig).
         std::ranges::for_each(armors, [this](const Armor& armor) { armor.updateActive(isActive); });
         const bool isHeadActive = head.isActive;
-        std::ranges::for_each(head.headParts,
-                              [isHeadActive, this](const Head::HeadPart& headPart)
+        std::ranges::for_each(head.headParts, [isHeadActive, this](const Head::HeadPart& headPart)
                               { headPart.updateActive(isHeadActive && isActive); });
         return isActive;
     }

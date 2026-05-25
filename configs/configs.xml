@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <configs>
-  <smp>
+	<smp>
 
-    <!-- ######################## LOGS #################################### -->
+		<!-- ######################## LOGS #################################### -->
 
-    <!--
+		<!--
       logLevel: (int 0-5) level of logs
       0 = critical
       1 = err
@@ -15,26 +15,26 @@
       5 = trace
 	  6 = off
     -->
-    <logLevel>3</logLevel>
+		<logLevel>3</logLevel>
 
-    <!-- ######################## Bone Node Backup #################################### -->
+		<!-- ######################## Bone Node Backup #################################### -->
 
-    <!--
+		<!--
       There's A unique issue with this port where when the skeleton and the body merge there is a chance that one of the bones don't get moved over and gets deleted
 	  when this happens it will cause a crash later down the line, if you encounter this issue add the node name into and it'll be backed up before the merge and put back as it should be.
 	  example, SOS-SAM and the "VirtualHands" node when hdt is enabled... this will cause a crash unless added here.
     -->
-    <backupNodeByName></backupNodeByName>
+		<backupNodeByName></backupNodeByName>
 
-    <!-- #################### NPC FACE PARTS ############################## -->
+		<!-- #################### NPC FACE PARTS ############################## -->
 
-    <!--
+		<!--
       enableNPCFaceParts: (boolean) enables physics for NPC face parts.
       If no value is set, default is true.
     -->
-    <enableNPCFaceParts>true</enableNPCFaceParts>
+		<enableNPCFaceParts>true</enableNPCFaceParts>
 
-    <!--
+		<!--
       disableSMPHairWhenWigEquipped: (boolean) if enabled, when you have at the
       same time smp hair and smp wig, now, only the wig is physically calculated.
       More precisely, if you have an armor on the hair or longhair slot, no headpart
@@ -42,25 +42,25 @@
       You very probably want this, except if you use a hidden helmet mod.
       If no value is set, default is false.
     -->
-    <disableSMPHairWhenWigEquipped>false</disableSMPHairWhenWigEquipped>
+		<disableSMPHairWhenWigEquipped>false</disableSMPHairWhenWigEquipped>
 
-    <!-- ##################### CLAMP ROTATIONS ############################ -->
+		<!-- ##################### CLAMP ROTATIONS ############################ -->
 
-    <!--
+		<!--
       clampRotations: (boolean) limits the PC rotation speed when turning a
       large angle, so that your character rotates slowly instead of instantly.
       If no value is set, default is true.
     -->
-    <clampRotations>true</clampRotations>
+		<clampRotations>true</clampRotations>
 
-    <!--
+		<!--
       rotationSpeedLimit: (float) rotation speed limit of the PC in radians per
       second. Must be positive.
       If no value is set, default is 10.0.
     -->
-    <rotationSpeedLimit>10.0</rotationSpeedLimit>
+		<rotationSpeedLimit>10.0</rotationSpeedLimit>
 
-    <!--
+		<!--
       unclampedResets: (boolean) when unclamped, if you do a large turn (full
       180° for example), we will attempt to apply physics for that enormous
       turn. Setting this to true will instead trigger a physics reset on the
@@ -68,19 +68,19 @@
       decide if you're OK with the results.
       If no value is set, default is true.
     -->
-    <unclampedResets>true</unclampedResets>
+		<unclampedResets>true</unclampedResets>
 
-    <!--
+		<!--
       unclampedResetAngle: (int) the angle value in degrees to reset at. You'll
       probably want to tweak this until you're happy. There is no limitation on
       value, use your common sense.
       If no value is set, default is 120°.
     -->
-    <unclampedResetAngle>130.0</unclampedResetAngle>
+		<unclampedResetAngle>130.0</unclampedResetAngle>
 
-    <!-- ######################### CLOCK ################################## -->
+		<!-- ######################### CLOCK ################################## -->
 
-    <!--
+		<!--
       useRealTime: (boolean) when enabled, use the RealTime clock instead of
       the WorldTime clock.
       This is quite a conceptual change: the physics are calculated not
@@ -96,22 +96,22 @@
       Players tests will indicate if this is a choice to keep.
       If no value is set, default is false.
     -->
-    <useRealTime>false</useRealTime>
+		<useRealTime>false</useRealTime>
 
-    <!-- ######################### CULLING ################################### -->
+		<!-- ######################### CULLING ################################### -->
 
-    <!--
+		<!--
       minCullingDistance: (float) the minimum distance from the camera under which
       no skeleton is culled.
       If no value is set, default is 500. It's useful if for example the skeleton
       origin is very near, behind the camera, but some parts of the skeleton
       are in front of the camera and need to be animated.
     -->
-    <minCullingDistance>500</minCullingDistance>
+		<minCullingDistance>500</minCullingDistance>
 
-    <!-- ################# MAX SKELETONS NUMBER ########################### -->
+		<!-- ################# MAX SKELETONS NUMBER ########################### -->
 
-    <!--
+		<!--
       autoAdjustMaxSkeletons: (boolean) sets dynamically the maximum number of
       simultaneous skeletons/actors for which physics is calculated, between 1
       and maximumActiveSkeletons (below) to consume only the allocated
@@ -122,9 +122,9 @@
       If disabled, fps may drop when you have too many active skeletons.
       If no value is set, default is true.
     -->
-    <autoAdjustMaxSkeletons>false</autoAdjustMaxSkeletons>
+		<autoAdjustMaxSkeletons>false</autoAdjustMaxSkeletons>
 
-    <!--
+		<!--
       maximumActiveSkeletons: (int) the configured maximum number of
       simultaneous skeletons/actors for which physics is calculated, when
       autoAdjustMaxSkeletons is enabled. If autoAdjustMaxSkeletons is disabled,
@@ -132,9 +132,9 @@
       There is no limit on the value.
       If no value is set, default is 20.
     -->
-    <maximumActiveSkeletons>20</maximumActiveSkeletons>
+		<maximumActiveSkeletons>20</maximumActiveSkeletons>
 
-    <!--
+		<!--
       budgetMs: (int 0.1-30.0) [requires autoAdjustMaxSkeleton = true]
 
       How many milliseconds per frame FSMP is allowed to spend on physics
@@ -155,9 +155,9 @@
 
       Default: 3.5
     -->
-	  <budgetMs>3.5</budgetMs>
+		<budgetMs>3.5</budgetMs>
 
-    <!--
+		<!--
       sampleSize: (int) how many samples (sample taken every min_fps
       frames/every second) to determine the average ms per activeSkeleton.
       This is used to log performance statistics and also used to calculate
@@ -167,51 +167,70 @@
       The value must be equal or greater to 1.
       If no value is set, default is 5.
     -->
-    <sampleSize>5</sampleSize>
+		<sampleSize>5</sampleSize>
 
-    <!-- ################## PC PHYSICS WHILE IN 1ST PERSON VIEW ########### -->
+		<!-- ################## PC PHYSICS WHILE IN 1ST PERSON VIEW ########### -->
 
-    <!--
+		<!--
       disable1stPersonViewPhysics: (boolean) if set to true, the physics of the
       PC won't be calculated when in 1st person view, to save performance.
       If no value is set, default is false.
     -->
-    <disable1stPersonViewPhysics>false</disable1stPersonViewPhysics>
+		<disable1stPersonViewPhysics>false</disable1stPersonViewPhysics>
 
-    <!-- ##################### CUDA ####################################### -->
+		<!-- ##################### DISTANCE AND SCREEN SIZE CULLING ############ -->
 
-    <!--
+		<!--
+      maxPhysicsDistance: (float) hard cutoff distance in world units beyond which
+      physics is never calculated for non-player skeletons, regardless of budget or
+      screen visibility. 0 disables the cutoff.
+      If no value is set, default is 0 (disabled).
+    -->
+		<maxPhysicsDistance>0</maxPhysicsDistance>
+
+		<!--
+      minScreenSizeFraction: (float 0-1) physics is skipped for non-player skeletons
+      whose bounding sphere diameter, projected onto the screen, is smaller than this
+      fraction of the screen height. For example, 0.02 skips skeletons that appear
+      smaller than 2% of screen height. 0 disables the check.
+      If no value is set, default is 0 (disabled).
+    -->
+		<minScreenSizeFraction>0</minScreenSizeFraction>
+
+		<!-- ##################### CUDA ####################################### -->
+
+		<!--
       enableCuda: (boolean) experimental GPU collision algorithm. Try this if
       you have a slow CPU and fast GPU. This setting will be ignored if you
       haven't installed the CUDA-enabled version.
       If no value is set, default is false.
     -->
-    <enableCuda>true</enableCuda>
+		<enableCuda>true</enableCuda>
 
-  </smp>
-  <solver>
+	</smp>
+	<solver>
 
-    <!-- ################ BULLET PHYSICS ENGINE SETTINGS  ################# -->
+		<!-- ################ BULLET PHYSICS ENGINE SETTINGS  ################# -->
 
-    <!--
+		<!--
       numIterations: (int 4-128) could be simplified as 'simulation accuracy',
       lower values will gain performance at the cost of less quality.
       If no value is set, default is 10.
     -->
-    <numIterations>16</numIterations>
+		<numIterations>16</numIterations>
 
-    <!--
+		<!--
       erp: (float ]0-1[) The error correction force applied per simulation
       step, constraints will drift apart naturally, this value will exert a
       force to move them back to where they are supposed to be.
       Do not use the 0 and 1 values.
       If no value is set, default is 0.2.
     -->
-    <erp>0.2</erp>
+		<erp>0.2</erp>
 
-    <!-- ################ PHYSICS SIMULATION FREQUENCY  ################### -->
+		<!-- ################ PHYSICS SIMULATION FREQUENCY  ################### -->
 
-    <!--
+		<!--
       min-fps: (int 60-300), is the main frequency at which physics simulation will
       advance; in fact, it defines the main period of time at which the physics
       simulation will advance; (p=1/f). min-fps should never be configured
@@ -220,11 +239,11 @@
       CPU/GPU. 120 costs twice as much cpu as 60.
       If no value is set, default is 60.
     -->
-    <min-fps>60</min-fps>
+		<min-fps>60</min-fps>
 
-    <!-- ################### PHYSICS SLOWDOWNS  ########################### -->
+		<!-- ################### PHYSICS SLOWDOWNS  ########################### -->
 
-    <!--
+		<!--
       maxSubSteps: (int, 1-60) this setting allows you to choose between fps and
       physics simulation quality, at low fps.
       maxSubSteps is the maximum number of physics calculus steps, each frame.
@@ -238,33 +257,33 @@
       is at 300 (max value).
       If no value is set, default is 4.
     -->
-    <maxSubSteps>4</maxSubSteps>
+		<maxSubSteps>4</maxSubSteps>
 
-  </solver>
-  <!-- ################### WIND EFFECTS  ########################### -->
+	</solver>
+	<!-- ################### WIND EFFECTS  ########################### -->
 
-  <wind>
-    <!--
+	<wind>
+		<!--
       enabled: (bool) Whether to enable wind effects, default is true.
       Wind in Skyrim is not developed well and appears to be a static direction.
       Wind can be detected generally from the sky object or by a weather object.
       Wind can be tested when snow or rain is falling (e.g., SkyrimStormSnow)
     -->
-    <enabled>true</enabled>
-    <!--
+		<enabled>true</enabled>
+		<!--
       windStrength: (float) Base strength of wind. Compare to gravity which uses
       9.8 m/s^2, default is 2.0.
     -->
-    <windStrength>2.0</windStrength>
-    <!--
+		<windStrength>2.0</windStrength>
+		<!--
       distanceForNoWind: (float) How close to an obstruction for wind to be fully blocked.
       This scales linearly with distanceForMaxWind. default is 50.0.
     -->
-    <distanceForNoWind>50.0</distanceForNoWind>
-    <!--
+		<distanceForNoWind>50.0</distanceForNoWind>
+		<!--
       distanceForMaxWind: (float) How far from an obstruction for wind to be not blocked.
       This scales linearly with distanceForNoWind. default is 3000.0.
     -->
-    <distanceForMaxWind>3000.0</distanceForMaxWind>
-  </wind>
+		<distanceForMaxWind>3000.0</distanceForMaxWind>
+	</wind>
 </configs>

@@ -36,38 +36,41 @@ namespace Hooks
         auto needRegularCall = true;
         if (hdt::ActorManager::instance()->skeletonNeedsParts(a_skeleton))
         {
-            RE::TESForm* form = RE::TESForm::LookupByID(a_skeleton->GetUserData()->formID);
-            if (const auto actor = skyrim_cast<RE::Actor*>(form))
+            if (const auto* userData = a_skeleton->GetUserData())
             {
-                const auto actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
-                uint32_t numHeadParts = 0;
-                RE::BGSHeadPart** Headparts = nullptr;
+                RE::TESForm* form = RE::TESForm::LookupByID(userData->formID);
+                if (const RE::Actor* actor = skyrim_cast<RE::Actor*>(form))
+                {
+                    RE::TESNPC* actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
+                    uint32_t numHeadParts = 0;
+                    RE::BGSHeadPart** Headparts = nullptr;
 
-                if (actorBase->HasOverlays())
-                {
-                    numHeadParts = actorBase->GetNumBaseOverlays();
-                    Headparts = actorBase->GetBaseOverlays();
-                }
-                else
-                {
-                    numHeadParts = actorBase->numHeadParts;
-                    Headparts = actorBase->headParts;
-                }
-
-                if (Headparts)
-                {
-                    for (uint32_t i = 0; i < numHeadParts; i++)
+                    if (actorBase->HasOverlays())
                     {
-                        if (Headparts[i])
+                        numHeadParts = actorBase->GetNumBaseOverlays();
+                        Headparts = actorBase->GetBaseOverlays();
+                    }
+                    else
+                    {
+                        numHeadParts = actorBase->numHeadParts;
+                        Headparts = actorBase->headParts;
+                    }
+
+                    if (Headparts)
+                    {
+                        for (uint32_t i = 0; i < numHeadParts; i++)
                         {
-                            ProcessHeadPart(a_this, Headparts[i], a_skeleton, a_unk);
+                            if (Headparts[i])
+                            {
+                                ProcessHeadPart(a_this, Headparts[i], a_skeleton, a_unk);
+                            }
                         }
                     }
-                }
 
-                if (a_skeleton->GetUserData() && a_skeleton->GetUserData()->formID == 0x14)
-                {
-                    needRegularCall = false;
+                    if (userData->formID == 0x14)
+                    {
+                        needRegularCall = false;
+                    }
                 }
             }
         }
@@ -81,6 +84,10 @@ namespace Hooks
     auto BSFaceGenNiNodeHooks::SkinSingleGeometry__Hook(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
                                                         RE::BSGeometry* a_triShape, [[maybe_unused]] bool a_unk) -> void
     {
+        if (a_skeleton == nullptr)
+        {
+            return;
+        }
         //
         auto name = "";
         uint32_t formId = 0x0;
@@ -119,6 +126,10 @@ namespace Hooks
     auto BSFaceGenNiNodeHooks::SkinAllGeometry__Hook(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
                                                      const bool a_unk) -> void
     {
+        if (a_skeleton == nullptr)
+        {
+            return;
+        }
         //
         auto name = "";
         uint32_t formId = 0x0;
@@ -171,19 +182,16 @@ namespace Hooks
     auto BSFaceGenNiNodeHooks::SkinAllGeometry(RE::BSFaceGenNiNode* const a_this, RE::NiNode* a_skeleton,
                                                const bool a_unk) -> void
     {
-        if (a_skeleton)
+        const auto& children = a_this->GetChildren();
+        if (!children.empty())
         {
-            const auto& children = a_this->GetChildren();
-            if (!children.empty())
+            for (const auto& child : children)
             {
-                for (const auto& child : children)
+                if (child)
                 {
-                    if (child)
+                    if (const auto triShape = child->AsTriShape())
                     {
-                        if (const auto triShape = child->AsTriShape())
-                        {
-                            SkinSingleGeometry__Hook(a_this, a_skeleton, triShape, a_unk);
-                        }
+                        SkinSingleGeometry__Hook(a_this, a_skeleton, triShape, a_unk);
                     }
                 }
             }
