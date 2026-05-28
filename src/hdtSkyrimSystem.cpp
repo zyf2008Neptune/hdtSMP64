@@ -254,12 +254,6 @@ namespace hdt
         m_mesh = RE::make_smart<SkyrimSystem>(skeleton);
         m_boneIndex.clear();
 
-        // Store original locale
-        const auto saved_locale = std::locale();
-
-        // Set locale to en_US
-        std::locale::global(std::locale::classic());
-
         // This forces the skeleton into a neutral reference pose, which avoids building invalid shape data
         // We pull the references directly from havok for the exact same reference data the engine uses
         std::vector<std::pair<RE::NiAVObject*, RE::NiTransform>> savedPoses;
@@ -443,9 +437,6 @@ namespace hdt
 
         m_deferredBuilds.clear();
 
-        // Restore original locale
-        std::locale::global(saved_locale);
-
         if (m_reader->GetErrorCode() != Xml::ErrorCode::None)
         {
             logger::error("xml parse error - {}", m_reader->GetErrorMessage());
@@ -455,8 +446,7 @@ namespace hdt
         m_mesh->m_skeleton = hdt::make_nismart(m_skeleton);
         m_mesh->m_shapeRefs.swap(m_shapeRefs);
         std::ranges::sort(
-            m_mesh->m_bones,
-            [](const auto& a, const auto& b)
+            m_mesh->m_bones, [](const auto& a, const auto& b)
             { return static_cast<SkyrimBone*>(a.get())->m_depth < static_cast<SkyrimBone*>(b.get())->m_depth; });
 
         // Restore the original pose to avoid a visual 1 Havok tick T-pose (only for visual reasons, it won't break

@@ -41,12 +41,6 @@ namespace hdt
             return;
         }
 
-        // Store original locale
-        const auto saved_locale = std::locale();
-
-        // Set locale to en_US
-        std::locale::global(std::locale::classic());
-
         XMLReader reader(reinterpret_cast<uint8_t*>(loaded.data()), loaded.size());
 
         reader.nextStartElement();
@@ -123,9 +117,6 @@ namespace hdt
                 break;
             }
         }
-
-        // Restore original locale
-        std::locale::global(saved_locale);
     }
 
     auto DefaultBBP::scanDefaultBBP(RE::NiNode* armor) -> PhysicsFile_t
@@ -193,14 +184,14 @@ namespace hdt
         if (const auto skinned = findNode(armor, "BSFaceGenNiNodeSkinned"))
         {
             const auto& skinnedNodechildren = skinned->GetChildren();
-            for (uint16_t i = 0; i < skinnedNodechildren.size(); ++i)
+            for (const auto& i : skinnedNodechildren)
             {
-                if (!skinnedNodechildren[i])
+                if (!i)
                 {
                     continue;
                 }
 
-                const auto tri = skinnedNodechildren[i]->AsTriShape();
+                const auto tri = i->AsTriShape();
                 if (!tri || tri->name.empty())
                 {
                     continue;
@@ -211,14 +202,14 @@ namespace hdt
         }
 
         const auto& armorNodechildren = armor->GetChildren();
-        for (uint16_t i = 0; i < armorNodechildren.size(); ++i)
+        for (const auto& i : armorNodechildren)
         {
-            if (!armorNodechildren[i])
+            if (!i)
             {
                 continue;
             }
 
-            const auto tri = armorNodechildren[i]->AsTriShape();
+            const auto tri = i->AsTriShape();
             if (!tri || tri->name.empty())
             {
                 continue;

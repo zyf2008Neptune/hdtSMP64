@@ -242,12 +242,6 @@ namespace hdt
             return;
         }
 
-        // Store original locale
-        const auto saved_locale = std::locale();
-
-        // Set locale to en_US
-        std::locale::global(std::locale::classic());
-
         XMLReader reader(reinterpret_cast<uint8_t*>(bytes.data()), bytes.size());
 
         while (reader.Inspect())
@@ -265,9 +259,6 @@ namespace hdt
                 }
             }
         }
-
-        // Restore original locale
-        std::locale::global(saved_locale);
     }
 
     auto logConfig() -> void
