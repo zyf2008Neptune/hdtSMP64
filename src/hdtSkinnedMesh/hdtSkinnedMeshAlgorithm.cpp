@@ -290,8 +290,14 @@ namespace hdt
 
             auto operator()() -> int
             {
-                std::vector<std::pair<ColliderTree*, ColliderTree*>> pairs;
-                pairs.reserve(this->c0->colliders.size() + this->c1->colliders.size());
+                thread_local std::vector<std::pair<ColliderTree*, ColliderTree*>> pairs;
+                pairs.clear();
+
+                if (pairs.capacity() < 256)
+                {
+                    pairs.reserve(256);
+                }
+
                 this->c0->checkCollisionL(this->c1, pairs);
                 if (pairs.empty())
                 {
@@ -366,7 +372,7 @@ namespace hdt
                 if (pairs.size() >= 32)
                 {
                     // isolate: thread parked here waiting for inner work must not steal an outer
-                    // processCollision task — that would alias thread_local MergeBuffer/listA/listB.
+                    // Note: If this is ever changed from isolate, you'll need to review tons of thread_local usage!
                     tbb::this_task_arena::isolate([&] { tbb::parallel_for_each(pairs.begin(), pairs.end(), func); });
                 }
                 else
