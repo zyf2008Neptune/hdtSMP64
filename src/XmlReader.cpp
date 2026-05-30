@@ -82,6 +82,11 @@ namespace hdt
 
     auto XMLReader::Inspect() -> bool
     {
+        if (Base::GetInspected() == Inspected::EmptyElementTag && isEmptyStart == true)
+        {
+            isEmptyStart = false;
+            return true;
+        }
         if (!Base::Inspect())
         {
             return false;
