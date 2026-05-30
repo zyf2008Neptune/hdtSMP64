@@ -9,26 +9,29 @@ namespace hdt
         auto convertFloat(const std::string& str) -> float
         {
             float ret{};
-            const char* begin = str.data();
-            const char* end = begin + str.size();
-            if (auto [ptr, ec] = std::from_chars(begin, end, ret); ec == std::errc() && ptr == end)
+            if (!str.contains(','))
             {
+                const auto begin = str.data();
+                const auto end = begin + str.size();
+                auto [ptr, ec] = std::from_chars(begin, end, ret);
+                if (ec != std::errc() || ptr != end)
+                {
+                    throw std::string("not a float value");
+                }
                 return ret;
             }
 
-            // Replace decimal comma with point
-            if (str.contains(','))
+            std::string s = str;
+            size_t start_pos = s.find(',');
+            s.replace(start_pos, 1, ".");
+            const char* begin = s.data();
+            const char* end = begin + s.size();
+            auto [ptr, ec] = std::from_chars(begin, end, ret);
+            if (ec != std::errc() || ptr != end)
             {
-                std::string normalized = str;
-                normalized[normalized.find(',')] = '.';
-                begin = normalized.data();
-                end = begin + normalized.size();
-                if (auto [ptr, ec] = std::from_chars(begin, end, ret); ec == std::errc() && ptr == end)
-                {
-                    return ret;
-                }
+                throw std::string("not a float value");
             }
-            throw std::string("not a float value");
+            return ret;
         }
     } // namespace
 
