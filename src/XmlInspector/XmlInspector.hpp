@@ -20,8 +20,8 @@
   THE SOFTWARE.
 */
 
-#ifndef XML_INSPECTOR_HPP__f66b9cdaf20734ef11086d0851a9c563
-#define XML_INSPECTOR_HPP__f66b9cdaf20734ef11086d0851a9c563
+#ifndef XML_INSPECTOR_HPP
+#define XML_INSPECTOR_HPP
 
 #include <cstdint>
 #include <deque>
@@ -47,7 +47,7 @@ namespace Xml
     /**
         @brief An inspected node type.
     */
-    enum class Inspected
+    enum class Inspected : uint8_t
     {
         /**
             @brief This is returned by the Inspector if an Inspect method has not been called.
@@ -113,7 +113,7 @@ namespace Xml
     /**
         @brief Error code.
     */
-    enum class ErrorCode
+    enum class ErrorCode : uint8_t
     {
         /**
             @brief There is no error.
@@ -267,7 +267,7 @@ namespace Xml
     /**
         @brief Delimiter for an attribute value.
     */
-    enum class QuotationMark
+    enum class QuotationMark : uint8_t
     {
         /**
             @brief Attribute is delimited by a single-quote characters (for example <tt>&lt;a name='value'&gt;</tt> ).
@@ -290,13 +290,13 @@ namespace Xml
         /**
             @brief Alias to the string type provided by the class template parameter.
         */
-        typedef TStringType StringType;
+        using StringType = TStringType;
 
         /**
             @brief Unsigned integer type definition for determining location in the XML document.
                 This type should be enough to store any file size or memory buffer size.
         */
-        typedef std::uint_least64_t SizeType;
+        using SizeType = std::uint_least64_t;
 
         /**
             @brief Qualified name of the attribute.
@@ -364,7 +364,7 @@ namespace Xml
     /// @cond DETAILS
     namespace Details
     {
-        enum class Bom
+        enum class Bom : uint8_t
         {
             None,
             StreamError,
@@ -385,37 +385,37 @@ namespace Xml
         class BasicIteratorsBuf : public std::basic_streambuf<TCharacterType, TTraits>
         {
         public:
-            typedef TInputIterator IteratorType;
-            typedef std::basic_streambuf<TCharacterType, TTraits> StreambufType;
+            using IteratorType = TInputIterator;
+            using StreambufType = std::basic_streambuf<TCharacterType, TTraits>;
 
-            typedef TCharacterType char_type;
-            typedef TTraits traits_type;
-            typedef typename traits_type::int_type int_type;
-            typedef typename traits_type::pos_type pos_type;
-            typedef typename traits_type::off_type off_type;
+            using char_type = TCharacterType;
+            using traits_type = TTraits;
+            using int_type = traits_type::int_type;
+            using pos_type = traits_type::pos_type;
+            using off_type = traits_type::off_type;
 
         protected:
             IteratorType curIter;
             IteratorType endIter;
 
-            virtual auto underflow() -> int_type;
+            auto underflow() -> int_type override;
 
-            virtual auto uflow() -> int_type;
+            auto uflow() -> int_type override;
 
-            virtual auto showmanyc() -> std::streamsize;
+            auto showmanyc() -> std::streamsize override;
 
         public:
             BasicIteratorsBuf(IteratorType first, IteratorType last) : StreambufType(), curIter(first), endIter(last) {}
 
-            virtual ~BasicIteratorsBuf() {}
+            ~BasicIteratorsBuf() override = default;
         };
 
         template <typename TStringType>
         class NamespaceDeclaration
         {
         public:
-            typedef TStringType StringType;
-            typedef std::uint_least64_t SizeType;
+            using StringType = TStringType;
+            using SizeType = std::uint_least64_t;
 
             StringType Prefix;
             StringType Uri;
@@ -426,8 +426,8 @@ namespace Xml
         class UnclosedTag
         {
         public:
-            typedef TStringType StringType;
-            typedef std::uint_least64_t SizeType;
+            using StringType = TStringType;
+            using SizeType = std::uint_least64_t;
 
             StringType Name;
             StringType LocalName;
@@ -506,52 +506,52 @@ namespace Xml
         /**
             @brief Alias of the characters writer type that is used to write strings.
         */
-        typedef TCharactersWriter CharactersWriterType;
+        using CharactersWriterType = TCharactersWriter;
 
         /**
             @brief String type provided by the CharactersWriterType.
         */
-        typedef typename TCharactersWriter::StringType StringType;
+        using StringType = TCharactersWriter::StringType;
 
         /**
             @brief Attribute type.
         */
-        typedef InspectedAttribute<StringType> AttributeType;
+        using AttributeType = InspectedAttribute<StringType>;
 
         /**
             @brief Unsigned integer type definition for determining location in the XML document.
                 This type should be enough to store any file size or memory buffer size.
         */
-        typedef std::uint_least64_t SizeType;
+        using SizeType = std::uint_least64_t;
 
     private:
-        typedef typename StringType::size_type StringSizeType;
-        typedef Details::UnclosedTag<StringType> UnclosedTagType;
-        typedef Details::NamespaceDeclaration<StringType> NamespaceDeclarationType;
-        typedef typename std::deque<AttributeType>::size_type AttributesSizeType;
-        typedef typename std::deque<UnclosedTagType>::size_type UnclosedTagsSizeType;
-        typedef typename std::deque<NamespaceDeclarationType>::size_type NamespacesSizeType;
+        using StringSizeType = StringType::size_type;
+        using UnclosedTagType = Details::UnclosedTag<StringType>;
+        using NamespaceDeclarationType = Details::NamespaceDeclaration<StringType>;
+        using AttributesSizeType = std::deque<AttributeType>::size_type;
+        using UnclosedTagsSizeType = std::deque<UnclosedTagType>::size_type;
+        using NamespacesSizeType = std::deque<NamespaceDeclarationType>::size_type;
 
-        static const unsigned char Space = 0x20; // ' '
-        static const unsigned char LineFeed = 0x0A; // '\n'
-        static const unsigned char CarriageReturn = 0x0D; // '\r'
-        static const unsigned char LessThan = 0x3C; // '<'
-        static const unsigned char GreaterThan = 0x3E; // '>'
-        static const unsigned char Equals = 0x3D; // '='
-        static const unsigned char SingleQuote = 0x27; // '\''
-        static const unsigned char DoubleQuote = 0x22; // '\"'
-        static const unsigned char Slash = 0x2F; // '/'
-        static const unsigned char Question = 0x3F; // '?'
-        static const unsigned char Exclamation = 0x21; // '!'
-        static const unsigned char Minus = 0x2D; // '-'
-        static const unsigned char Ampersand = 0x26; // '&'
-        static const unsigned char Hash = 0x23; // '#'
-        static const unsigned char X = 0x78; // 'x'
-        static const unsigned char Colon = 0x3A; // ':'
-        static const unsigned char Semicolon = 0x3B; // ';'
-        static const unsigned char LeftSquareBracket = 0x5B; // '['
-        static const unsigned char RightSquareBracket = 0x5D; // ']'
-        static const unsigned char Dot = 0x2E; // '.'
+        static constexpr unsigned char Space = 0x20; // ' '
+        static constexpr unsigned char LineFeed = 0x0A; // '\n'
+        static constexpr unsigned char CarriageReturn = 0x0D; // '\r'
+        static constexpr unsigned char LessThan = 0x3C; // '<'
+        static constexpr unsigned char GreaterThan = 0x3E; // '>'
+        static constexpr unsigned char Equals = 0x3D; // '='
+        static constexpr unsigned char SingleQuote = 0x27; // '\''
+        static constexpr unsigned char DoubleQuote = 0x22; // '\"'
+        static constexpr unsigned char Slash = 0x2F; // '/'
+        static constexpr unsigned char Question = 0x3F; // '?'
+        static constexpr unsigned char Exclamation = 0x21; // '!'
+        static constexpr unsigned char Minus = 0x2D; // '-'
+        static constexpr unsigned char Ampersand = 0x26; // '&'
+        static constexpr unsigned char Hash = 0x23; // '#'
+        static constexpr unsigned char X = 0x78; // 'x'
+        static constexpr unsigned char Colon = 0x3A; // ':'
+        static constexpr unsigned char Semicolon = 0x3B; // ';'
+        static constexpr unsigned char LeftSquareBracket = 0x5B; // '['
+        static constexpr unsigned char RightSquareBracket = 0x5D; // ']'
+        static constexpr unsigned char Dot = 0x2E; // '.'
         static const unsigned char LowerXml[3]; // "xml"
         static const unsigned char UpperXml[3]; // "XML"
         static const unsigned char Xmlns[5]; // "xmlns"
@@ -574,11 +574,11 @@ namespace Xml
         static const unsigned char ToLower[256];
 
         // Source types.
-        static const int SourceNone = 0; // Inspector() constructor.
-        static const int SourcePath = 1; // Inspector(const char*) or Inspector(const std::string&) constructor.
-        static const int SourceStream = 2; // Inspector(std::istream*) constructor.
-        static const int SourceIterators = 3; // Inspector(InputIterator first, InputIterator last) constructor.
-        static const int SourceReader = 4; // Inspector(Encoding::CharactersReader*) constructor.
+        static constexpr int SourceNone = 0; // Inspector() constructor.
+        static constexpr int SourcePath = 1; // Inspector(const char*) or Inspector(const std::string&) constructor.
+        static constexpr int SourceStream = 2; // Inspector(std::istream*) constructor.
+        static constexpr int SourceIterators = 3; // Inspector(InputIterator first, InputIterator last) constructor.
+        static constexpr int SourceReader = 4; // Inspector(Encoding::CharactersReader*) constructor.
 
         static const StringSizeType NameReserve = 31;
         static const StringSizeType ValueReserve = 63;
@@ -757,11 +757,12 @@ namespace Xml
 
         auto InitStrings() -> void;
 
+    public:
         // Copy constructor is inaccessible for this class.
-        Inspector(const Inspector&) {};
+        Inspector(const Inspector&) = delete;
 
         // Assignment operator is inaccessible for this class.
-        auto operator=(const Inspector&) -> Inspector& { return *this; };
+        auto operator=(const Inspector&) -> Inspector& = delete;
 
     public:
         /**
@@ -1025,7 +1026,7 @@ namespace Xml
     };
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::IsWhiteSpace(char32_t codePoint) -> bool
+    inline auto Inspector<TCharactersWriter>::IsWhiteSpace(const char32_t codePoint) -> bool
     {
         return (codePoint == 0x20 || codePoint == 0x0A || codePoint == 0x09);
     }
@@ -1220,7 +1221,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::SetError(ErrorCode errorCode) -> void
+    inline auto Inspector<TCharactersWriter>::SetError(const ErrorCode errorCode) -> void
     {
         err = errorCode;
         if (errorCode != ErrorCode::None)
@@ -3897,7 +3898,7 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::NamespacesStuff() -> bool
     {
         // Collect namespaces from attributes.
-        typedef typename std::deque<AttributeType>::iterator AttrIter;
+        using AttrIter = std::deque<AttributeType>::iterator;
         AttrIter attrEnd = attributes.begin() + attributesSize;
         for (AttrIter attr = attributes.begin(); attr != attrEnd; ++attr)
         {
@@ -3979,7 +3980,7 @@ namespace Xml
         }
 
         // Assign URIs to attributes.
-        typedef typename std::deque<NamespaceDeclarationType>::const_iterator NamespaceIter;
+        using NamespaceIter = std::deque<NamespaceDeclarationType>::const_iterator;
         NamespaceIter namespaceLast = namespaces.begin();
         if (namespacesSize != 0)
         {
@@ -4120,7 +4121,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::ParseCharacterReference(char32_t& result, bool insideTag) -> bool
+    inline auto Inspector<TCharactersWriter>::ParseCharacterReference(char32_t& result, const bool insideTag) -> bool
     {
         // currentCharacter == Hash.
 
@@ -4141,7 +4142,7 @@ namespace Xml
             return false;
         }
 
-        const int BufferSize = 7;
+        constexpr int BufferSize = 7;
         unsigned char buffer[BufferSize];
         int digitCount = 0;
         int digit = 0;
@@ -4303,7 +4304,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::ParseEntityReference(bool insideTag) -> int
+    inline auto Inspector<TCharactersWriter>::ParseEntityReference(const bool insideTag) -> int
     {
         // IsNameStartChar(currentCharacter) == true
         // &&
@@ -5362,7 +5363,7 @@ namespace Xml
         // latin1
         static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x31};
         // l1
-        static const unsigned char c5[2] = {0x6C, 0x31};
+        static constexpr unsigned char c5[2] = {0x6C, 0x31};
         // IBM819
         static const unsigned char c6[6] = {0x49, 0x42, 0x4D, 0x38, 0x31, 0x39};
         // CP819
@@ -5396,7 +5397,7 @@ namespace Xml
         // latin2
         static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x32};
         // l2
-        static const unsigned char c5[2] = {0x6C, 0x32};
+        static constexpr unsigned char c5[2] = {0x6C, 0x32};
         // csISOLatin2
         static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x32};
         return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
@@ -5424,7 +5425,7 @@ namespace Xml
         // latin3
         static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x33};
         // l3
-        static const unsigned char c5[2] = {0x6C, 0x33};
+        static constexpr unsigned char c5[2] = {0x6C, 0x33};
         // csISOLatin3
         static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x33};
         return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
@@ -5452,7 +5453,7 @@ namespace Xml
         // latin4
         static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x34};
         // l4
-        static const unsigned char c5[2] = {0x6C, 0x34};
+        static constexpr unsigned char c5[2] = {0x6C, 0x34};
         // csISOLatin4
         static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x34};
         return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
@@ -5599,7 +5600,7 @@ namespace Xml
         // latin5
         static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x35};
         // l5
-        static const unsigned char c5[2] = {0x6C, 0x35};
+        static constexpr unsigned char c5[2] = {0x6C, 0x35};
         // csISOLatin5
         static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x35};
         return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
@@ -5623,7 +5624,7 @@ namespace Xml
         // iso-ir-157
         static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x35, 0x37};
         // l6
-        static const unsigned char c3[2] = {0x6C, 0x36};
+        static constexpr unsigned char c3[2] = {0x6C, 0x36};
         // ISO_8859-10
         static const unsigned char c4[11] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x30};
         // csISOLatin6
@@ -5672,7 +5673,7 @@ namespace Xml
         // iso-celtic
         static const unsigned char c5[10] = {0x69, 0x73, 0x6F, 0x2D, 0x63, 0x65, 0x6C, 0x74, 0x69, 0x63};
         // l8
-        static const unsigned char c6[2] = {0x6C, 0x38};
+        static constexpr unsigned char c6[2] = {0x6C, 0x38};
         // csISO885914
         static const unsigned char c7[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38, 0x38, 0x35, 0x39, 0x31, 0x34};
         return (CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 11) || CharsetEqual(c4, 6) ||
@@ -5722,7 +5723,7 @@ namespace Xml
         // latin10
         static const unsigned char c4[7] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x31, 0x30};
         // l10
-        static const unsigned char c5[3] = {0x6C, 0x31, 0x30};
+        static constexpr unsigned char c5[3] = {0x6C, 0x31, 0x30};
         // csISO885916
         static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38, 0x38, 0x35, 0x39, 0x31, 0x36};
         return (CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 11) || CharsetEqual(c4, 7) ||
@@ -5913,7 +5914,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::NewAttribute() -> typename Inspector<TCharactersWriter>::AttributeType&
+    inline auto Inspector<TCharactersWriter>::NewAttribute() -> Inspector<TCharactersWriter>::AttributeType&
 
     {
         AttributesSizeType fakeSize = static_cast<AttributesSizeType>(attributesSize);
@@ -5942,8 +5943,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::NewUnclosedTag() ->
-        typename Inspector<TCharactersWriter>::UnclosedTagType&
+    inline auto Inspector<TCharactersWriter>::NewUnclosedTag() -> Inspector<TCharactersWriter>::UnclosedTagType&
 
     {
         UnclosedTagsSizeType fakeSize = static_cast<UnclosedTagsSizeType>(unclosedTagsSize);
@@ -5970,8 +5970,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::NewNamespace() ->
-        typename Inspector<TCharactersWriter>::NamespaceDeclarationType&
+    inline auto Inspector<TCharactersWriter>::NewNamespace() -> Inspector<TCharactersWriter>::NamespaceDeclarationType&
 
     {
         NamespacesSizeType fakeSize = static_cast<NamespacesSizeType>(namespacesSize);
@@ -6024,7 +6023,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::CharsetEqual(const unsigned char* charset, std::size_t len) -> bool
+    inline auto Inspector<TCharactersWriter>::CharsetEqual(const unsigned char* charset, const std::size_t len) -> bool
     {
         // comparingName contains encoding name.
         if (len != comparingName.size())
@@ -6086,7 +6085,7 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::NextCharBad(bool insideTag) -> bool
+    inline auto Inspector<TCharactersWriter>::NextCharBad(const bool insideTag) -> bool
     {
         // x, CR, LF, y => x, LF, y
         // x, CR, y => x, LF, y
@@ -6532,40 +6531,35 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetName() const -> const
-        typename Inspector<TCharactersWriter>::StringType&
+    inline auto Inspector<TCharactersWriter>::GetName() const -> const Inspector<TCharactersWriter>::StringType&
 
     {
         return name;
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetValue() const -> const
-        typename Inspector<TCharactersWriter>::StringType&
+    inline auto Inspector<TCharactersWriter>::GetValue() const -> const Inspector<TCharactersWriter>::StringType&
 
     {
         return value;
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetLocalName() const -> const
-        typename Inspector<TCharactersWriter>::StringType&
+    inline auto Inspector<TCharactersWriter>::GetLocalName() const -> const Inspector<TCharactersWriter>::StringType&
 
     {
         return localName;
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetPrefix() const -> const
-        typename Inspector<TCharactersWriter>::StringType&
+    inline auto Inspector<TCharactersWriter>::GetPrefix() const -> const Inspector<TCharactersWriter>::StringType&
 
     {
         return prefix;
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetNamespaceUri() const -> const
-        typename Inspector<TCharactersWriter>::StringType&
+    inline auto Inspector<TCharactersWriter>::GetNamespaceUri() const -> const Inspector<TCharactersWriter>::StringType&
 
     {
         return namespaceUri;
@@ -6578,15 +6572,14 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetAttributesCount() const ->
-        typename Inspector<TCharactersWriter>::SizeType
+    inline auto Inspector<TCharactersWriter>::GetAttributesCount() const -> Inspector<TCharactersWriter>::SizeType
     {
         return static_cast<SizeType>(attributesSize);
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetAttributeAt(SizeType index) const -> const
-        typename Inspector<TCharactersWriter>::AttributeType&
+    inline auto Inspector<TCharactersWriter>::GetAttributeAt(SizeType index) const
+        -> const Inspector<TCharactersWriter>::AttributeType&
 
     {
         if (index >= attributesSize)
@@ -6609,19 +6602,19 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetRow() const -> typename Inspector<TCharactersWriter>::SizeType
+    inline auto Inspector<TCharactersWriter>::GetRow() const -> Inspector<TCharactersWriter>::SizeType
     {
         return row;
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetColumn() const -> typename Inspector<TCharactersWriter>::SizeType
+    inline auto Inspector<TCharactersWriter>::GetColumn() const -> Inspector<TCharactersWriter>::SizeType
     {
         return column;
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::GetDepth() const -> typename Inspector<TCharactersWriter>::SizeType
+    inline auto Inspector<TCharactersWriter>::GetDepth() const -> Inspector<TCharactersWriter>::SizeType
     {
         if (node == Inspected::StartTag)
         {
@@ -7044,8 +7037,8 @@ namespace Xml
         }
 
         template <typename TInputIterator, typename TCharacterType, typename TTraits>
-        inline auto BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::underflow() ->
-            typename BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::int_type
+        inline auto BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::underflow()
+            -> BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::int_type
         {
             if (curIter == endIter)
             {
@@ -7056,8 +7049,8 @@ namespace Xml
         }
 
         template <typename TInputIterator, typename TCharacterType, typename TTraits>
-        inline auto BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::uflow() ->
-            typename BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::int_type
+        inline auto BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::uflow()
+            -> BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::int_type
         {
             if (curIter == endIter)
             {

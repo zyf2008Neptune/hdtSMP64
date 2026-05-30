@@ -9,22 +9,22 @@ namespace hdt
         auto convertFloat(const std::string& str) -> float
         {
             // Replace decimal comma with point
-            std::string s = str;
-            const size_t start_pos = s.find(",");
-            if (start_pos != std::string::npos)
+            if (str.contains(','))
             {
+                float ret{};
+                std::string s = str;
+                const size_t start_pos = str.find(',');
                 s.replace(start_pos, 1, ".");
+                const char* begin = s.data();
+                const char* end = begin + s.size();
+                auto [ptr, ec] = std::from_chars(begin, end, ret);
+                if (ec != std::errc() || ptr != end) // Checking if there has been an error
+                {
+                    throw std::string("not a float value");
+                }
+                return ret;
             }
-
-            float ret{};
-            const char* begin = s.data();
-            const char* end = begin + s.size();
-            auto [ptr, ec] = std::from_chars(begin, end, ret);
-            if (ec != std::errc() || ptr != end) // Checking if there has been an error
-            {
-                throw std::string("not a float value");
-            }
-            return ret;
+            throw std::string("not a float value");
         }
     } // namespace
 
@@ -36,12 +36,12 @@ namespace hdt
             const char* end = begin + str.size();
 
             int radix = 10;
-            if (!str.compare(0, 2, "0x"))
+            if (str.starts_with("0x"))
             {
                 radix = 16;
                 begin += 2;
             }
-            else if (str.length() > 1 && str[0] == '0')
+            else if (str.length() > 1 && str.starts_with('0'))
             {
                 begin += 1;
                 radix = 8;
@@ -75,10 +75,6 @@ namespace hdt
 
     auto XMLReader::Inspect() -> bool
     {
-        if (Base::GetInspected() == Inspected::EmptyElementTag && isEmptyStart)
-        {
-            return isEmptyStart = false, true;
-        }
         if (!Base::Inspect())
         {
             return false;
