@@ -323,7 +323,7 @@ namespace Hooks
                 RE::NiAVObject* object = armor->GetObjectByName(NodeName);
                 if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
                 {
-                    const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->bones;
+                    const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
                     for (uint32_t idx = 0; idx < size; idx++) // all good here
                     {
                         const auto bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
@@ -349,7 +349,7 @@ namespace Hooks
                 RE::NiAVObject* object = ret->GetObjectByName(NodeName);
                 if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
                 {
-                    const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->bones;
+                    const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
                     for (uint32_t idx = 0; idx < size; idx++)
                     {
                         auto bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];

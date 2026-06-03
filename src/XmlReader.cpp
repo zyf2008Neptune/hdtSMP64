@@ -6,7 +6,7 @@ namespace hdt
 {
     namespace
     {
-        auto convertFloat(const std::string& str) -> float
+        auto convertFloat(const std::string_view str) -> float
         {
             float ret{};
             if (!str.contains(','))
@@ -21,7 +21,7 @@ namespace hdt
                 return ret;
             }
 
-            std::string s = str;
+            std::string s = std::string(str);
             size_t start_pos = s.find(',');
             s.replace(start_pos, 1, ".");
             const char* begin = s.data();
@@ -37,7 +37,7 @@ namespace hdt
 
     namespace
     {
-        auto convertInt(const std::string& str) -> int
+        auto convertInt(const std::string_view str) -> int
         {
             const char* begin = str.data();
             const char* end = begin + str.size();
@@ -66,7 +66,7 @@ namespace hdt
 
     namespace
     {
-        auto convertBool(const std::string& str) -> bool
+        auto convertBool(const std::string_view str) -> bool
         {
             if (str == "true" || str == "1")
             {

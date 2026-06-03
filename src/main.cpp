@@ -199,7 +199,7 @@ namespace
             auto& children = niNode->GetChildren();
             if (!children.empty())
             {
-                for (auto object : children)
+                for (const auto& object : children)
                 {
                     if (object)
                     {
@@ -213,8 +213,8 @@ namespace
                             if (geometry->GetGeometryRuntimeData().skinInstance &&
                                 geometry->GetGeometryRuntimeData().skinInstance->skinData)
                             {
-                                for (uint32_t boneIdx = 0;
-                                     boneIdx < geometry->GetGeometryRuntimeData().skinInstance->skinData->bones;
+                                for (uint32_t boneIdx = 0; boneIdx <
+                                     geometry->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
                                      boneIdx++)
                                 {
                                     const auto bone = geometry->GetGeometryRuntimeData().skinInstance->bones[boneIdx];
