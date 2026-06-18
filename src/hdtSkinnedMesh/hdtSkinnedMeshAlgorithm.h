@@ -5,6 +5,16 @@
 
 namespace hdt
 {
+    struct CollisionResult
+    {
+        btVector3 posA{};
+        btVector3 posB{};
+        btVector3 normOnB{};
+        Collider* colliderA{nullptr};
+        Collider* colliderB{nullptr};
+        float depth{};
+    };
+
     class SkinnedMeshAlgorithm
     {
     public:
