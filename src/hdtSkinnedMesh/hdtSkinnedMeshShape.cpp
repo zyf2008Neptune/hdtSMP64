@@ -209,21 +209,21 @@ namespace hdt
         m_verticesCollision->remapVertices(map);
     }
 
-    auto PerTriangleShape::addTriangle(int a, int b, int c) -> void
+    auto PerTriangleShape::addTriangle(const int p0, const int p1, const int p2) -> void
     {
-        assert(a < m_owner->m_vertices.size());
-        assert(b < m_owner->m_vertices.size());
-        assert(c < m_owner->m_vertices.size());
-        const Collider collider(a, b, c);
+        assert(p0 < m_owner->m_vertices.size());
+        assert(p1 < m_owner->m_vertices.size());
+        assert(p2 < m_owner->m_vertices.size());
+        const Collider collider(p0, p1, p2);
 
         // Stacklocal fixed arrays, max 12 unique bones (3 verts * 4 weights)
         U32 keys[12];
         float w[12];
         int count = 0;
 
-        const auto& v0 = m_owner->m_vertices[a];
-        const auto& v1 = m_owner->m_vertices[b];
-        const auto& v2 = m_owner->m_vertices[c];
+        const auto& v0 = m_owner->m_vertices[p0];
+        const auto& v1 = m_owner->m_vertices[p1];
+        const auto& v2 = m_owner->m_vertices[p2];
         const Vertex* verts[3] = {&v0, &v1, &v2};
 
         for (int vi = 0; vi < 3; ++vi)

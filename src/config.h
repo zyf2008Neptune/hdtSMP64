@@ -7,4 +7,4 @@ namespace hdt
     //
     auto loadConfig() -> void;
     auto logConfig() -> void;
-}
+} // namespace hdt

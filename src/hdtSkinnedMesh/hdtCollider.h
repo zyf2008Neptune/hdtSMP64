@@ -5,7 +5,7 @@
 
 namespace hdt
 {
-    inline constexpr auto MaxCollisionPairs = 4024;
+    inline constexpr auto MaxCollisionPairs = 6024;
 
     struct alignas(16) Collider
     {

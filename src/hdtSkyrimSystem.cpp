@@ -254,12 +254,6 @@ namespace hdt
         m_mesh = RE::make_smart<SkyrimSystem>(skeleton);
         m_boneIndex.clear();
 
-        // Store original locale
-        const auto saved_locale = std::locale();
-
-        // Set locale to en_US
-        std::locale::global(std::locale::classic());
-
         // This forces the skeleton into a neutral reference pose, which avoids building invalid shape data
         // We pull the references directly from havok for the exact same reference data the engine uses
         std::vector<std::pair<RE::NiAVObject*, RE::NiTransform>> savedPoses;
@@ -442,9 +436,6 @@ namespace hdt
         }
 
         m_deferredBuilds.clear();
-
-        // Restore original locale
-        std::locale::global(saved_locale);
 
         if (m_reader->GetErrorCode() != Xml::ErrorCode::None)
         {
@@ -947,15 +938,15 @@ namespace hdt
 
             const RE::NiSkinInstance* skinInstance = triShape->GetGeometryRuntimeData().skinInstance.get();
             const RE::NiSkinData* skinData = skinInstance->skinData.get();
-            for (uint32_t boneIdx = 0; boneIdx < skinData->bones; ++boneIdx)
+            for (uint32_t boneIdx = 0; boneIdx < skinData->GetBoneCount(); ++boneIdx)
             {
                 const auto node = skinInstance->bones[boneIdx];
                 if (!node)
                 {
                     continue;
                 }
-                const auto boneData = &skinData->boneData[boneIdx];
-                auto boundingSphere = BoundingSphere(convertNi(boneData->bound.center), boneData->bound.radius);
+                const auto& boneBound = skinData->GetBoneDataBound(boneIdx);
+                auto boundingSphere = BoundingSphere(convertNi(boneBound.center), boneBound.radius);
                 const RE::BSFixedString& boneName = node->name;
                 auto bone = static_cast<SkinnedMeshBone*>(findBoneFromIndex(boneName));
                 if (!bone)
@@ -969,7 +960,7 @@ namespace hdt
                                  name);
                 }
 
-                body->addBone(bone, convertNi(boneData->skinToBone), boundingSphere);
+                body->addBone(bone, convertNi(skinData->GetBoneDataSkinToBone(boneIdx)), boundingSphere);
             }
 
             RE::NiSkinPartition* skinPartition = triShape->GetGeometryRuntimeData().skinInstance->skinPartition.get();

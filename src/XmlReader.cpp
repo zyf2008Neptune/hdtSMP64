@@ -1,22 +1,33 @@
 #include "XmlReader.h"
 
+#include <charconv>
+
 namespace hdt
 {
     namespace
     {
-        auto convertFloat(const std::string& str) -> float
+        auto convertFloat(const std::string_view str) -> float
         {
-            // Replace decimal comma with point
-            std::string s = str;
-            const size_t start_pos = s.find(",");
-            if (start_pos != std::string::npos)
+            float ret{};
+            if (!str.contains(','))
             {
-                s.replace(start_pos, 1, ".");
+                const auto begin = str.data();
+                const auto end = begin + str.size();
+                auto [ptr, ec] = std::from_chars(begin, end, ret);
+                if (ec != std::errc() || ptr != end)
+                {
+                    throw std::string("not a float value");
+                }
+                return ret;
             }
 
-            errno = 0; // Reinitializing the error global variable (thread-safe)
-            const float ret = strtof(s.c_str(), nullptr);
-            if (errno != 0) // Checking if there has been an error
+            std::string s = std::string(str);
+            size_t start_pos = s.find(',');
+            s.replace(start_pos, 1, ".");
+            const char* begin = s.data();
+            const char* end = begin + s.size();
+            auto [ptr, ec] = std::from_chars(begin, end, ret);
+            if (ec != std::errc() || ptr != end)
             {
                 throw std::string("not a float value");
             }
@@ -26,25 +37,26 @@ namespace hdt
 
     namespace
     {
-        auto convertInt(const std::string& str) -> int
+        auto convertInt(const std::string_view str) -> int
         {
-            auto begin = str.c_str();
-            char* end;
+            const char* begin = str.data();
+            const char* end = begin + str.size();
 
             int radix = 10;
-            if (!str.compare(0, 2, "0x"))
+            if (str.starts_with("0x"))
             {
                 radix = 16;
                 begin += 2;
             }
-            else if (str.length() > 1 && str[0] == '0')
+            else if (str.length() > 1 && str.starts_with('0'))
             {
                 begin += 1;
                 radix = 8;
             }
 
-            const int ret = strtol(str.c_str(), &end, radix);
-            if (end != str.c_str() + str.length())
+            int ret{};
+            auto [ptr, ec] = std::from_chars(begin, end, ret, radix);
+            if (ec != std::errc() || ptr != end)
             {
                 throw std::string("not a int value");
             }
@@ -54,7 +66,7 @@ namespace hdt
 
     namespace
     {
-        auto convertBool(const std::string& str) -> bool
+        auto convertBool(const std::string_view str) -> bool
         {
             if (str == "true" || str == "1")
             {
@@ -70,9 +82,10 @@ namespace hdt
 
     auto XMLReader::Inspect() -> bool
     {
-        if (Base::GetInspected() == Inspected::EmptyElementTag && isEmptyStart)
+        if (Base::GetInspected() == Inspected::EmptyElementTag && isEmptyStart == true)
         {
-            return isEmptyStart = false, true;
+            isEmptyStart = false;
+            return true;
         }
         if (!Base::Inspect())
         {

@@ -257,6 +257,7 @@ namespace hdt
 
     auto SkinnedMeshBody::canCollideWith(const SkinnedMeshBody* body) const -> bool
     {
+        // TODO: whether it's needed or not
         if (!body)
         {
             return false;

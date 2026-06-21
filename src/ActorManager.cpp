@@ -154,6 +154,10 @@ namespace hdt
         }
         else
         {
+            if (e->armorModel == nullptr)
+            {
+                return RE::BSEventNotifyControl::kContinue;
+            }
             skeleton.addArmor(e->armorModel);
         }
 
@@ -469,6 +473,19 @@ namespace hdt
         const auto cameraOrientation = cameraTransform.rotate * RE::NiPoint3(0., 1., 0.);
         // The camera matrix is relative to the world.
         m_cameraPositionDuringFrame = cameraPosition;
+
+        m_screenSizeNearPlaneScale = 0.f;
+        m_screenSizeThresholdScale = 0.f;
+        if (m_minScreenSizeFraction > 0.f)
+        {
+            if (auto* cam = RE::Main::WorldRootCamera())
+            {
+                const auto& f = cam->GetRuntimeData2().viewFrustum;
+                const float screenH = f.fTop - f.fBottom; // near-plane total vertical span in world units
+                m_screenSizeNearPlaneScale = 4.f * f.fNear * f.fNear;
+                m_screenSizeThresholdScale = m_minScreenSizeFraction * m_minScreenSizeFraction * screenH * screenH;
+            }
+        }
 
         for (auto& skel : m_skeletons)
         {
@@ -1000,10 +1017,7 @@ namespace hdt
 
     auto ActorManager::Skeleton::addArmor(RE::NiNode* armorModel) -> void
     {
-        if (armorModel)
-        {
-            logBrokenNifOnce(armorModel->name.c_str(), armorModel);
-        }
+        logBrokenNifOnce(armorModel->name.c_str(), armorModel);
 
         const IDType id = !armors.empty() ? armors.back().id + 1 : 0;
         const auto prefix = armorPrefix(id);
@@ -1268,6 +1282,20 @@ namespace hdt
             return false;
         }
 
+        // Is the skeleton too small on screen?
+        // Ie, is the NPC's projected bounding sphere smaller than the allowed fraction of screen height?
+        // screenFraction < minFraction <=> 2r·fNear / (dist·screenH) < fr <=> 4r²·fNear² < fr²·dist²·screenH²
+        if (manager->m_screenSizeThresholdScale > 0.f)
+        {
+            const float r =
+                skeleton3D->worldBound.radius; // the radius of the bounding sphere of the skeleton in world units
+            if (manager->m_screenSizeNearPlaneScale * r * r <
+                manager->m_screenSizeThresholdScale * m_distanceFromCamera2)
+            {
+                return false;
+            }
+        }
+
         RE::NiPoint3 hitLocation;
         const auto* obstacle = Actor_CalculateLOS(owner, &manager->m_cameraPositionDuringFrame, &hitLocation, 6.28f);
         return !obstacle; // If obstacle, we hit something on the path
@@ -1328,6 +1356,11 @@ namespace hdt
                     isActive = true;
                     state = SkeletonState::e_ActiveIsPlayer;
                 }
+            }
+            else if (instance()->m_maxPhysicsDistance > 0.f &&
+                     m_distanceFromCamera2 > instance()->m_maxPhysicsDistance * instance()->m_maxPhysicsDistance)
+            {
+                state = SkeletonState::e_InactiveTooFar;
             }
             else if (isInPlayerView())
             {
@@ -1620,7 +1653,8 @@ namespace hdt
                                     rootFadeNode->ProcessClone(c);
                                     auto clonedRoot = static_cast<RE::BSFadeNode*>(clonedObj);
 
-                                    // VR stuff probably still needed?
+                                    // NOTE: This is likely not needed due to:
+                                    // https://github.com/alandtse/CommonLibVR/commit/2f535530072827b8e8961f853232bec6b219ecff
                                     // VR: NiSkinInstance::LinkObject fails to resolve internal bone refs,
                                     // storing the bone name as a raw char* instead of a resolved NiNode*.
                                     // Bone NiNodes are self-contained in the face geometry NIF, so resolve
@@ -1648,7 +1682,8 @@ namespace hdt
                                             }
                                             std::uint32_t vrResolved = 0;
                                             std::uint32_t vrFailed = 0;
-                                            for (std::uint32_t bi = 0; bi < grd.skinInstance->skinData->bones; ++bi)
+                                            for (std::uint32_t bi = 0; bi < grd.skinInstance->skinData->GetBoneCount();
+                                                 ++bi)
                                             {
                                                 auto bone = grd.skinInstance->bones[bi];
                                                 if (!bone || isValidNiObject(bone))
@@ -1730,7 +1765,7 @@ namespace hdt
         auto hasMerged = false;
         auto hasRenames = false;
 
-        for (uint32_t boneIdx = 0; boneIdx < geometry->GetGeometryRuntimeData().skinInstance->skinData->bones;
+        for (uint32_t boneIdx = 0; boneIdx < geometry->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
              boneIdx++)
         {
             RE::BSFixedString boneName("");
@@ -1752,7 +1787,7 @@ namespace hdt
                 {
                     auto skinData = rd.skinInstance->skinData.get();
                     if (skinData && reinterpret_cast<uintptr_t>(skinData) <= kCanonicalUserSpaceMax &&
-                        boneIdx < skinData->bones)
+                        boneIdx < skinData->GetBoneCount())
                     {
                         if (rd.skinInstance->bones &&
                             reinterpret_cast<uintptr_t>(rd.skinInstance->bones) <= kCanonicalUserSpaceMax)
@@ -1781,7 +1816,7 @@ namespace hdt
                 {
                     auto skinData = activeSkin->skinData.get();
                     if (skinData && reinterpret_cast<uintptr_t>(skinData) <= kCanonicalUserSpaceMax &&
-                        boneIdx < skinData->bones)
+                        boneIdx < skinData->GetBoneCount())
                     {
                         if (activeSkin->bones &&
                             reinterpret_cast<uintptr_t>(activeSkin->bones) <= kCanonicalUserSpaceMax)

@@ -179,6 +179,14 @@ namespace hdt
                     {
                         ActorManager::instance()->m_disable1stPersonViewPhysics = reader.readBool();
                     }
+                    else if (reader.GetLocalName() == "maxPhysicsDistance")
+                    {
+                        ActorManager::instance()->m_maxPhysicsDistance = std::max(reader.readFloat(), 0.f);
+                    }
+                    else if (reader.GetLocalName() == "minScreenSizeFraction")
+                    {
+                        ActorManager::instance()->m_minScreenSizeFraction = std::clamp(reader.readFloat(), 0.f, 1.f);
+                    }
                     else
                     {
                         logger::warn("Unknown config : {}", reader.GetLocalName());
@@ -234,12 +242,6 @@ namespace hdt
             return;
         }
 
-        // Store original locale
-        const auto saved_locale = std::locale();
-
-        // Set locale to en_US
-        std::locale::global(std::locale::classic());
-
         XMLReader reader(reinterpret_cast<uint8_t*>(bytes.data()), bytes.size());
 
         while (reader.Inspect())
@@ -257,9 +259,6 @@ namespace hdt
                 }
             }
         }
-
-        // Restore original locale
-        std::locale::global(saved_locale);
     }
 
     auto logConfig() -> void
@@ -298,6 +297,8 @@ namespace hdt
         LOG("smp.autoAdjustMaxSkeletons", a->m_autoAdjustMaxSkeletons);
         LOG("smp.sampleSize", w->m_sampleSize);
         LOG("smp.disable1stPersonViewPhysics", a->m_disable1stPersonViewPhysics);
+        LOG("smp.maxPhysicsDistance", a->m_maxPhysicsDistance);
+        LOG("smp.minScreenSizeFraction", a->m_minScreenSizeFraction);
 #undef LOG
     }
 } // namespace hdt

@@ -199,9 +199,9 @@ namespace
             auto& children = niNode->GetChildren();
             if (!children.empty())
             {
-                for (uint16_t i = 0; i < children.size(); i++)
+                for (const auto& object : children)
                 {
-                    if (RE::NiPointer<RE::NiAVObject> object = children[i])
+                    if (object)
                     {
                         RE::NiNode* childNode = object->AsNode();
                         if (RE::BSGeometry* geometry = object->AsGeometry())
@@ -213,8 +213,8 @@ namespace
                             if (geometry->GetGeometryRuntimeData().skinInstance &&
                                 geometry->GetGeometryRuntimeData().skinInstance->skinData)
                             {
-                                for (uint32_t boneIdx = 0;
-                                     boneIdx < geometry->GetGeometryRuntimeData().skinInstance->skinData->bones;
+                                for (uint32_t boneIdx = 0; boneIdx <
+                                     geometry->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
                                      boneIdx++)
                                 {
                                     const auto bone = geometry->GetGeometryRuntimeData().skinInstance->bones[boneIdx];
@@ -580,7 +580,7 @@ namespace
         case SKSE::MessagingInterface::kPreLoadGame:
         {
             std::string save_name = static_cast<char*>(a_msg->data);
-            save_name = save_name.substr(0, save_name.find_last_of("."));
+            save_name = save_name.substr(0, save_name.find_last_of('.'));
 
             std::ifstream ifs("Data/SKSE/Plugins/hdtOverrideSaves/" + save_name + ".dhdt", std::ios::in);
             if (ifs && ifs.is_open())
@@ -593,6 +593,7 @@ namespace
         break;
         case SKSE::MessagingInterface::kPostPostLoad:
         {
+            Hooks::InstallHighPriority();
             hdt::g_pluginInterface.onPostPostLoad();
             checkOldPlugins();
         }
@@ -704,7 +705,7 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
     SKSE::GetCameraEventSource()->AddEventSink(hdt::SkyrimPhysicsWorld::get());
 
     //
-    Hooks::Install();
+    Hooks::InstallLowPriority();
 
     //
     hdt::g_pluginInterface.init(a_skse);
