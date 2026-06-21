@@ -7,9 +7,9 @@ namespace hdt
 {
     struct CollisionResult
     {
-        btVector3 posA{};
-        btVector3 posB{};
-        btVector3 normOnB{};
+        btVector3 posA;
+        btVector3 posB;
+        btVector3 normOnB;
         Collider* colliderA{nullptr};
         Collider* colliderB{nullptr};
         float depth{};
@@ -30,7 +30,7 @@ namespace hdt
         {
             btVector3 normal; // accumulated weighted normal: length encodes depth, direction encodes contact normal
             btVector3 pos[2];
-            float weight;
+            float weight{};
 
             CollisionMerge()
             {
@@ -112,9 +112,9 @@ namespace hdt
             auto apply(const SkinnedMeshBody* body0, const SkinnedMeshBody* body1,
                        CollisionDispatcher* dispatcher) const -> void;
 
-            int mergeStride;
-            int mergeSize;
-            uint32_t currentGen;
+            int mergeStride{};
+            int mergeSize{};
+            uint32_t currentGen{};
             CollisionMerge* buffer = nullptr;
             uint32_t* generations = nullptr;
             std::vector<int> activeCells;
