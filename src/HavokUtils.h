@@ -1,5 +1,10 @@
 #pragma once
 
+#include "RE/A/Actor.h"
+#include "RE/B/BSAnimationGraphManager.h"
+#include "RE/H/hkaSkeleton.h"
+
+
 namespace hdt::havok
 {
     inline auto getAnimationSkeleton(const RE::Actor* a_actor) -> const RE::hkaSkeleton*
@@ -33,7 +38,11 @@ namespace hdt::havok
 
     inline auto hKQsTransformToNiTransform(const RE::hkQsTransform& a_hkTransform) -> RE::NiTransform
     {
-        const auto* r = a_hkTransform.rotation.vec.quad.m128_f32;
+#if (__clang__)
+        const auto r = a_hkTransform.rotation.vec.quad;
+#elif (_MSC_VER)
+        const auto r = a_hkTransform.rotation.vec.quad.m128_f32;
+#endif
         const float qx = r[0], qy = r[1], qz = r[2], qw = r[3];
         const float sqx = qx * qx, sqy = qy * qy, sqz = qz * qz, sqw = qw * qw;
         const float invs = 1.0f / (sqx + sqy + sqz + sqw);
@@ -54,11 +63,19 @@ namespace hdt::havok
         cross(qx, qz, qy, qw, 0, 2);
         cross(qy, qz, qx, qw, 2, 1);
 
+#if (__clang__)
+        const auto t = a_hkTransform.translation.quad;
+#elif (_MSC_VER)
         const auto* t = a_hkTransform.translation.quad.m128_f32;
+#endif
         result.translate.x = t[0];
         result.translate.y = t[1];
         result.translate.z = t[2];
+#if (__clang__)
+        result.scale = a_hkTransform.scale.quad[0];
+#elif (_MSC_VER)
         result.scale = a_hkTransform.scale.quad.m128_f32[0];
+#endif
 
         return result;
     }

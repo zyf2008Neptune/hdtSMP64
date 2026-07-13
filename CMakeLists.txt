@@ -4,6 +4,7 @@ project(
 	hdtsmp64
 	VERSION 3.1.0
 	LANGUAGES CXX)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Pre-release build identifier (e.g. "dev-abc1234"). Empty for production builds.

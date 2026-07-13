@@ -8,7 +8,11 @@ namespace hdt
     {
         Aabb() { invalidate(); }
 
-        Aabb(const __m128 mmin, const __m128 mmax) : m_min(mmin), m_max(mmax) {}
+        Aabb(const __m128 mmin, const __m128 mmax)
+        {
+            m_min = mmin;
+            m_max = mmax;
+        }
 
         __m128 m_min;
         __m128 m_max;
@@ -18,7 +22,7 @@ namespace hdt
             const auto flag0 = _mm_cmplt_ps(rhs.m_max, m_min);
             const auto flag1 = _mm_cmplt_ps(m_max, rhs.m_min);
             const auto flag = _mm_movemask_ps(_mm_or_ps(flag0, flag1));
-            return !(flag & 0x7);
+            return (flag & 0x7) == 0;
         }
 
         auto invalidate() -> void
@@ -44,8 +48,9 @@ namespace hdt
     {
         BoundingSphere() = default;
 
-        BoundingSphere(const btVector3& center, const float radius) : m_centerRadius(center)
+        BoundingSphere(const btVector3& center, const float radius)
         {
+            m_centerRadius = center;
             m_centerRadius[3] = radius;
         }
 

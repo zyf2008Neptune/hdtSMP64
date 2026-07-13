@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <functional>
 #include "hdtAABB.h"
 
@@ -24,8 +25,8 @@ namespace hdt
 
         auto operator=(const Collider& rhs) -> Collider&
         {
-            const auto dst = reinterpret_cast<__m128i*>(this);
-            const auto src = reinterpret_cast<__m128i*>(const_cast<Collider*>(&rhs));
+            auto* dst = reinterpret_cast<__m128i*>(this);
+            const auto* src = reinterpret_cast<__m128i*>(const_cast<Collider*>(&rhs));
             const auto xmm0 = _mm_load_si128(src + 0);
             _mm_store_si128(dst, xmm0);
             return *this;
@@ -34,7 +35,7 @@ namespace hdt
         union
         {
             U32 vertex; // vertexshape
-            U32 vertices[3]; // triangleshape
+            std::array<U32, 3> vertices; // triangleshape
         };
 
         float flexible{};
@@ -83,7 +84,7 @@ namespace hdt
         auto updateAabb() -> void;
         auto optimize() -> void;
 
-        auto empty() const -> bool { return children.empty() && colliders.empty(); }
+        [[nodiscard]] auto empty() const -> bool { return children.empty() && colliders.empty(); }
 
         auto collapseCollideL(ColliderTree* r) -> bool;
         auto collapseCollideR(ColliderTree* r) -> bool;

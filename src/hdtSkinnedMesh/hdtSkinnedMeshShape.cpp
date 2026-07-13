@@ -127,16 +127,21 @@ namespace hdt
             auto p0 = vertices[c->vertices[0]].m_data;
             auto p1 = vertices[c->vertices[1]].m_data;
             auto p2 = vertices[c->vertices[2]].m_data;
-            auto margin4 = p0 + p1 + p2;
+            auto margin4 = _mm_add_ps(_mm_add_ps(p0, p1), p2);
 
             auto aabbMin = _mm_min_ps(_mm_min_ps(p0, p1), p2);
             auto aabbMax = _mm_max_ps(_mm_max_ps(p0, p1), p2);
             auto prenetration = _mm_set_ss(m_shapeProp.penetration);
             prenetration = _mm_andnot_ps(_mm_set_ss(-0.0f), prenetration); // abs
+#if (__clang__)
+            margin4 = _mm_max_ss(_mm_set_ss(margin4[3] * m_shapeProp.margin / 3), prenetration);
+#elif (_MSC_VER)
             margin4 = _mm_max_ss(_mm_set_ss(margin4.m128_f32[3] * m_shapeProp.margin / 3), prenetration);
+#endif
+
             margin4 = _mm_shuffle_ps(margin4, margin4, 0);
-            aabbMin = aabbMin - margin4;
-            aabbMax = aabbMax + margin4;
+            aabbMin = _mm_sub_ps(aabbMin, margin4);
+            aabbMax = _mm_add_ps(aabbMax, margin4);
 
             m_aabb[i].m_min = aabbMin;
             m_aabb[i].m_max = aabbMax;

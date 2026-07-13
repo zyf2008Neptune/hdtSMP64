@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include "NetImmerseUtils.h"
 
 #include "DynamicHDT.h"
@@ -51,10 +52,10 @@ namespace hdt
 
             auto setPhysics(const RE::BSTSmartPointer<SkyrimSystem>& system, bool active) -> void;
             auto clearPhysics() -> void;
-            auto hasPhysics() const -> bool { return m_physics.get(); }
-            auto state() const -> ItemState;
+            [[nodiscard]] auto hasPhysics() const -> bool { return m_physics.get() != nullptr; }
+            [[nodiscard]] auto state() const -> ItemState;
 
-            auto meshes() const -> const std::vector<RE::BSTSmartPointer<SkinnedMeshBody>>&;
+            [[nodiscard]] auto meshes() const -> const std::vector<RE::BSTSmartPointer<SkinnedMeshBody>>&;
 
             auto updateActive(bool active) const -> void;
 
@@ -109,7 +110,7 @@ namespace hdt
             SkeletonState state;
             bool mustFixOneArmorMap = false;
 
-            auto name() const -> std::string;
+            [[nodiscard]] auto name() const -> std::string;
             auto addArmor(RE::NiNode* armorModel) -> void;
             auto attachArmor(RE::NiNode* armorModel, RE::NiAVObject* attachedNode) -> void;
 
@@ -126,16 +127,16 @@ namespace hdt
             auto calculateDistanceAndOrientationDifferenceFromSource(RE::NiPoint3 sourcePosition,
                                                                      RE::NiPoint3 sourceOrientation) -> void;
 
-            auto isPlayerCharacter() const -> bool;
-            auto isInPlayerView() const -> bool;
+            [[nodiscard]] auto isPlayerCharacter() const -> bool;
+            [[nodiscard]] auto isInPlayerView() const -> bool;
             bool hasPhysics = false;
-            auto position() const -> std::optional<RE::NiPoint3>;
+            [[nodiscard]] auto position() const -> std::optional<RE::NiPoint3>;
 
             // @brief Update windfactor for skeleton
             // @param a_windFactor is a percentage [0,1] with 0 being no wind effect to 1 being full wind effect.
             auto updateWindFactor(float a_windFactor) -> void;
             // @brief Get windfactor for skeleton
-            auto getWindFactor() const -> float;
+            [[nodiscard]] auto getWindFactor() const -> float;
 
             // @brief Updates the states and activity of skeletons, their heads parts and armors.
             // @param playerCell The skeletons not in the player cell are automatically inactive.
@@ -164,17 +165,17 @@ namespace hdt
             float m_distanceFromCamera2 = std::numeric_limits<float>::max();
 
             // @brief This is |camera2SkeletonVector|*cos(angle between that vector and the camera direction).
-            float m_cosAngleFromCameraDirectionTimesSkeletonDistance = -1.;
+            float m_cosAngleFromCameraDirectionTimesSkeletonDistance = -1.F;
 
         private:
-            auto isActiveInScene() const -> bool;
+            [[nodiscard]] auto isActiveInScene() const -> bool;
             auto checkPhysics() -> bool;
             static auto doSkeletonMerge(RE::NiNode* dst, RE::NiNode* src, std::string_view prefix,
                                         std::unordered_map<RE::BSFixedString, RE::BSFixedString>& map,
                                         RE::NiNode* dstRoot, bool renameSource) -> void;
 
             bool isActive = false;
-            float currentWindFactor = 0.f;
+            float currentWindFactor = 0.F;
             std::vector<Armor> armors;
         };
 
@@ -247,7 +248,7 @@ namespace hdt
 
         static auto skeletonNeedsParts(RE::NiNode* skeleton) -> bool;
         auto getSkeletons() -> std::vector<Skeleton>&; // Altered by Dynamic HDT
-        auto lockGuard() -> std::unique_lock<std::recursive_mutex> { return std::unique_lock(m_lock); }
+        auto lockGuard() -> std::scoped_lock<std::recursive_mutex> { return std::scoped_lock(m_lock); }
         bool m_skinNPCFaceParts = true;
         bool m_disableSMPHairWhenWigEquipped = false;
         bool m_autoAdjustMaxSkeletons = true;
@@ -255,17 +256,17 @@ namespace hdt
         int m_maxActiveSkeletons = 20; // The maximum active skeletons; hard limit
         float m_minCullingDistance = 500; // The distance from the camera under which we never cull the skeletons.
         float m_maxPhysicsDistance =
-            0.f; // 0 = disabled; hard cutoff — physics skipped beyond this distance (world units).
+            0.F; // 0 = disabled; hard cutoff — physics skipped beyond this distance (world units).
         float m_minScreenSizeFraction =
-            0.f; // 0 = disabled; the minimum fraction of screen height the skeleton should occupy to be active - [0,1].
+            0.F; // 0 = disabled; the minimum fraction of screen height the skeleton should occupy to be active - [0,1].
 
         // @brief Depending on this setting, we avoid to calculate the physics of the PC when it is in 1st person view.
         bool m_disable1stPersonViewPhysics = false;
 
     private:
         RE::NiPoint3 m_cameraPositionDuringFrame;
-        float m_screenSizeNearPlaneScale = 0.f; // precomputed per frame: 4·fNear²
-        float m_screenSizeThresholdScale = 0.f; // precomputed per frame: minScreenSizeFraction²·screenH²
+        float m_screenSizeNearPlaneScale = 0.F; // precomputed per frame: 4·fNear²
+        float m_screenSizeThresholdScale = 0.F; // precomputed per frame: minScreenSizeFraction²·screenH²
         static auto getCameraNode() -> RE::NiNode*;
 
         auto setSkeletonsActive(bool updateMetrics = false) -> void;

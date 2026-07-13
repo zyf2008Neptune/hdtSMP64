@@ -8,7 +8,7 @@ namespace hdt
     public:
         auto scaleConstraint() const -> void
         {
-            for (auto& i : m_constraints)
+            for (const auto& i : m_constraints)
             {
                 i->scaleConstraint();
             }

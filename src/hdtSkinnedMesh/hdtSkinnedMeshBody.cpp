@@ -1,6 +1,7 @@
 #include "hdtSkinnedMeshBody.h"
 #include "hdtSkinnedMeshShape.h"
 
+#include <cstddef>
 #include <tbb/tbb.h>
 
 namespace hdt
@@ -53,7 +54,7 @@ namespace hdt
             {
                 _mm_prefetch(reinterpret_cast<const char*>(skinnedBones[i + 4].ptr), _MM_HINT_T0);
             }
-            auto& v = skinnedBones[i];
+            const auto& v = skinnedBones[i];
             auto boneT = v.ptr->m_currentTransform;
             bonesDst[i].m_vertexToWorld = btMatrix4x3T(boneT) * v.vertexToBone;
             bonesDst[i].m_maginMultipler = v.ptr->m_marginMultipler * boneT.getScale();
@@ -78,7 +79,7 @@ namespace hdt
             }
 
             {
-                auto& v = verts[idx];
+                const auto& v = verts[idx];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -88,7 +89,7 @@ namespace hdt
                 vpos[idx].set(pm);
             }
             {
-                auto& v = verts[idx + 1];
+                const auto& v = verts[idx + 1];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -100,7 +101,7 @@ namespace hdt
         }
         for (; idx < size; ++idx)
         {
-            auto& v = verts[idx];
+            const auto& v = verts[idx];
             auto p = v.m_skinPos.get128();
             auto w = _mm_load_ps(v.m_weight);
             auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -125,7 +126,7 @@ namespace hdt
             }
 
             {
-                auto& v = verts[idx];
+                const auto& v = verts[idx];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -135,7 +136,7 @@ namespace hdt
                 vpos[idx].set(pm);
             }
             {
-                auto& v = verts[idx + 1];
+                const auto& v = verts[idx + 1];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -145,7 +146,7 @@ namespace hdt
                 vpos[idx + 1].set(pm);
             }
             {
-                auto& v = verts[idx + 2];
+                const auto& v = verts[idx + 2];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -155,7 +156,7 @@ namespace hdt
                 vpos[idx + 2].set(pm);
             }
             {
-                auto& v = verts[idx + 3];
+                const auto& v = verts[idx + 3];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -167,7 +168,7 @@ namespace hdt
         }
         for (; idx < size; ++idx)
         {
-            auto& v = verts[idx];
+            const auto& v = verts[idx];
             auto p = v.m_skinPos.get128();
             auto w = _mm_load_ps(v.m_weight);
             auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
@@ -185,14 +186,14 @@ namespace hdt
 
     auto SkinnedMeshBody::flexible(const Vertex& v) const -> float
     {
-        float ret = 0.f;
+        float ret = 0.F;
         for (int i = 0; i < 4; ++i)
         {
             if (v.m_weight[i] < FLT_EPSILON)
             {
                 break;
             }
-            int boneIdx = v.getBoneIdx(i);
+            auto boneIdx = v.getBoneIdx(i);
             if (!m_skinnedBones[boneIdx].isKinematic)
             {
                 ret += v.m_weight[i];
@@ -238,7 +239,7 @@ namespace hdt
 
         UINT numUsed = 0;
         std::vector<UINT> map(m_vertices.size());
-        for (int i = 0; i < m_vertices.size(); ++i)
+        for (size_t i = 0; i < m_vertices.size(); ++i)
         {
             if (flags[i])
             {
@@ -258,7 +259,7 @@ namespace hdt
     auto SkinnedMeshBody::canCollideWith(const SkinnedMeshBody* body) const -> bool
     {
         // TODO: whether it's needed or not
-        if (!body)
+        if (body == nullptr)
         {
             return false;
         }
@@ -270,7 +271,7 @@ namespace hdt
 
         if (m_canCollideWithTags.empty())
         {
-            for (auto& i : body->m_tags)
+            for (const auto& i : body->m_tags)
             {
                 if (m_noCollideWithTags.contains(i))
                 {
@@ -279,7 +280,7 @@ namespace hdt
             }
             return true;
         }
-        for (auto& i : body->m_tags)
+        for (const auto& i : body->m_tags)
         {
             if (m_canCollideWithTags.contains(i))
             {
@@ -308,10 +309,6 @@ namespace hdt
 
     auto SkinnedMeshBody::isBoundingSphereCollided(const SkinnedMeshBody* rhs) const -> bool
     {
-        if (canCollideWith(rhs) && rhs->canCollideWith(this))
-        {
-            return true;
-        }
-        return false;
+        return canCollideWith(rhs) && rhs->canCollideWith(this);
     }
 } // namespace hdt

@@ -29,7 +29,11 @@ namespace hdt
         auto set(const btVector3& p, const float m) -> void
         {
             m_data = p.get128();
+#if (__clang__)
+            m_data[3] = m;
+#elif (_MSC_VER)
             m_data.m128_f32[3] = m;
+#endif
         }
 
         auto set(const btVector4& pm) -> void { m_data = pm.get128(); }

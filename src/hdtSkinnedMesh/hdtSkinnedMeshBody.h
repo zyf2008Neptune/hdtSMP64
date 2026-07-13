@@ -60,8 +60,8 @@ namespace hdt
             BoundingSphere localBoundingSphere;
             BoundingSphere worldBoundingSphere;
             SkinnedMeshBone* ptr = nullptr;
-            float weightThreshold;
-            bool isKinematic;
+            float weightThreshold{};
+            bool isKinematic{};
         };
 
         RE::BSFixedString m_name;
