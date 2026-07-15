@@ -1,5 +1,7 @@
 #include "hdtSkinnedMeshShape.h"
 
+#include <array>
+#include <cstddef>
 #include <tbb/tbb.h>
 
 namespace hdt
@@ -36,7 +38,7 @@ namespace hdt
         m_tree.optimize();
         m_tree.updateKinematic([this](const Collider* n) { return m_owner->flexible(m_owner->m_vertices[n->vertex]); });
 
-        m_owner->setCollisionFlags(m_tree.isKinematic ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
+        m_owner->setCollisionFlags((m_tree.isKinematic != 0U) ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
 
         m_tree.exportColliders(m_colliders);
         m_aabb.resize(m_colliders.size());
@@ -82,7 +84,7 @@ namespace hdt
                     keys.push_back(m_owner->m_vertices[i].getBoneIdx(j));
                 }
             }
-            m_tree.insertCollider(keys.data(), keys.size(), Collider(i));
+            m_tree.insertCollider(keys, keys.size(), Collider(i));
         }
     }
 
@@ -123,7 +125,7 @@ namespace hdt
         size_t size = m_colliders.size();
         for (size_t i = 0; i < size; ++i)
         {
-            auto c = &m_colliders[i];
+            auto* c = &m_colliders[i];
             auto p0 = vertices[c->vertices[0]].m_data;
             auto p1 = vertices[c->vertices[1]].m_data;
             auto p2 = vertices[c->vertices[2]].m_data;
@@ -132,7 +134,7 @@ namespace hdt
             auto aabbMin = _mm_min_ps(_mm_min_ps(p0, p1), p2);
             auto aabbMax = _mm_max_ps(_mm_max_ps(p0, p1), p2);
             auto prenetration = _mm_set_ss(m_shapeProp.penetration);
-            prenetration = _mm_andnot_ps(_mm_set_ss(-0.0f), prenetration); // abs
+            prenetration = _mm_andnot_ps(_mm_set_ss(-0.0F), prenetration); // abs
 #if (__clang__)
             margin4 = _mm_max_ss(_mm_set_ss(margin4[3] * m_shapeProp.margin / 3), prenetration);
 #elif (_MSC_VER)
@@ -162,7 +164,7 @@ namespace hdt
                 return k / 3;
             });
 
-        m_owner->setCollisionFlags(m_tree.isKinematic ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
+        m_owner->setCollisionFlags((m_tree.isKinematic != 0U) ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
 
         m_tree.exportColliders(m_colliders);
         m_aabb.resize(m_colliders.size());
@@ -216,20 +218,20 @@ namespace hdt
 
     auto PerTriangleShape::addTriangle(const int p0, const int p1, const int p2) -> void
     {
-        assert(p0 < m_owner->m_vertices.size());
-        assert(p1 < m_owner->m_vertices.size());
-        assert(p2 < m_owner->m_vertices.size());
+        assert(static_cast<size_t>(p0) < m_owner->m_vertices.size());
+        assert(static_cast<size_t>(p1) < m_owner->m_vertices.size());
+        assert(static_cast<size_t>(p2) < m_owner->m_vertices.size());
         const Collider collider(p0, p1, p2);
 
         // Stacklocal fixed arrays, max 12 unique bones (3 verts * 4 weights)
-        U32 keys[12];
-        float w[12];
+        std::array<U32, 12> keys;
+        std::array<float, 12> w;
         int count = 0;
 
         const auto& v0 = m_owner->m_vertices[p0];
         const auto& v1 = m_owner->m_vertices[p1];
         const auto& v2 = m_owner->m_vertices[p2];
-        const Vertex* verts[3] = {&v0, &v1, &v2};
+        const std::array<const Vertex*, 3> verts{&v0, &v1, &v2};
 
         for (int vi = 0; vi < 3; ++vi)
         {

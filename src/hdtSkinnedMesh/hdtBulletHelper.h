@@ -36,44 +36,6 @@ namespace hdt
     inline auto setAll2(const __m128 m) -> __m128 { return pshufd<0xAA>(m); }
     inline auto setAll3(const __m128 m) -> __m128 { return pshufd<0xFF>(m); }
 
-#if (!(__clang__)) && (_MSC_VER)
-    inline auto operator+=(__m128& l, const __m128 r) -> __m128&
-    {
-        l = _mm_add_ps(l, r);
-        return l;
-    }
-
-    inline auto operator-=(__m128& l, const __m128 r) -> __m128&
-    {
-        l = _mm_sub_ps(l, r);
-        return l;
-    }
-
-    inline auto operator*=(__m128& l, const __m128 r) -> __m128&
-    {
-        l = _mm_mul_ps(l, r);
-        return l;
-    }
-
-    inline auto operator+=(__m128& l, const float r) -> __m128&
-    {
-        l = _mm_add_ps(l, setAll(r));
-        return l;
-    }
-
-    inline auto operator-=(__m128& l, const float r) -> __m128&
-    {
-        l = _mm_sub_ps(l, setAll(r));
-        return l;
-    }
-
-    inline auto operator*=(__m128& l, const float r) -> __m128&
-    {
-        l = _mm_mul_ps(l, setAll(r));
-        return l;
-    }
-#endif
-
     inline auto cross(const __m128 a, const __m128 b) -> __m128
     {
         __m128 T = pshufd<_MM_SHUFFLE(3, 0, 2, 1)>(a);
@@ -148,15 +110,10 @@ namespace hdt
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR()
 
-        btQsTransform()
-        {
-            m_basis = btQuaternion::getIdentity();
-            m_originScale = {0, 0, 0, 1};
-        }
+        btQsTransform() : m_basis{btQuaternion::getIdentity()}, m_originScale{0, 0, 0, 1} {}
 
-        btQsTransform(const btQuaternion& r, const btVector3& t, const float s = 1.0F)
+        btQsTransform(const btQuaternion& r, const btVector3& t, const float s = 1.0F) : m_basis{r}
         {
-            m_basis = r;
 #ifdef BT_ALLOW_SSE4
             // 0x30 inserts the 0th element of _mm_set_ss into the 3rd (W) element of t
             m_originScale.mVec128 = _mm_insert_ps(t.get128(), _mm_set_ss(s), 0x30);
@@ -166,9 +123,8 @@ namespace hdt
 #endif
         }
 
-        btQsTransform(const btTransform& t, const float s = 1.0F)
+        btQsTransform(const btTransform& t, const float s = 1.0F) : m_basis{t.getRotation()}
         {
-            m_basis = t.getRotation();
 #ifdef BT_ALLOW_SSE4
             m_originScale.mVec128 = _mm_insert_ps(t.getOrigin().get128(), _mm_set_ss(s), 0x30);
 #else

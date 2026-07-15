@@ -5,12 +5,12 @@
 namespace hdt
 {
 
-    auto ColliderTree::insertCollider(const U32* keys, const size_t keyCount, const Collider& c) -> void
+    auto ColliderTree::insertCollider(const std::span<U32> keys, const size_t keyCount, const Collider& c) -> void
     {
         auto* p = this;
         for (size_t i = 0; i < keyCount && i < 4; ++i)
         {
-            auto f = std::ranges::find_if(p->children, [=](const ColliderTree& n) { return n.key == keys[i]; });
+            auto f = std::ranges::find_if(p->children, [=](const ColliderTree& n) -> bool { return n.key == keys[i]; });
             if (f == p->children.end())
             {
                 p->children.emplace_back(keys[i]);
@@ -21,7 +21,7 @@ namespace hdt
                 p = std::addressof(*f);
             }
         }
-        p->colliders.push_back(c);
+        p->colliders.emplace_back(c);
     }
 
     // finds overlapping pairs between two collider trees

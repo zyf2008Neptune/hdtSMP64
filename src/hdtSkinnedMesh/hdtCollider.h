@@ -1,36 +1,25 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include "hdtAABB.h"
 
 namespace hdt
 {
-    inline constexpr auto MaxCollisionPairs = 6024;
+    inline constexpr uint32_t MaxCollisionPairs = 6024;
 
     struct alignas(16) Collider
     {
         Collider() = default;
 
-        Collider(const int i0) { vertex = i0; }
+        Collider(const uint32_t i0) : vertex{i0} {}
 
-        Collider(const int i0, const int i1, const int i2)
-        {
-            vertices[0] = i0;
-            vertices[1] = i1;
-            vertices[2] = i2;
-        }
+        Collider(const uint32_t i0, const uint32_t i1, const uint32_t i2) : vertices{i0, i1, i2} {}
 
         Collider(const Collider& rhs) { operator=(rhs); }
 
-        auto operator=(const Collider& rhs) -> Collider&
-        {
-            auto* dst = reinterpret_cast<__m128i*>(this);
-            const auto* src = reinterpret_cast<__m128i*>(const_cast<Collider*>(&rhs));
-            const auto xmm0 = _mm_load_si128(src + 0);
-            _mm_store_si128(dst, xmm0);
-            return *this;
-        }
+        auto operator=(const Collider& rhs) -> Collider& = default;
 
         union
         {
@@ -72,7 +61,7 @@ namespace hdt
         vectorA16<Collider> colliders;
         U32 key{};
 
-        auto insertCollider(const U32* keys, size_t keyCount, const Collider& c) -> void;
+        auto insertCollider(std::span<U32> keys, size_t keyCount, const Collider& c) -> void;
         auto exportColliders(vectorA16<Collider>& exportTo) -> void;
         auto remapColliders(Collider* start, Aabb* startAabb) -> void;
 
