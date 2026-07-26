@@ -123,34 +123,40 @@ jobs:
 
   build:
     needs: prepare
-    runs-on: windows-2022
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       # Use a matrix to run all presets at the same time
       matrix:
         include:
-          - preset: vs2022-windows
+          - preset: msvc-windows
             avx_variant: noavx
-          - preset: vs2022-windows-avx
+          - preset: msvc-windows-avx
             avx_variant: avx
-          - preset: vs2022-windows-avx2
+          - preset: msvc-windows-avx2
             avx_variant: avx2
-          - preset: vs2022-windows-avx512
+          - preset: msvc-windows-avx512
             avx_variant: avx512
-          #- preset: msvc-windows
-           # avx_variant: noavx
-          #- preset: msvc-windows-avx
-           # avx_variant: avx
-          #- preset: msvc-windows-avx2
-           # avx_variant: avx2
-          #- preset: msvc-windows-avx512
-           # avx_variant: avx512
+          - preset: clang-windows
+            avx_variant: noavx
+          - preset: clang-windows-avx
+            avx_variant: avx
+          - preset: clang-windows-avx2
+            avx_variant: avx2
+          - preset: clang-windows-avx512
+            avx_variant: avx512
 
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
         with:
           submodules: recursive # This handles the 'git submodule update --init --recursive' automatically
+
+      - name: Setup MSVC and Clang-cl Environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: hostx64/x64
 
       - name: Restore vcpkg dependencies and binary cache
         uses: actions/cache@v4
@@ -339,4 +345,3 @@ jobs:
           files: "FSMP-${{ needs.prepare.outputs.tag_version }}.zip"
           # prerelease is true for all branches except master
           prerelease: ${{ github.ref_name != 'master' }}
-

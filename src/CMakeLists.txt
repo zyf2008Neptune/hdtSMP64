@@ -74,6 +74,19 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 						"$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:PROFILE>>:/INCREMENTAL:NO;/OPT:REF;/OPT:ICF;/DEBUG:FULL>")
 endif()
 
+# disable clang warnings
+if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
+	target_compile_options(
+	"${PROJECT_NAME}"
+	PUBLIC
+	-Wno-c++98-compat
+	-Wno-c++11-compat
+	-Wno-c++14-compat
+	-Wno-c++17-compat
+	-Wno-c++20-compat
+)
+endif()
+
 target_include_directories("${PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/src" "${SOURCE_DIR}"
 													 ${DETOURS_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS})
 

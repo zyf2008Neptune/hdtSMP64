@@ -212,9 +212,9 @@
     },
     {
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "-Wall -Wextra",
-        "CMAKE_C_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER": "clang++"
+        "CMAKE_CXX_FLAGS": "/EHsc /W4",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
       "inherits": ["cmake-dev", "vcpkg", "windows", "skyrim-runtimes"],
@@ -222,9 +222,9 @@
     },
     {
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "-Wall -Wextra -mavx -mfma",
-        "CMAKE_C_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER": "clang++"
+        "CMAKE_CXX_FLAGS": "/EHsc /W4 -mavx -mfma",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
       "inherits": ["cmake-dev", "vcpkg", "windows-avx", "skyrim-runtimes"],
@@ -232,9 +232,9 @@
     },
     {
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "-Wall -Wextra -mavx2 -mfma -mf16c",
-        "CMAKE_C_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER": "clang++"
+        "CMAKE_CXX_FLAGS": "/EHsc /W4 -mavx2 -mfma -mf16c",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
       "inherits": ["cmake-dev", "vcpkg", "windows-avx2", "skyrim-runtimes"],
@@ -242,9 +242,9 @@
     },
     {
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "-Wall -Wextra -mavx512f -mfma -mf16c",
-        "CMAKE_C_COMPILER": "clang++",
-        "CMAKE_CXX_COMPILER": "clang++"
+        "CMAKE_CXX_FLAGS": "/EHsc /W4 -mavx512f -mfma -mf16c",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
       "inherits": ["cmake-dev", "vcpkg", "windows-avx512", "skyrim-runtimes"],
@@ -253,15 +253,27 @@
   ],
   "buildPresets": [
     {
-      "name": "avx2-debug",
-      "displayName": "Debug",
+      "name": "msvc-avx2-debug",
+      "displayName": "MSVC-Debug",
       "configurePreset": "msvc-windows-avx2",
       "configuration": "Debug"
     },
     {
-      "name": "avx2-release",
-      "displayName": "Release",
+      "name": "clang-avx2-debug",
+      "displayName": "Clang-Debug",
+      "configurePreset": "clang-windows-avx2",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc-avx2-release",
+      "displayName": "MSVC-Release",
       "configurePreset": "msvc-windows-avx2",
+      "configuration": "Release"
+    },
+    {
+      "name": "clang-avx2-release",
+      "displayName": "Clang-Release",
+      "configurePreset": "clang-windows-avx2",
       "configuration": "Release"
     }
   ],

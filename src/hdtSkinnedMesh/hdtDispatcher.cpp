@@ -55,8 +55,8 @@ namespace hdt
 
     auto CollisionDispatcher::needsCollision(const btCollisionObject* body0, const btCollisionObject* body1) -> bool
     {
-        const bool skinned0 = isSkinnedMesh(body0);
-        const bool skinned1 = isSkinnedMesh(body1);
+        const auto skinned0 = isSkinnedMesh(body0);
+        const auto skinned1 = isSkinnedMesh(body1);
 
         if (skinned0 || skinned1)
         {
@@ -117,8 +117,8 @@ namespace hdt
             auto* obj0 = static_cast<btCollisionObject*>(pair.m_pProxy0->m_clientObject);
             auto* obj1 = static_cast<btCollisionObject*>(pair.m_pProxy1->m_clientObject);
 
-            const bool skinned0 = isSkinnedMesh(obj0);
-            const bool skinned1 = isSkinnedMesh(obj1);
+            const auto skinned0 = isSkinnedMesh(obj0);
+            const auto skinned1 = isSkinnedMesh(obj1);
 
             if (skinned0 || skinned1)
             {

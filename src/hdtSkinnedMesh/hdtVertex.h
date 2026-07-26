@@ -6,9 +6,9 @@ namespace hdt
 {
     struct alignas(16) Vertex
     {
-        Vertex() { ZeroMemory(this, sizeof(*this)); }
+        Vertex() = default;
 
-        Vertex(const float x, const float y, const float z) : Vertex() { m_skinPos.setValue(x, y, z); }
+        Vertex(const float x, const float y, const float z) { m_skinPos.setValue(x, y, z); }
 
         // skin info;
         btVector3 m_skinPos;

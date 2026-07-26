@@ -45,7 +45,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~CharactersReader();
+            virtual ~CharactersReader() = default;
 
             /**
                 @brief Checks if character is allowed in XML document.
@@ -150,7 +150,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Utf8ReaderBase();
+            ~Utf8ReaderBase() override = default;
         };
 
         /**
@@ -173,7 +173,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Utf8StreamReader();
+            ~Utf8StreamReader() override = default;
 
             /**
                 @brief Reads one Unicode character.
@@ -187,12 +187,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -269,7 +269,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Utf8IteratorsReader();
+            ~Utf8IteratorsReader() override = default;
 
             /**
                 @brief Reads one Unicode character.
@@ -283,7 +283,7 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the first iterator.
@@ -327,7 +327,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Utf16BEStreamReader();
+            ~Utf16BEStreamReader() override = default;
 
             /**
                 @brief Reads one Unicode character.
@@ -341,12 +341,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -374,7 +374,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Utf16LEStreamReader();
+            ~Utf16LEStreamReader() override = default;
 
             /**
                 @brief Reads one Unicode character.
@@ -388,12 +388,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -421,7 +421,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Utf32BEStreamReader();
+            ~Utf32BEStreamReader() override = default;
 
             /**
                 @brief Reads one Unicode character.
@@ -435,12 +435,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -468,7 +468,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Utf32LEStreamReader();
+            ~Utf32LEStreamReader() override = default;
 
             /**
                 @brief Reads one Unicode character.
@@ -482,12 +482,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -515,7 +515,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_1_StreamReader();
+            ~ISO_8859_1_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-1 character.
@@ -526,12 +526,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -559,7 +559,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_2_StreamReader();
+            ~ISO_8859_2_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-2 character.
@@ -570,12 +570,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -603,7 +603,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_3_StreamReader();
+            ~ISO_8859_3_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-3 character.
@@ -614,12 +614,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -647,7 +647,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_4_StreamReader();
+            ~ISO_8859_4_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-4 character.
@@ -658,12 +658,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -691,7 +691,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_5_StreamReader();
+            ~ISO_8859_5_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-5 character.
@@ -702,12 +702,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -735,7 +735,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_6_StreamReader();
+            ~ISO_8859_6_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-6 character.
@@ -746,12 +746,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -779,7 +779,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_7_StreamReader();
+            ~ISO_8859_7_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-7 character.
@@ -790,12 +790,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -823,7 +823,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_8_StreamReader();
+            ~ISO_8859_8_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-8 character.
@@ -834,12 +834,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -867,7 +867,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_9_StreamReader();
+            ~ISO_8859_9_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-9 character.
@@ -878,12 +878,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -911,7 +911,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_10_StreamReader();
+            ~ISO_8859_10_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-10 character.
@@ -922,12 +922,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -955,7 +955,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_13_StreamReader();
+            ~ISO_8859_13_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-13 character.
@@ -966,12 +966,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -999,7 +999,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_14_StreamReader();
+            ~ISO_8859_14_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-14 character.
@@ -1010,12 +1010,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1043,7 +1043,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_15_StreamReader();
+            ~ISO_8859_15_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-15 character.
@@ -1054,12 +1054,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1087,7 +1087,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~ISO_8859_16_StreamReader();
+            ~ISO_8859_16_StreamReader() override = default;
 
             /**
                 @brief Reads one ISO-8859-16 character.
@@ -1098,12 +1098,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1131,7 +1131,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~TIS620StreamReader();
+            ~TIS620StreamReader() override = default;
 
             /**
                 @brief Reads one TIS-620 character.
@@ -1142,12 +1142,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1175,7 +1175,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows874StreamReader();
+            ~Windows874StreamReader() override = default;
 
             /**
                 @brief Reads one windows-874 character.
@@ -1186,12 +1186,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1219,7 +1219,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1250StreamReader();
+            ~Windows1250StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1250 character.
@@ -1230,12 +1230,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1263,7 +1263,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1251StreamReader();
+            ~Windows1251StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1251 character.
@@ -1274,12 +1274,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1307,7 +1307,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1252StreamReader();
+            ~Windows1252StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1252 character.
@@ -1318,12 +1318,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1351,7 +1351,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1253StreamReader();
+            ~Windows1253StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1253 character.
@@ -1362,12 +1362,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1395,7 +1395,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1254StreamReader();
+            ~Windows1254StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1254 character.
@@ -1406,12 +1406,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1439,7 +1439,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1255StreamReader();
+            ~Windows1255StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1255 character.
@@ -1450,12 +1450,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1483,7 +1483,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1256StreamReader();
+            ~Windows1256StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1256 character.
@@ -1494,12 +1494,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1527,7 +1527,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1257StreamReader();
+            ~Windows1257StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1257 character.
@@ -1538,12 +1538,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1571,7 +1571,7 @@ namespace Xml
             /**
                 @brief Destructor.
             */
-            virtual ~Windows1258StreamReader();
+            ~Windows1258StreamReader() override = default;
 
             /**
                 @brief Reads one windows-1258 character.
@@ -1582,12 +1582,12 @@ namespace Xml
                     @b -1 if character is not allowed in XML document.
                     @b -2 if there was an error while reading character.
             */
-            virtual auto ReadCharacter(char32_t& result) -> int;
+            auto ReadCharacter(char32_t& result) -> int override;
 
             /**
                 @brief Gets the pointer to the input stream.
             */
-            auto GetInputStream() const -> std::istream*;
+            [[nodiscard]] auto GetInputStream() const -> std::istream*;
 
             /**
                 @brief Replaces the pointer to the input stream.
@@ -1599,7 +1599,6 @@ namespace Xml
         // CharactersReader implementation.
         //
 
-        inline CharactersReader::~CharactersReader() {}
 
         inline auto CharactersReader::IsChar(char32_t codePoint) -> bool
         {
@@ -1730,15 +1729,12 @@ namespace Xml
             return BytesCount[leadingByte];
         }
 
-        inline Utf8ReaderBase::~Utf8ReaderBase() {}
 
         //
         // Utf8StreamReader implementation.
         //
 
         inline Utf8StreamReader::Utf8StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Utf8StreamReader::~Utf8StreamReader() {}
 
         inline auto Utf8StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -1856,10 +1852,6 @@ namespace Xml
         }
 
         template <typename TInputIterator>
-        inline Utf8IteratorsReader<TInputIterator>::~Utf8IteratorsReader()
-        {}
-
-        template <typename TInputIterator>
         inline auto Utf8IteratorsReader<TInputIterator>::ReadCharacter(char32_t& result) -> int
         {
             if (iterBegin != iterEnd)
@@ -1971,8 +1963,6 @@ namespace Xml
 
         inline Utf16BEStreamReader::Utf16BEStreamReader(std::istream* inputStream) : in(inputStream) {}
 
-        inline Utf16BEStreamReader::~Utf16BEStreamReader() {}
-
         inline auto Utf16BEStreamReader::ReadCharacter(char32_t& result) -> int
         {
             if (in != nullptr)
@@ -2031,7 +2021,7 @@ namespace Xml
                         return -2; // Something terrible with the stream.
                     }
 
-                    char32_t trailSurrogate = static_cast<char32_t>(static_cast<unsigned char>(oneByte));
+                    auto trailSurrogate = static_cast<char32_t>(static_cast<unsigned char>(oneByte));
 
                     // Fourth byte (second of trail surrogate).
                     oneByte = in->get();
@@ -2058,7 +2048,7 @@ namespace Xml
                     }
                     return -1;
                 }
-                else if ((in->rdstate() & std::istream::eofbit) != 0)
+                if ((in->rdstate() & std::istream::eofbit) != 0)
                 {
                     return 0; // End of the stream.
                 }
@@ -2075,8 +2065,6 @@ namespace Xml
         //
 
         inline Utf16LEStreamReader::Utf16LEStreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Utf16LEStreamReader::~Utf16LEStreamReader() {}
 
         inline auto Utf16LEStreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2135,7 +2123,7 @@ namespace Xml
                         return -2; // Something terrible with the stream.
                     }
 
-                    char32_t trailSurrogate = static_cast<char32_t>(static_cast<unsigned char>(oneByte));
+                    auto trailSurrogate = static_cast<char32_t>(static_cast<unsigned char>(oneByte));
 
                     // Fourth byte (second of trail surrogate).
                     oneByte = in->get();
@@ -2161,7 +2149,7 @@ namespace Xml
                     }
                     return -1;
                 }
-                else if ((in->rdstate() & std::istream::eofbit) != 0)
+                if ((in->rdstate() & std::istream::eofbit) != 0)
                 {
                     return 0; // End of the stream.
                 }
@@ -2179,13 +2167,12 @@ namespace Xml
 
         inline Utf32BEStreamReader::Utf32BEStreamReader(std::istream* inputStream) : in(inputStream) {}
 
-        inline Utf32BEStreamReader::~Utf32BEStreamReader() {}
-
         inline auto Utf32BEStreamReader::ReadCharacter(char32_t& result) -> int
         {
             if (in != nullptr)
             {
-                char32_t codePoint, temp;
+                char32_t codePoint;
+                char32_t temp;
 
                 // First byte.
                 int oneByte = in->get();
@@ -2267,13 +2254,12 @@ namespace Xml
 
         inline Utf32LEStreamReader::Utf32LEStreamReader(std::istream* inputStream) : in(inputStream) {}
 
-        inline Utf32LEStreamReader::~Utf32LEStreamReader() {}
-
         inline auto Utf32LEStreamReader::ReadCharacter(char32_t& result) -> int
         {
             if (in != nullptr)
             {
-                char32_t codePoint, temp;
+                char32_t codePoint;
+                char32_t temp;
 
                 // First byte.
                 int oneByte = in->get();
@@ -2354,8 +2340,6 @@ namespace Xml
 
         inline ISO_8859_1_StreamReader::ISO_8859_1_StreamReader(std::istream* inputStream) : in(inputStream) {}
 
-        inline ISO_8859_1_StreamReader::~ISO_8859_1_StreamReader() {}
-
         inline auto ISO_8859_1_StreamReader::ReadCharacter(char32_t& result) -> int
         {
             static const unsigned char map[256] = {
@@ -2394,10 +2378,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2411,8 +2393,6 @@ namespace Xml
         //
 
         inline ISO_8859_2_StreamReader::ISO_8859_2_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_2_StreamReader::~ISO_8859_2_StreamReader() {}
 
         inline auto ISO_8859_2_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2456,10 +2436,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2473,8 +2451,6 @@ namespace Xml
         //
 
         inline ISO_8859_3_StreamReader::ISO_8859_3_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_3_StreamReader::~ISO_8859_3_StreamReader() {}
 
         inline auto ISO_8859_3_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2519,10 +2495,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2536,8 +2510,6 @@ namespace Xml
         //
 
         inline ISO_8859_4_StreamReader::ISO_8859_4_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_4_StreamReader::~ISO_8859_4_StreamReader() {}
 
         inline auto ISO_8859_4_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2582,10 +2554,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2599,8 +2569,6 @@ namespace Xml
         //
 
         inline ISO_8859_5_StreamReader::ISO_8859_5_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_5_StreamReader::~ISO_8859_5_StreamReader() {}
 
         inline auto ISO_8859_5_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2645,10 +2613,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2662,8 +2628,6 @@ namespace Xml
         //
 
         inline ISO_8859_6_StreamReader::ISO_8859_6_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_6_StreamReader::~ISO_8859_6_StreamReader() {}
 
         inline auto ISO_8859_6_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2708,10 +2672,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2725,8 +2687,6 @@ namespace Xml
         //
 
         inline ISO_8859_7_StreamReader::ISO_8859_7_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_7_StreamReader::~ISO_8859_7_StreamReader() {}
 
         inline auto ISO_8859_7_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2771,10 +2731,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2788,8 +2746,6 @@ namespace Xml
         //
 
         inline ISO_8859_8_StreamReader::ISO_8859_8_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_8_StreamReader::~ISO_8859_8_StreamReader() {}
 
         inline auto ISO_8859_8_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2834,10 +2790,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2851,8 +2805,6 @@ namespace Xml
         //
 
         inline ISO_8859_9_StreamReader::ISO_8859_9_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_9_StreamReader::~ISO_8859_9_StreamReader() {}
 
         inline auto ISO_8859_9_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2897,10 +2849,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2914,8 +2864,6 @@ namespace Xml
         //
 
         inline ISO_8859_10_StreamReader::ISO_8859_10_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_10_StreamReader::~ISO_8859_10_StreamReader() {}
 
         inline auto ISO_8859_10_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -2960,10 +2908,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -2977,8 +2923,6 @@ namespace Xml
         //
 
         inline ISO_8859_13_StreamReader::ISO_8859_13_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_13_StreamReader::~ISO_8859_13_StreamReader() {}
 
         inline auto ISO_8859_13_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3023,10 +2967,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3040,8 +2982,6 @@ namespace Xml
         //
 
         inline ISO_8859_14_StreamReader::ISO_8859_14_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_14_StreamReader::~ISO_8859_14_StreamReader() {}
 
         inline auto ISO_8859_14_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3086,10 +3026,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3103,8 +3041,6 @@ namespace Xml
         //
 
         inline ISO_8859_15_StreamReader::ISO_8859_15_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_15_StreamReader::~ISO_8859_15_StreamReader() {}
 
         inline auto ISO_8859_15_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3149,10 +3085,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3166,8 +3100,6 @@ namespace Xml
         //
 
         inline ISO_8859_16_StreamReader::ISO_8859_16_StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline ISO_8859_16_StreamReader::~ISO_8859_16_StreamReader() {}
 
         inline auto ISO_8859_16_StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3212,10 +3144,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3229,8 +3159,6 @@ namespace Xml
         //
 
         inline TIS620StreamReader::TIS620StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline TIS620StreamReader::~TIS620StreamReader() {}
 
         inline auto TIS620StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3275,10 +3203,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3292,8 +3218,6 @@ namespace Xml
         //
 
         inline Windows874StreamReader::Windows874StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows874StreamReader::~Windows874StreamReader() {}
 
         inline auto Windows874StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3337,10 +3261,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3354,8 +3276,6 @@ namespace Xml
         //
 
         inline Windows1250StreamReader::Windows1250StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1250StreamReader::~Windows1250StreamReader() {}
 
         inline auto Windows1250StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3399,10 +3319,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3416,8 +3334,6 @@ namespace Xml
         //
 
         inline Windows1251StreamReader::Windows1251StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1251StreamReader::~Windows1251StreamReader() {}
 
         inline auto Windows1251StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3461,10 +3377,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3478,8 +3392,6 @@ namespace Xml
         //
 
         inline Windows1252StreamReader::Windows1252StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1252StreamReader::~Windows1252StreamReader() {}
 
         inline auto Windows1252StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3523,10 +3435,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3540,8 +3450,6 @@ namespace Xml
         //
 
         inline Windows1253StreamReader::Windows1253StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1253StreamReader::~Windows1253StreamReader() {}
 
         inline auto Windows1253StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3585,10 +3493,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3602,8 +3508,6 @@ namespace Xml
         //
 
         inline Windows1254StreamReader::Windows1254StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1254StreamReader::~Windows1254StreamReader() {}
 
         inline auto Windows1254StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3647,10 +3551,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3664,8 +3566,6 @@ namespace Xml
         //
 
         inline Windows1255StreamReader::Windows1255StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1255StreamReader::~Windows1255StreamReader() {}
 
         inline auto Windows1255StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3709,10 +3609,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3726,8 +3624,6 @@ namespace Xml
         //
 
         inline Windows1256StreamReader::Windows1256StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1256StreamReader::~Windows1256StreamReader() {}
 
         inline auto Windows1256StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3771,10 +3667,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3788,8 +3682,6 @@ namespace Xml
         //
 
         inline Windows1257StreamReader::Windows1257StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1257StreamReader::~Windows1257StreamReader() {}
 
         inline auto Windows1257StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3833,10 +3725,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
@@ -3850,8 +3740,6 @@ namespace Xml
         //
 
         inline Windows1258StreamReader::Windows1258StreamReader(std::istream* inputStream) : in(inputStream) {}
-
-        inline Windows1258StreamReader::~Windows1258StreamReader() {}
 
         inline auto Windows1258StreamReader::ReadCharacter(char32_t& result) -> int
         {
@@ -3895,10 +3783,8 @@ namespace Xml
                 {
                     return 1;
                 }
-                else
-                {
-                    return -1;
-                }
+
+                return -1;
             }
             return -2;
         }
