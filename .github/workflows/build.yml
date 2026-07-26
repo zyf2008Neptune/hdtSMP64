@@ -154,9 +154,6 @@ jobs:
 
       - name: Setup MSVC and Clang-cl Environment
         uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-          toolset: hostx64/x64
 
       - name: Restore vcpkg dependencies and binary cache
         uses: actions/cache@v4
