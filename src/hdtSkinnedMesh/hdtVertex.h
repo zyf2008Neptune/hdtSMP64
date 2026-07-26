@@ -12,8 +12,8 @@ namespace hdt
 
         // skin info;
         btVector3 m_skinPos;
-        float m_weight[4];
-        U32 m_boneIdx[4];
+        float m_weight[4]{};
+        U32 m_boneIdx[4]{};
 
         [[nodiscard]] auto getBoneIdx(const int i) const -> U32 { return m_boneIdx[i]; }
 

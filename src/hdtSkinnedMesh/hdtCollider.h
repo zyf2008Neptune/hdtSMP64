@@ -17,7 +17,7 @@ namespace hdt
 
         Collider(const uint32_t i0, const uint32_t i1, const uint32_t i2) : vertices{i0, i1, i2} {}
 
-        Collider(const Collider& rhs) { operator=(rhs); }
+        Collider(const Collider& rhs) = default;
 
         auto operator=(const Collider& rhs) -> Collider& = default;
 

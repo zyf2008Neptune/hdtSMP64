@@ -212,7 +212,7 @@
     },
     {
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "/EHsc /W4",
+        "CMAKE_CXX_FLAGS": "/EHsc /W4 --msse4.1",
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl"
       },
