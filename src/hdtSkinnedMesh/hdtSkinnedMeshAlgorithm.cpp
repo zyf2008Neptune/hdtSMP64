@@ -29,15 +29,15 @@ namespace hdt
                 numResults = 0;
             }
 
-            VertexPos* v0;
-            VertexPos* v1;
-            ColliderTree* c0;
-            ColliderTree* c1;
-            SP0* sp0;
-            SP1* sp1;
+            VertexPos* v0{};
+            VertexPos* v1{};
+            ColliderTree* c0{};
+            ColliderTree* c1{};
+            SP0* sp0{};
+            SP1* sp1{};
 
-            std::atomic_long numResults;
-            CollisionResult* results;
+            std::atomic_long numResults{};
+            CollisionResult* results{};
         };
 
     } // namespace
@@ -165,7 +165,7 @@ namespace hdt
             auto p0 = this->v1[b->vertices[0]];
             auto p1 = this->v1[b->vertices[1]];
             auto p2 = this->v1[b->vertices[2]];
-            auto margin = (p0.marginMultiplier() + p1.marginMultiplier() + p2.marginMultiplier()) * (1.0f / 3.0f);
+            auto margin = (p0.marginMultiplier() + p1.marginMultiplier() + p2.marginMultiplier()) * (1.0F / 3.0F);
             auto penetration = this->sp1->penetration * margin;
             margin *= this->sp1->margin;
             if (penetration > -FLT_EPSILON && penetration < FLT_EPSILON)
@@ -264,18 +264,18 @@ namespace hdt
                 CollisionResult temp;
                 bool hasResult = false;
 
-                auto abeg = a->aabb;
-                auto bbeg = b->aabb;
+                const auto* abeg = a->aabb;
+                const auto* bbeg = b->aabb;
 
                 if (!listA.empty() && !listB.empty())
                 {
-                    for (auto i : listA)
+                    for (const auto* i : listA)
                     {
                         if (!i->collideWith(refinedBForPruningA))
                         {
                             continue;
                         }
-                        for (auto j : listB)
+                        for (const auto* j : listB)
                         {
                             if (!i->collideWith(*j))
                             {
@@ -333,21 +333,22 @@ namespace hdt
                     return 0;
                 }
 
-                decltype(auto) func = [this](const std::pair<ColliderTree*, ColliderTree*>& pair)
+                decltype(auto) func = [this](const std::pair<ColliderTree*, ColliderTree*>& pair) -> auto
                 {
                     if (this->numResults >= SkinnedMeshAlgorithm::MaxCollisionCount)
                     {
                         return;
                     }
 
-                    auto a = pair.first, b = pair.second;
+                    auto* a = pair.first;
+                    auto* b = pair.second;
 
-                    const auto abeg = a->aabb;
-                    const auto bbeg = b->aabb;
+                    auto* abeg = a->aabb;
+                    auto* bbeg = b->aabb;
                     const auto asize = b->isKinematic ? a->dynCollider : a->numCollider;
                     const auto bsize = a->isKinematic ? b->dynCollider : b->numCollider;
-                    const auto aend = abeg + asize;
-                    const auto bend = bbeg + bsize;
+                    const auto* aend = abeg + asize;
+                    const auto* bend = bbeg + bsize;
 
                     Aabb aabbA;
                     auto aabbB = b->aabbMe;
@@ -363,11 +364,11 @@ namespace hdt
                     // Colliders in A that intersect full bounding box of B. Compute a new bounding box for just those -
                     // this can be MUCH smaller than the original bounding box for A (consider the case where we have
                     // two spheres colliding, offset by an equal amount in all three axes).
-                    for (auto i = abeg; i < aend; ++i)
+                    for (auto* i = abeg; i < aend; ++i)
                     {
                         if (i->collideWith(aabbB))
                         {
-                            listA.push_back(i);
+                            listA.emplace_back(i);
                             aabbA.merge(*i);
                         }
                     }
@@ -377,11 +378,11 @@ namespace hdt
                     if (!listA.empty())
                     {
                         aabbB.invalidate();
-                        for (auto i = bbeg; i < bend; ++i)
+                        for (auto* i = bbeg; i < bend; ++i)
                         {
                             if (i->collideWith(aabbA))
                             {
-                                listB.push_back(i);
+                                listB.emplace_back(i);
                                 aabbB.merge(*i);
                             }
                         }
@@ -448,8 +449,8 @@ namespace hdt
                 continue;
             }
 
-            float w = flexible * res.depth;
-            float w2 = w * w;
+            const auto w = flexible * res.depth;
+            const auto w2 = w * w;
 
             // pre-scale outside the bone loop, these don't depend on bone indices and the inner
             // loop runs bonePerCollider^2 times, so this matters
@@ -460,7 +461,7 @@ namespace hdt
             for (int ib = 0; ib < shape0->getBonePerCollider(); ++ib)
             {
                 auto w0 = shape0->getColliderBoneWeight(res.colliderA, ib);
-                int boneIdx0 = shape0->getColliderBoneIndex(res.colliderA, ib);
+                auto boneIdx0 = shape0->getColliderBoneIndex(res.colliderA, ib);
                 if (w0 <= shape0->m_owner->m_skinnedBones[boneIdx0].weightThreshold)
                 {
                     continue;
@@ -469,7 +470,7 @@ namespace hdt
                 for (int jb = 0; jb < shape1->getBonePerCollider(); ++jb)
                 {
                     auto w1 = shape1->getColliderBoneWeight(res.colliderB, jb);
-                    int boneIdx1 = shape1->getColliderBoneIndex(res.colliderB, jb);
+                    auto boneIdx1 = shape1->getColliderBoneIndex(res.colliderB, jb);
                     if (w1 <= shape1->m_owner->m_skinnedBones[boneIdx1].weightThreshold)
                     {
                         continue;
@@ -481,7 +482,7 @@ namespace hdt
                         continue;
                     }
 
-                    const auto c = getAndTrack(boneIdx0, boneIdx1);
+                    auto* c = getAndTrack(boneIdx0, boneIdx1);
 
                     // If we already have a primary direction (weight > 0),
                     // and this new contact pushes in the opposite direction (dot < 0),
@@ -531,14 +532,14 @@ namespace hdt
                 continue;
             }
 
-            const auto rb0 = body0->m_skinnedBones[i].ptr;
-            const auto rb1 = body1->m_skinnedBones[j].ptr;
+            const auto* rb0 = body0->m_skinnedBones[i].ptr;
+            const auto* rb1 = body1->m_skinnedBones[j].ptr;
             if (rb0 == rb1)
             {
                 continue;
             }
 
-            float invWeight = 1.0f / c->weight;
+            float invWeight = 1.0F / c->weight;
 
             auto worldA = c->pos[0] * invWeight;
             auto worldB = c->pos[1] * invWeight;
@@ -567,7 +568,7 @@ namespace hdt
             newPt.m_combinedRestitution = rb0->m_rig.getRestitution() * rb1->m_rig.getRestitution();
             newPt.m_combinedRollingFriction = rb0->m_rig.getRollingFriction() * rb1->m_rig.getRollingFriction();
 
-            const auto maniford = dispatcher->getNewManifold(&rb0->m_rig, &rb1->m_rig);
+            auto* maniford = dispatcher->getNewManifold(&rb0->m_rig, &rb1->m_rig);
             maniford->addManifoldPoint(newPt);
         }
     }
@@ -582,7 +583,7 @@ namespace hdt
             // results come back in random order from parallel workers, sort so doMerge's
             // early break actually bails on shallow contacts instead of random ones
             std::sort(collision, collision + count,
-                      [](const CollisionResult& a, const CollisionResult& b) { return a.depth < b.depth; });
+                      [](const CollisionResult& a, const CollisionResult& b) -> auto { return a.depth < b.depth; });
             merge.doMerge(shape0, shape1, collision, count);
         }
     }
@@ -600,7 +601,7 @@ namespace hdt
 
         merge.resize(static_cast<int>(body0->m_skinnedBones.size()), static_cast<int>(body1->m_skinnedBones.size()));
 
-        if (body0->m_shape->asPerTriangleShape() && body1->m_shape->asPerTriangleShape())
+        if ((body0->m_shape->asPerTriangleShape() != nullptr) && (body1->m_shape->asPerTriangleShape() != nullptr))
         {
             // Todo: This can actually be further optimized, but would need a re-factor.. However, would the performance
             // increase be worth the extra boilerplate code..?
@@ -609,12 +610,12 @@ namespace hdt
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerTriangleShape(), merge,
                              collision.get());
         }
-        else if (body0->m_shape->asPerTriangleShape())
+        else if (body0->m_shape->asPerTriangleShape() != nullptr)
         {
             processCollision(body0->m_shape->asPerTriangleShape(), body1->m_shape->asPerVertexShape(), merge,
                              collision.get());
         }
-        else if (body1->m_shape->asPerTriangleShape())
+        else if (body1->m_shape->asPerTriangleShape() != nullptr)
         {
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerTriangleShape(), merge,
                              collision.get());

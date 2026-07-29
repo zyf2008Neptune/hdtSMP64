@@ -59,12 +59,12 @@ namespace hdt
     auto SkinnedMeshSystem::gather(std::vector<SkinnedMeshBody*>& bodies, std::vector<SkinnedMeshShape*>& shapes) const
         -> void
     {
-        for (auto& mesh : m_meshes)
+        for (const auto& mesh : m_meshes)
         {
             bodies.push_back(mesh.get());
             shapes.push_back(mesh->m_shape.get());
 
-            if (const auto triShape = static_cast<PerTriangleShape*>(mesh->m_shape.get()))
+            if (const auto* triShape = static_cast<PerTriangleShape*>(mesh->m_shape.get()))
             {
                 shapes.push_back(triShape->m_verticesCollision.get());
             }

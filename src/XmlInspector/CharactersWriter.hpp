@@ -42,7 +42,7 @@ namespace Xml::Encoding
         /**
             @brief String type that is able to store the UTF-8 encoded string.
         */
-        typedef std::string StringType;
+        using StringType = std::string;
 
         /**
             @brief Inserts the Unicode character into the UTF-8 encoded string.
@@ -64,7 +64,7 @@ namespace Xml::Encoding
         /**
             @brief String type that is able to store the UTF-16 encoded string.
         */
-        typedef std::u16string StringType;
+        using StringType = std::u16string;
 
         /**
             @brief Inserts the Unicode character into the UTF-16 encoded string.
@@ -86,7 +86,7 @@ namespace Xml::Encoding
         /**
             @brief String type that is able to store the UTF-32 encoded string.
         */
-        typedef std::u32string StringType;
+        using StringType = std::u32string;
 
         /**
             @brief Inserts Unicode character into the UTF-32 encoded string.

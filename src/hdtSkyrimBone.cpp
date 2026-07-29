@@ -6,8 +6,7 @@ namespace hdt
 {
     SkyrimBone::SkyrimBone(const RE::BSFixedString& name, RE::NiNode* node, RE::NiNode* skeleton,
                            const btRigidBody::btRigidBodyConstructionInfo& ci) :
-        SkinnedMeshBone(name, ci),
-        m_node(node), m_skeleton(skeleton)
+        SkinnedMeshBone(name, ci), m_node(node), m_skeleton(skeleton)
     {
         if (ci.m_mass)
         {

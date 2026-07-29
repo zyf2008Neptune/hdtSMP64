@@ -90,11 +90,11 @@ file(WRITE "${SOURCE_PATH}/src/BulletDynamics/ConstraintSolver/btGeneric6DofSpri
 # thread-count limiting and tbb::info::default_concurrency() instead of the removed default_num_threads().
 file(READ "${SOURCE_PATH}/src/LinearMath/btThreads.cpp" THREADS_CPP)
 string(REPLACE "#include <tbb/task_scheduler_init.h>\n" "#include <tbb/global_control.h>\n#include <tbb/info.h>\n"
-			   THREADS_CPP "${THREADS_CPP}")
+						THREADS_CPP "${THREADS_CPP}")
 string(REPLACE "tbb::task_scheduler_init* m_tbbSchedulerInit;" "tbb::global_control* m_tbbSchedulerInit;" THREADS_CPP
-			   "${THREADS_CPP}")
+						"${THREADS_CPP}")
 string(REPLACE "return tbb::task_scheduler_init::default_num_threads();" "return tbb::info::default_concurrency();"
-			   THREADS_CPP "${THREADS_CPP}")
+						THREADS_CPP "${THREADS_CPP}")
 string(
 	REPLACE "m_tbbSchedulerInit = new tbb::task_scheduler_init(m_numThreads);"
 			"m_tbbSchedulerInit = new tbb::global_control(tbb::global_control::max_allowed_parallelism, m_numThreads);"
@@ -139,6 +139,33 @@ string(
 		"${QUICKPROF_CPP}")
 file(WRITE "${SOURCE_PATH}/src/LinearMath/btQuickprof.cpp" "${QUICKPROF_CPP}")
 
+file(READ "${SOURCE_PATH}/src/LinearMath/btScalar.h" QUICKPROF_HEADER)
+string(
+	REPLACE
+		"#elif (defined (_WIN32) && (_MSC_VER) && _MSC_VER >= 1400) && (!defined (BT_USE_DOUBLE_PRECISION))"
+		"#elif (defined (_WIN32)) && (!defined (BT_USE_DOUBLE_PRECISION))"
+		QUICKPROF_HEADER
+		"${QUICKPROF_HEADER}")
+string(
+	REPLACE
+		"#ifdef __clang__\n#define __BT_DISABLE_SSE__\n#endif\n#ifndef __BT_DISABLE_SSE__\n\t\t\t#if _MSC_VER>1400\n\t\t\t\t#define BT_USE_SIMD_VECTOR3\n\t\t\t#endif\n\t\t\t#define BT_USE_SSE\n#endif//__BT_DISABLE_SSE__\n\t\t\t#ifdef BT_USE_SSE\n\n#if (_MSC_FULL_VER >= 170050727)//Visual Studio 2012 can compile SSE4/FMA3 (but SSE4/FMA3 is not enabled by default)\n\t\t\t#define BT_ALLOW_SSE4\n#endif //(_MSC_FULL_VER >= 160040219)"
+		"#define BT_USE_SIMD_VECTOR3\n#define BT_USE_SSE\n#define BT_ALLOW_SSE4"
+		QUICKPROF_HEADER
+		"${QUICKPROF_HEADER}")
+string(
+	REPLACE
+		"#endif\n\n\t\t#endif//_XBOX"
+		"#endif//_XBOX"
+		QUICKPROF_HEADER
+		"${QUICKPROF_HEADER}")
+string(
+	REPLACE
+		"#ifndef BT_NO_SIMD_OPERATOR_OVERLOADS"
+		"#if (!defined(BT_NO_SIMD_OPERATOR_OVERLOADS)) && (!defined(__clang__)) && defined(_MSC_VER)"
+		QUICKPROF_HEADER
+		"${QUICKPROF_HEADER}")
+file(WRITE "${SOURCE_PATH}/src/LinearMath/btScalar.h" "${QUICKPROF_HEADER}")
+
 file(REMOVE_RECURSE "${SOURCE_PATH}/examples/ThirdPartyLibs")
 
 vcpkg_check_features(
@@ -164,13 +191,13 @@ if("multithreading" IN_LIST FEATURES)
 	# hdtSMP64 plugin. vcpkg's oneTBB ships as tbb12(_debug).lib; bullet's CMake does a fixed find_library(TBB_LIBRARY
 	# tbb ...), so we pre-seed the cache vars to short-circuit the find and point at the right file per config.
 	list(APPEND FEATURE_OPTIONS -DBULLET2_USE_TBB_MULTITHREADING=ON
-		 "-DBULLET2_TBB_INCLUDE_DIR=${CURRENT_INSTALLED_DIR}/include")
+			"-DBULLET2_TBB_INCLUDE_DIR=${CURRENT_INSTALLED_DIR}/include")
 	list(APPEND _bullet_tbb_options_release "-DBULLET2_TBB_LIB_DIR=${CURRENT_INSTALLED_DIR}/lib"
-		 "-DTBB_LIBRARY=${CURRENT_INSTALLED_DIR}/lib/tbb12.lib"
-		 "-DTBBMALLOC_LIBRARY=${CURRENT_INSTALLED_DIR}/lib/tbbmalloc.lib")
+			"-DTBB_LIBRARY=${CURRENT_INSTALLED_DIR}/lib/tbb12.lib"
+			"-DTBBMALLOC_LIBRARY=${CURRENT_INSTALLED_DIR}/lib/tbbmalloc.lib")
 	list(APPEND _bullet_tbb_options_debug "-DBULLET2_TBB_LIB_DIR=${CURRENT_INSTALLED_DIR}/debug/lib"
-		 "-DTBB_LIBRARY=${CURRENT_INSTALLED_DIR}/debug/lib/tbb12_debug.lib"
-		 "-DTBBMALLOC_LIBRARY=${CURRENT_INSTALLED_DIR}/debug/lib/tbbmalloc_debug.lib")
+			"-DTBB_LIBRARY=${CURRENT_INSTALLED_DIR}/debug/lib/tbb12_debug.lib"
+			"-DTBBMALLOC_LIBRARY=${CURRENT_INSTALLED_DIR}/debug/lib/tbbmalloc_debug.lib")
 endif()
 
 string(COMPARE EQUAL "${VCPKG_CRT_LINKAGE}" "dynamic" USE_MSVC_RUNTIME_LIBRARY_DLL)

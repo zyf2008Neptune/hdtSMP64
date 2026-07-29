@@ -19,7 +19,7 @@ namespace hdt
         auto getNewManifold(const btCollisionObject* b0, const btCollisionObject* b1) -> btPersistentManifold* override
         {
             std::scoped_lock l(m_lock);
-            const auto ret = btCollisionDispatcherMt::getNewManifold(b0, b1);
+            auto* ret = btCollisionDispatcherMt::getNewManifold(b0, b1);
             return ret;
         }
 

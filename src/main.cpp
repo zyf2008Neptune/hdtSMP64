@@ -38,11 +38,11 @@ namespace
 {
     auto checkOldPlugins() -> void
     {
-        const auto framework = GetModuleHandleA("hdtSSEFramework");
-        const auto physics = GetModuleHandleA("hdtSSEPhysics");
-        const auto hh = GetModuleHandleA("hdtSSEHighHeels");
+        const auto* framework = GetModuleHandleA("hdtSSEFramework");
+        const auto* physics = GetModuleHandleA("hdtSSEPhysics");
+        const auto* hh = GetModuleHandleA("hdtSSEHighHeels");
 
-        if (physics)
+        if (physics != nullptr)
         {
             MessageBox(nullptr,
                        TEXT("hdtSSEPhysics.dll is loaded. This is an older version of HDT-SMP and conflicts with "
@@ -50,7 +50,7 @@ namespace
                        TEXT("hdtSMP64"), MB_OK);
         }
 
-        if (framework && !hh)
+        if (framework != nullptr && hh == nullptr)
         {
             MessageBox(
                 nullptr,
@@ -69,9 +69,13 @@ namespace
         switch (index)
         {
         case RE::BSTextureSet::Texture::kDiffuse:
+        {
             return std::addressof(material->diffuseTexture);
+        }
         case RE::BSTextureSet::Texture::kNormal:
+        {
             return std::addressof(material->normalTexture);
+        }
         case RE::BSTextureSet::Texture::kEnvironmentMask:
         {
             if (material->GetFeature() == RE::BSShaderMaterial::Feature::kFaceGen)
@@ -193,7 +197,7 @@ namespace
                 logger::info("{} {}", node->extra[i]->GetRTTI()->name, node->extra[i]->name);
             }
         }
-        auto niNode = node->AsNode();
+        auto* niNode = node->AsNode();
         if (niNode != nullptr)
         {
             auto& children = niNode->GetChildren();
@@ -217,7 +221,7 @@ namespace
                                      geometry->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
                                      boneIdx++)
                                 {
-                                    const auto bone = geometry->GetGeometryRuntimeData().skinInstance->bones[boneIdx];
+                                    const auto* bone = geometry->GetGeometryRuntimeData().skinInstance->bones[boneIdx];
                                     logger::info("Bone {} - {} {} [{:.2f}, {:.2f}, {:.2f}]", boneIdx,
                                                  bone->GetRTTI()->name, bone->name, bone->world.translate.x,
                                                  bone->world.translate.y, bone->world.translate.z);
@@ -226,29 +230,29 @@ namespace
 
                             const RE::BSShaderProperty* shaderProperty =
                                 geometry->GetGeometryRuntimeData().shaderProperty.get();
-                            if (shaderProperty)
+                            if (shaderProperty != nullptr)
                             {
                                 const RE::BSLightingShaderProperty* lightingShader =
                                     netimmerse_cast<RE::BSLightingShaderProperty*>(shaderProperty);
-                                if (lightingShader)
+                                if (lightingShader != nullptr)
                                 {
-                                    auto material =
+                                    auto* material =
                                         static_cast<RE::BSLightingShaderMaterial*>(lightingShader->material);
 
-                                    for (auto texIdx = 0; texIdx < RE::BSTextureSet::Textures::kTotal; ++texIdx)
+                                    for (uint8_t texIdx = 0; texIdx < RE::BSTextureSet::Textures::kTotal; ++texIdx)
                                     {
                                         const auto textureID = static_cast<RE::BSTextureSet::Textures::Texture>(texIdx);
 
                                         const char* texturePath = material->textureSet->GetTexturePath(textureID);
-                                        if (!texturePath)
+                                        if (texturePath == nullptr)
                                         {
                                             continue;
                                         }
 
-                                        auto textureName = "";
+                                        const auto* textureName = "";
                                         const RE::NiSourceTexturePtr* texture =
                                             GetTextureFromIndex(material, textureID);
-                                        if (texture && texture->get())
+                                        if ((texture != nullptr) && (texture->get() != nullptr))
                                         {
                                             textureName = texture->get()->name.c_str();
                                         }
@@ -260,7 +264,7 @@ namespace
                                 }
                             }
                         }
-                        else if (childNode)
+                        else if (childNode != nullptr)
                         {
                             DumpNodeChildren(childNode);
                         }
@@ -300,10 +304,10 @@ namespace
             RE::TESObjectREFR* skelOwner = nullptr;
             const RE::TESFullName* ownerName = nullptr;
 
-            if (skeleton.skeleton->GetUserData())
+            if (skeleton.skeleton->GetUserData() != nullptr)
             {
                 skelOwner = skeleton.skeleton->GetUserData();
-                if (skelOwner->GetBaseObject())
+                if (skelOwner->GetBaseObject() != nullptr)
                 {
                     ownerName = skyrim_cast<RE::TESFullName*>(skelOwner->GetBaseObject());
                 }
@@ -312,8 +316,10 @@ namespace
             RE::ConsoleLog::GetSingleton()->Print(
                 "[HDT-SMP] %s skeleton - owner %s (refr formid %08x, base formid %08x) - %s",
                 skeleton.state > hdt::ActorManager::SkeletonState::e_SkeletonActive ? "active" : "inactive",
-                ownerName ? ownerName->GetFullName() : "unk_name", skelOwner ? skelOwner->formID : 0x00000000,
-                skelOwner && skelOwner->GetBaseObject() ? skelOwner->GetBaseObject()->formID : 0x00000000,
+                (ownerName != nullptr) ? ownerName->GetFullName() : "unk_name",
+                (skelOwner != nullptr) ? skelOwner->formID : 0x00000000,
+                (skelOwner != nullptr) && (skelOwner->GetBaseObject() != nullptr) ? skelOwner->GetBaseObject()->formID
+                                                                                  : 0x00000000,
                 stateStrings[skeleton.state]);
 
             if (includeItems)
@@ -390,14 +396,14 @@ namespace
             hdt::loadConfig();
             hdt::logConfig();
 
-            const RE::MenuOpenCloseEvent e{.menuName = "", .opening = false};
+            const RE::MenuOpenCloseEvent e{.menuName = "", .opening = false, .pad09 = 0, .pad0A = 0, .pad0C = 0};
             hdt::ActorManager::instance()->ProcessEvent(&e, nullptr);
             hdt::SkyrimPhysicsWorld::get()->resetSystems();
             return true;
         }
         if (_strnicmp(buffer, "dumptree", MAX_PATH) == 0)
         {
-            if (a_thisObj)
+            if (a_thisObj != nullptr)
             {
                 RE::ConsoleLog::GetSingleton()->Print("dumping targeted reference's node tree");
                 DumpNodeChildren(a_thisObj->Get3D1(false));
@@ -615,7 +621,8 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
     }
 
     const auto ver = a_skse->RuntimeVersion();
-    if (REL::Module::IsSE() && ver < SKSE::RUNTIME_SSE_1_5_39 || REL::Module::IsVR() && ver < SKSE::RUNTIME_LATEST_VR)
+    if ((REL::Module::IsSE() && ver < SKSE::RUNTIME_SSE_1_5_39) ||
+        (REL::Module::IsVR() && ver < SKSE::RUNTIME_LATEST_VR))
     {
         logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
         return false;
@@ -643,7 +650,7 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 #ifndef NDEBUG
     auto start = std::chrono::high_resolution_clock::now();
 
-    while (!IsDebuggerPresent())
+    while (IsDebuggerPresent() == 0)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -672,7 +679,7 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
     hdt::loadConfig();
     hdt::logConfig();
 
-    const auto messaging = SKSE::GetMessagingInterface();
+    const auto* messaging = SKSE::GetMessagingInterface();
     if (!messaging->RegisterListener("SKSE", MessageHandler))
     {
         return false;
@@ -711,7 +718,7 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
     hdt::g_pluginInterface.init(a_skse);
 
     //
-    if (const auto unusedCommand = RE::SCRIPT_FUNCTION::LocateConsoleCommand("ShowRenderPasses"))
+    if (auto* unusedCommand = RE::SCRIPT_FUNCTION::LocateConsoleCommand("ShowRenderPasses"))
     {
         static RE::SCRIPT_PARAMETER params[3];
         params[0].paramType = RE::SCRIPT_PARAM_TYPE::kChar;

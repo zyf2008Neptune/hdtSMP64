@@ -23,6 +23,7 @@
 #ifndef XML_INSPECTOR_HPP
 #define XML_INSPECTOR_HPP
 
+#include <array>
 #include <cstdint>
 #include <deque>
 #include <fstream>
@@ -32,6 +33,7 @@
 #include <stdexcept>
 #include <streambuf>
 #include <string>
+#include <string_view>
 #include "CharactersReader.hpp"
 #include "CharactersWriter.hpp"
 
@@ -552,26 +554,49 @@ namespace Xml
         static constexpr unsigned char LeftSquareBracket = 0x5B; // '['
         static constexpr unsigned char RightSquareBracket = 0x5D; // ']'
         static constexpr unsigned char Dot = 0x2E; // '.'
-        static const unsigned char LowerXml[3]; // "xml"
-        static const unsigned char UpperXml[3]; // "XML"
-        static const unsigned char Xmlns[5]; // "xmlns"
-        static const unsigned char XmlUri[36]; // "http://www.w3.org/XML/1998/namespace"
-        static const unsigned char XmlnsUri[29]; // "http://www.w3.org/2000/xmlns/"
-        static const unsigned char XmlDeclarationVersion[7]; // "version"
-        static const unsigned char XmlDeclarationEncoding[8]; // "encoding"
-        static const unsigned char XmlDeclarationStandalone[10]; // "standalone"
-        static const unsigned char Yes[3]; // "yes"
-        static const unsigned char No[2]; // "no"
-        static const unsigned char CDATA[5]; // "CDATA"
-        static const unsigned char DOCTYPE[7]; // "DOCTYPE"
-        static const unsigned char LtEntityName[2]; // "lt"
-        static const unsigned char GtEntityName[2]; // "gt"
-        static const unsigned char AmpEntityName[3]; // "amp"
-        static const unsigned char AposEntityName[4]; // "apos"
-        static const unsigned char QuotEntityName[4]; // "quot"
+        static constexpr std::array<uint8_t, 3> LowerXml{0x78, 0x6D, 0x6C}; // "xml"
+        static constexpr std::array<uint8_t, 3> UpperXml{0x58, 0x4D, 0x4C}; // "XML"
+        static constexpr std::array<uint8_t, 5> Xmlns{0x78, 0x6D, 0x6C, 0x6E, 0x73}; // "xmlns"
+        static constexpr std::array<uint8_t, 36> XmlUri{
+            0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E, 0x77, 0x33,
+            0x2E, 0x6F, 0x72, 0x67, 0x2F, 0x58, 0x4D, 0x4C, 0x2F, 0x31, 0x39, 0x39, 0x38,
+            0x2F, 0x6E, 0x61, 0x6D, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65}; // "http://www.w3.org/XML/1998/namespace"
+        static constexpr std::array<uint8_t, 29> XmlnsUri{
+            0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E, 0x77, 0x33, 0x2E, 0x6F,
+            0x72, 0x67, 0x2F, 0x32, 0x30, 0x30, 0x30, 0x2F, 0x78, 0x6D, 0x6C, 0x6E, 0x73, 0x2F}; // "http://www.w3.org/2000/xmlns/"
+        static constexpr std::array<uint8_t, 7> XmlDeclarationVersion{0x76, 0x65, 0x72, 0x73,
+                                                                      0x69, 0x6F, 0x6E}; // "version"
+        static constexpr std::array<uint8_t, 8> XmlDeclarationEncoding{0x65, 0x6E, 0x63, 0x6F,
+                                                                       0x64, 0x69, 0x6E, 0x67}; // "encoding"
+        static constexpr std::array<uint8_t, 10> XmlDeclarationStandalone{0x73, 0x74, 0x61, 0x6E, 0x64,
+                                                                          0x61, 0x6C, 0x6F, 0x6E, 0x65}; // "standalone"
+        static constexpr std::array<uint8_t, 3> Yes{0x79, 0x65, 0x73}; // "yes"
+        static constexpr std::array<uint8_t, 2> No{0x6E, 0x6F}; // "no"
+        static constexpr std::array<uint8_t, 5> CDATA{0x43, 0x44, 0x41, 0x54, 0x41}; // "CDATA"
+        static constexpr std::array<uint8_t, 7> DOCTYPE{0x44, 0x4F, 0x43, 0x54, 0x59, 0x50, 0x45}; // "DOCTYPE"
+        static constexpr std::array<uint8_t, 2> LtEntityName{0x6C, 0x74}; // "lt"
+        static constexpr std::array<uint8_t, 2> GtEntityName{0x67, 0x74}; // "gt"
+        static constexpr std::array<uint8_t, 3> AmpEntityName{0x61, 0x6D, 0x70}; // "amp"
+        static constexpr std::array<uint8_t, 4> AposEntityName{0x61, 0x70, 0x6F, 0x73}; // "apos"
+        static constexpr std::array<uint8_t, 4> QuotEntityName{0x71, 0x75, 0x6F, 0x74}; // "quot"
 
         // Use only for 1-byte characters!
-        static const unsigned char ToLower[256];
+        static constexpr std::array<uint8_t, 256> ToLower{
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x0A, 0x00, 0x00, 0x0D, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x21, 0x22, 0x23,
+            0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
+            0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67,
+            0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79,
+            0x7A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B,
+            0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D,
+            0x7E, 0x7F, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
+            0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F, 0xA0, 0xA1,
+            0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2, 0xB3,
+            0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5,
+            0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7,
+            0xD8, 0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF, 0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9,
+            0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB,
+            0xFC, 0xFD, 0xFE, 0xFF};
 
         // Source types.
         static constexpr int SourceNone = 0; // Inspector() constructor.
@@ -580,11 +605,11 @@ namespace Xml
         static constexpr int SourceIterators = 3; // Inspector(InputIterator first, InputIterator last) constructor.
         static constexpr int SourceReader = 4; // Inspector(Encoding::CharactersReader*) constructor.
 
-        static const StringSizeType NameReserve = 31;
-        static const StringSizeType ValueReserve = 63;
-        static const StringSizeType LocalNameReserve = 15;
-        static const StringSizeType PrefixReserve = 15;
-        static const StringSizeType NamespaceUriReserve = 63;
+        static constexpr StringSizeType NameReserve = 31;
+        static constexpr StringSizeType ValueReserve = 63;
+        static constexpr StringSizeType LocalNameReserve = 15;
+        static constexpr StringSizeType PrefixReserve = 15;
+        static constexpr StringSizeType NamespaceUriReserve = 63;
 
         SizeType row;
         SizeType column;
@@ -853,12 +878,12 @@ namespace Xml
         /**
             @brief Gets a value indicating whether the last inspected node has any attributes.
         */
-        auto HasAttributes() const -> bool;
+        [[nodiscard]] auto HasAttributes() const -> bool;
 
         /**
             @brief Gets the number of attributes on the last inspected node.
         */
-        auto GetAttributesCount() const -> SizeType;
+        [[nodiscard]] auto GetAttributesCount() const -> SizeType;
 
         /**
             @brief Returns attribute at the specified index on the last inspected node.
@@ -873,12 +898,12 @@ namespace Xml
         /**
             @brief Gets the last error message.
         */
-        auto GetErrorMessage() const -> const char*;
+        [[nodiscard]] auto GetErrorMessage() const -> const char*;
 
         /**
             @brief Gets the last error code.
         */
-        auto GetErrorCode() const -> ErrorCode;
+        [[nodiscard]] auto GetErrorCode() const -> ErrorCode;
 
         /**
             @brief Gets the current row number.
@@ -896,7 +921,7 @@ namespace Xml
 
             @sa GetColumn() and GetDepth().
         */
-        auto GetRow() const -> SizeType;
+        [[nodiscard]] auto GetRow() const -> SizeType;
 
         /**
             @brief Gets the current column number.
@@ -911,7 +936,7 @@ namespace Xml
 
             @sa GetRow() and GetDepth().
         */
-        auto GetColumn() const -> SizeType;
+        [[nodiscard]] auto GetColumn() const -> SizeType;
 
         /**
             @brief Gets the depth of the last inspected node in the XML document.
@@ -930,7 +955,7 @@ namespace Xml
 
             @sa GetRow() and GetColumn().
         */
-        auto GetDepth() const -> SizeType;
+        [[nodiscard]] auto GetDepth() const -> SizeType;
 
         /**
             @brief Removes the association with the source and resets
@@ -1030,111 +1055,6 @@ namespace Xml
     {
         return (codePoint == 0x20 || codePoint == 0x0A || codePoint == 0x09);
     }
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::LowerXml[3] = {
-        // "xml"
-        0x78, 0x6D, 0x6C};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::UpperXml[3] = {
-        // "XML"
-        0x58, 0x4D, 0x4C};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::Xmlns[5] = {
-        // "xmlns"
-        0x78, 0x6D, 0x6C, 0x6E, 0x73};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::XmlUri[36] = {
-        // "http://www.w3.org/XML/1998/namespace"
-        0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E, 0x77, 0x33, 0x2E, 0x6F, 0x72, 0x67, 0x2F,
-        0x58, 0x4D, 0x4C, 0x2F, 0x31, 0x39, 0x39, 0x38, 0x2F, 0x6E, 0x61, 0x6D, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::XmlnsUri[29] = {
-        // "http://www.w3.org/2000/xmlns/"
-        0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E, 0x77, 0x33, 0x2E, 0x6F,
-        0x72, 0x67, 0x2F, 0x32, 0x30, 0x30, 0x30, 0x2F, 0x78, 0x6D, 0x6C, 0x6E, 0x73, 0x2F};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::XmlDeclarationVersion[7] = {
-        // "version"
-        0x76, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::XmlDeclarationEncoding[8] = {
-        // "encoding"
-        0x65, 0x6E, 0x63, 0x6F, 0x64, 0x69, 0x6E, 0x67};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::XmlDeclarationStandalone[10] = {
-        // "standalone"
-        0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x6C, 0x6F, 0x6E, 0x65};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::Yes[3] = {
-        // "yes"
-        0x79, 0x65, 0x73};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::No[2] = {
-        // "no"
-        0x6E, 0x6F};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::CDATA[5] = {
-        // "CDATA"
-        0x43, 0x44, 0x41, 0x54, 0x41};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::DOCTYPE[7] = {
-        // "DOCTYPE"
-        0x44, 0x4F, 0x43, 0x54, 0x59, 0x50, 0x45};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::LtEntityName[2] = {
-        // "lt"
-        0x6C, 0x74};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::GtEntityName[2] = {
-        // "gt"
-        0x67, 0x74};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::AmpEntityName[3] = {
-        // "amp"
-        0x61, 0x6D, 0x70};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::AposEntityName[4] = {
-        // "apos"
-        0x61, 0x70, 0x6F, 0x73};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::QuotEntityName[4] = {
-        // "quot"
-        0x71, 0x75, 0x6F, 0x74};
-
-    template <typename TCharactersWriter>
-    const unsigned char Inspector<TCharactersWriter>::ToLower[256] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x0A, 0x00, 0x00, 0x0D, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x21, 0x22, 0x23,
-        0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
-        0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67,
-        0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79,
-        0x7A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B,
-        0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D,
-        0x7E, 0x7F, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F,
-        0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F, 0xA0, 0xA1,
-        0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2, 0xB3,
-        0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5,
-        0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7,
-        0xD8, 0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF, 0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9,
-        0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB,
-        0xFC, 0xFD, 0xFE, 0xFF};
 
     template <typename TCharactersWriter>
     inline Inspector<TCharactersWriter>::Inspector() :
@@ -2255,7 +2175,7 @@ namespace Xml
         --unclosedTagsSize;
 
         // Namespaces associated with this tag are no longer needed.
-        SizeType indicesToRemove = static_cast<SizeType>(unclosedTagsSize);
+        auto indicesToRemove = static_cast<SizeType>(unclosedTagsSize);
         NamespacesSizeType newNamespacesSize = 0;
         while (newNamespacesSize < namespacesSize)
         {
@@ -2379,7 +2299,7 @@ namespace Xml
                     }
                     continue;
                 }
-                else if (currentCharacter != Colon && Encoding::CharactersReader::IsNameStartChar(currentCharacter))
+                if (currentCharacter != Colon && Encoding::CharactersReader::IsNameStartChar(currentCharacter))
                 {
                     int resultParsing = ParseEntityReference(false);
                     if (resultParsing == -1)
@@ -2387,7 +2307,7 @@ namespace Xml
                         // Error.
                         return false;
                     }
-                    else if (resultParsing == 0)
+                    if (resultParsing == 0)
                     {
                         // Unknown entity reference.
                         if (value.empty())
@@ -2398,52 +2318,46 @@ namespace Xml
                             node = Inspected::EntityReference;
                             return true;
                         }
+
+                        // entityName field is set,
+                        // but first I must return some text.
+                        if (onlyWhite)
+                        {
+                            node = Inspected::Whitespace;
+                        }
                         else
                         {
-                            // entityName field is set,
-                            // but first I must return some text.
-                            if (onlyWhite)
-                            {
-                                node = Inspected::Whitespace;
-                            }
-                            else
-                            {
-                                node = Inspected::Text;
-                            }
-                            return true;
+                            node = Inspected::Text;
                         }
+                        return true;
                     }
-                    else // resultParsing == 1.
+                    // resultParsing == 1.
+                    // Predefined entity reference.
+                    onlyWhite = false;
+                    CharactersWriterType::WriteCharacter(value, currentCharacter);
+                    if (NextCharBad(false))
                     {
-                        // Predefined entity reference.
-                        onlyWhite = false;
-                        CharactersWriterType::WriteCharacter(value, currentCharacter);
-                        if (NextCharBad(false))
+                        if (eof)
                         {
-                            if (eof)
-                            {
-                                UnclosedTagType& ref = unclosedTags[unclosedTagsSize - 1];
-                                Reset();
-                                SetError(ErrorCode::UnclosedTag);
-                                row = ref.Row;
-                                column = ref.Column;
-                                eof = true;
-                            }
-                            return false;
+                            UnclosedTagType& ref = unclosedTags[unclosedTagsSize - 1];
+                            Reset();
+                            SetError(ErrorCode::UnclosedTag);
+                            row = ref.Row;
+                            column = ref.Column;
+                            eof = true;
                         }
-                        continue;
+                        return false;
                     }
+                    continue;
                 }
-                else
-                {
-                    tempRow = currentRow;
-                    tempColumn = currentColumn - 1;
-                    Reset();
-                    SetError(ErrorCode::InvalidReferenceSyntax);
-                    row = tempRow;
-                    column = tempColumn;
-                    return false;
-                }
+
+                tempRow = currentRow;
+                tempColumn = currentColumn - 1;
+                Reset();
+                SetError(ErrorCode::InvalidReferenceSyntax);
+                row = tempRow;
+                column = tempColumn;
+                return false;
             }
 
             if (currentCharacter == RightSquareBracket)
@@ -5917,7 +5831,7 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::NewAttribute() -> Inspector<TCharactersWriter>::AttributeType&
 
     {
-        AttributesSizeType fakeSize = static_cast<AttributesSizeType>(attributesSize);
+        auto fakeSize = attributesSize;
         if (fakeSize < attributes.size())
         {
             ++attributesSize;
@@ -5946,7 +5860,7 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::NewUnclosedTag() -> Inspector<TCharactersWriter>::UnclosedTagType&
 
     {
-        UnclosedTagsSizeType fakeSize = static_cast<UnclosedTagsSizeType>(unclosedTagsSize);
+        auto fakeSize = unclosedTagsSize;
         if (fakeSize < unclosedTags.size())
         {
             ++unclosedTagsSize;
@@ -5973,7 +5887,7 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::NewNamespace() -> Inspector<TCharactersWriter>::NamespaceDeclarationType&
 
     {
-        NamespacesSizeType fakeSize = static_cast<NamespacesSizeType>(namespacesSize);
+        auto fakeSize = namespacesSize;
         if (fakeSize < namespaces.size())
         {
             ++namespacesSize;

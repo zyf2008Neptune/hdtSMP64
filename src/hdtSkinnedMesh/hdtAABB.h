@@ -18,7 +18,7 @@ namespace hdt
             const auto flag0 = _mm_cmplt_ps(rhs.m_max, m_min);
             const auto flag1 = _mm_cmplt_ps(m_max, rhs.m_min);
             const auto flag = _mm_movemask_ps(_mm_or_ps(flag0, flag1));
-            return !(flag & 0x7);
+            return (flag & 0x7) == 0;
         }
 
         auto invalidate() -> void

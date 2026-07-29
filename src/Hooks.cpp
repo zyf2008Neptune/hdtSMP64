@@ -12,7 +12,7 @@ namespace Hooks
                                                RE::NiNode* a_skeleton, const bool a_unk) -> void
     {
         //
-        if (headPart)
+        if (headPart != nullptr)
         {
             if (RE::NiAVObject* headNode = a_this->GetObjectByName(headPart->formEditorID))
             {
@@ -23,7 +23,7 @@ namespace Hooks
             }
 
             //
-            for (const auto it : headPart->extraParts)
+            for (auto* it : headPart->extraParts)
             {
                 ProcessHeadPart(a_this, it, a_skeleton, a_unk);
             }
@@ -41,7 +41,7 @@ namespace Hooks
                 RE::TESForm* form = RE::TESForm::LookupByID(userData->formID);
                 if (const RE::Actor* actor = skyrim_cast<RE::Actor*>(form))
                 {
-                    RE::TESNPC* actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
+                    auto* actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
                     uint32_t numHeadParts = 0;
                     RE::BGSHeadPart** Headparts = nullptr;
 
@@ -52,15 +52,15 @@ namespace Hooks
                     }
                     else
                     {
-                        numHeadParts = actorBase->numHeadParts;
+                        numHeadParts = static_cast<uint8_t>(actorBase->numHeadParts);
                         Headparts = actorBase->headParts;
                     }
 
-                    if (Headparts)
+                    if (Headparts != nullptr)
                     {
                         for (uint32_t i = 0; i < numHeadParts; i++)
                         {
-                            if (Headparts[i])
+                            if (Headparts[i] != nullptr)
                             {
                                 ProcessHeadPart(a_this, Headparts[i], a_skeleton, a_unk);
                             }
@@ -89,19 +89,19 @@ namespace Hooks
             return;
         }
         //
-        auto name = "";
+        const auto* name = "";
         uint32_t formId = 0x0;
 
         //
-        if (a_skeleton->GetUserData() && a_skeleton->GetUserData()->GetBaseObject())
+        if ((a_skeleton->GetUserData() != nullptr) && (a_skeleton->GetUserData()->GetBaseObject() != nullptr))
         {
-            if (const auto bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->GetBaseObject()))
+            if (const auto* bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->GetBaseObject()))
             {
                 name = bname->GetFullName();
             }
 
-            const auto bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->GetBaseObject());
-            if (bnpc && bnpc->faceNPC)
+            const auto* bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->GetBaseObject());
+            if ((bnpc != nullptr) && (bnpc->faceNPC != nullptr))
             {
                 formId = bnpc->faceNPC->formID;
             }
@@ -110,8 +110,9 @@ namespace Hooks
         //
         logger::debug("SkinSingleGeometry {} {} - {}, {}, (formid {:08x} base form {:08x} head template form {:08x})",
                       a_skeleton->name.c_str(), a_skeleton->GetChildren().size(), a_triShape->name.c_str(), name,
-                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->formID : 0x0,
-                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->GetBaseObject()->formID : 0x0, formId);
+                      (a_skeleton->GetUserData() != nullptr) ? a_skeleton->GetUserData()->formID : 0x0,
+                      (a_skeleton->GetUserData() != nullptr) ? a_skeleton->GetUserData()->GetBaseObject()->formID : 0x0,
+                      formId);
 
         //
         Events::SkinSingleHeadGeometryEvent e;
@@ -131,19 +132,19 @@ namespace Hooks
             return;
         }
         //
-        auto name = "";
+        const auto* name = "";
         uint32_t formId = 0x0;
 
         //
-        if (a_skeleton->GetUserData() && a_skeleton->GetUserData()->data.objectReference)
+        if ((a_skeleton->GetUserData() != nullptr) && (a_skeleton->GetUserData()->data.objectReference != nullptr))
         {
-            if (const auto bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->data.objectReference))
+            if (const auto* bname = skyrim_cast<RE::TESFullName*>(a_skeleton->GetUserData()->data.objectReference))
             {
                 name = bname->GetFullName();
             }
 
-            const auto bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->data.objectReference);
-            if (bnpc && bnpc->faceNPC)
+            const auto* bnpc = skyrim_cast<RE::TESNPC*>(a_skeleton->GetUserData()->data.objectReference);
+            if ((bnpc != nullptr) && (bnpc->faceNPC != nullptr))
             {
                 formId = bnpc->faceNPC->formID;
             }
@@ -152,8 +153,9 @@ namespace Hooks
         //
         logger::debug("SkinAllGeometry {} {}, {}, (formid {:08x} base form {:08x} head template form {:08x})",
                       a_skeleton->name.c_str(), a_skeleton->GetChildren().size(), name,
-                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->formID : 0x0,
-                      a_skeleton->GetUserData() ? a_skeleton->GetUserData()->GetBaseObject()->formID : 0x0, formId);
+                      (a_skeleton->GetUserData() != nullptr) ? a_skeleton->GetUserData()->formID : 0x0,
+                      (a_skeleton->GetUserData() != nullptr) ? a_skeleton->GetUserData()->GetBaseObject()->formID : 0x0,
+                      formId);
 
         //
         Events::SkinAllHeadGeometryEvent e;
@@ -189,7 +191,7 @@ namespace Hooks
             {
                 if (child)
                 {
-                    if (const auto triShape = child->AsTriShape())
+                    if (auto* triShape = child->AsTriShape())
                     {
                         SkinSingleGeometry__Hook(a_this, a_skeleton, triShape, a_unk);
                     }
@@ -205,7 +207,7 @@ namespace Hooks
 
         struct BoneLimitFix : Xbyak::CodeGenerator
         {
-            BoneLimitFix(const uintptr_t a_returnAddr) : Xbyak::CodeGenerator()
+            BoneLimitFix(const uintptr_t a_returnAddr)
             {
                 Xbyak::Label ret;
 
@@ -313,7 +315,7 @@ namespace Hooks
         std::unordered_map<std::string, std::vector<RE::NiPointer<RE::NiAVObject>>> backupBones;
 
         //
-        if (armor)
+        if (armor != nullptr)
         {
             for (auto& NodeName : BackupNodes)
             {
@@ -321,12 +323,12 @@ namespace Hooks
 
                 //
                 RE::NiAVObject* object = armor->GetObjectByName(NodeName);
-                if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
+                if (RE::BSTriShape* triShape = (object != nullptr) ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
                     for (uint32_t idx = 0; idx < size; idx++) // all good here
                     {
-                        const auto bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
+                        auto* bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
                         result.emplace_back(hdt::make_nismart(bone));
                     }
                 }
@@ -342,17 +344,17 @@ namespace Hooks
         RE::NiAVObject* ret = _func(a_this, armor, skeleton, a_unk1, a_unk2, a_unk3, a_unk4);
 
         //
-        if (ret)
+        if (ret != nullptr)
         {
             for (auto& NodeName : BackupNodes)
             {
                 RE::NiAVObject* object = ret->GetObjectByName(NodeName);
-                if (RE::BSTriShape* triShape = object ? object->AsTriShape() : nullptr)
+                if (RE::BSTriShape* triShape = (object != nullptr) ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
                     for (uint32_t idx = 0; idx < size; idx++)
                     {
-                        auto bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
+                        auto* bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
                         if (bone == nullptr)
                         {
                             if (backupBones.contains(NodeName))
@@ -367,7 +369,7 @@ namespace Hooks
         }
 
         //
-        if (ret)
+        if (ret != nullptr)
         {
             armorAtachEvent.attachedNode = ret;
             armorAtachEvent.hasAttached = true;

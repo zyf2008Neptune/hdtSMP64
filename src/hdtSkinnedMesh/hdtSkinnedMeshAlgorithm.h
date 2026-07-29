@@ -51,7 +51,7 @@ namespace hdt
 
         struct MergeBuffer
         {
-            MergeBuffer() : mergeStride(0), mergeSize(0), currentGen(0) { activeCells.reserve(256); }
+            MergeBuffer() { activeCells.reserve(256); }
 
             ~MergeBuffer()
             {
@@ -91,7 +91,10 @@ namespace hdt
                 activeCells.clear();
             }
 
-            auto get(const int x, const int y) const -> CollisionMerge* { return &buffer[x * mergeStride + y]; }
+            [[nodiscard]] auto get(const int x, const int y) const -> CollisionMerge*
+            {
+                return &buffer[x * mergeStride + y];
+            }
 
             auto getAndTrack(const int x, const int y) -> CollisionMerge*
             {

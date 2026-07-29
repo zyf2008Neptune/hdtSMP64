@@ -50,9 +50,9 @@ namespace hdt
         m_linearLimits.m_springStiffness *= factor3;
         m_linearLimits.m_upperLimit *= factor;
         m_linearLimits.m_lowerLimit *= factor;
-        for (int i = 0; i < 3; ++i)
+        for (auto& m_angularLimit : m_angularLimits)
         {
-            m_angularLimits[i].m_springStiffness *= factor5;
+            m_angularLimit.m_springStiffness *= factor5;
         }
 
         m_scaleA = newScaleA;

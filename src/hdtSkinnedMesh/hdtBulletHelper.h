@@ -36,42 +36,6 @@ namespace hdt
     inline auto setAll2(const __m128 m) -> __m128 { return pshufd<0xAA>(m); }
     inline auto setAll3(const __m128 m) -> __m128 { return pshufd<0xFF>(m); }
 
-    inline auto operator+=(__m128& l, const __m128 r) -> __m128&
-    {
-        l = _mm_add_ps(l, r);
-        return l;
-    }
-
-    inline auto operator-=(__m128& l, const __m128 r) -> __m128&
-    {
-        l = _mm_sub_ps(l, r);
-        return l;
-    }
-
-    inline auto operator*=(__m128& l, const __m128 r) -> __m128&
-    {
-        l = _mm_mul_ps(l, r);
-        return l;
-    }
-
-    inline auto operator+=(__m128& l, const float r) -> __m128&
-    {
-        l = _mm_add_ps(l, setAll(r));
-        return l;
-    }
-
-    inline auto operator-=(__m128& l, const float r) -> __m128&
-    {
-        l = _mm_sub_ps(l, setAll(r));
-        return l;
-    }
-
-    inline auto operator*=(__m128& l, const float r) -> __m128&
-    {
-        l = _mm_mul_ps(l, setAll(r));
-        return l;
-    }
-
     inline auto cross(const __m128 a, const __m128 b) -> __m128
     {
         __m128 T = pshufd<_MM_SHUFFLE(3, 0, 2, 1)>(a);
@@ -92,8 +56,8 @@ namespace hdt
 
         const __m128 muls = _mm_mul_ss(_mm_mul_ss(n, est), est);
 
-        const __m128 half_est = _mm_mul_ss(est, _mm_set_ss(0.5f));
-        const __m128 three_minus_muls = _mm_sub_ss(_mm_set_ss(3.0f), muls);
+        const __m128 half_est = _mm_mul_ss(est, _mm_set_ss(0.5F));
+        const __m128 three_minus_muls = _mm_sub_ss(_mm_set_ss(3.0F), muls);
 
         return _mm_cvtss_f32(_mm_mul_ss(half_est, three_minus_muls));
     }
@@ -107,7 +71,7 @@ namespace hdt
     template <>
     inline auto abs(const float rhs) -> float
     {
-        return _mm_cvtss_f32(_mm_andnot_ps(_mm_set_ss(-0.f), _mm_set_ss(rhs)));
+        return _mm_cvtss_f32(_mm_andnot_ps(_mm_set_ss(-0.F), _mm_set_ss(rhs)));
     }
 
     template <class T>
@@ -146,9 +110,9 @@ namespace hdt
     public:
         BT_DECLARE_ALIGNED_ALLOCATOR()
 
-        btQsTransform() : m_basis(btQuaternion::getIdentity()), m_originScale(0, 0, 0, 1) {}
+        btQsTransform() : m_basis{btQuaternion::getIdentity()}, m_originScale{0, 0, 0, 1} {}
 
-        btQsTransform(const btQuaternion& r, const btVector3& t, const float s = 1.0f) : m_basis(r)
+        btQsTransform(const btQuaternion& r, const btVector3& t, const float s = 1.0F) : m_basis{r}
         {
 #ifdef BT_ALLOW_SSE4
             // 0x30 inserts the 0th element of _mm_set_ss into the 3rd (W) element of t
@@ -159,7 +123,7 @@ namespace hdt
 #endif
         }
 
-        btQsTransform(const btTransform& t, const float s = 1.0f) : m_basis(t.getRotation())
+        btQsTransform(const btTransform& t, const float s = 1.0F) : m_basis{t.getRotation()}
         {
 #ifdef BT_ALLOW_SSE4
             m_originScale.mVec128 = _mm_insert_ps(t.getOrigin().get128(), _mm_set_ss(s), 0x30);
@@ -243,7 +207,7 @@ namespace hdt
         [[nodiscard]] auto inverse() const -> btQsTransform
         {
             const btQuaternion r = m_basis.inverse();
-            const float s = 1.0f / getScale();
+            const float s = 1.0F / getScale();
             return {r, quatRotate(r, -getOrigin() * s), s};
         }
 
@@ -267,9 +231,15 @@ namespace hdt
             m_row[0] = _mm_mul_ps(m_row[0], scale);
             m_row[1] = _mm_mul_ps(m_row[1], scale);
             m_row[2] = _mm_mul_ps(m_row[2], scale);
+#if (__clang__)
+            m_row[0][3] = t.getOrigin()[0];
+            m_row[1][3] = t.getOrigin()[1];
+            m_row[2][3] = t.getOrigin()[2];
+#elif (_MSC_VER)
             m_row[0].m128_f32[3] = t.getOrigin()[0];
             m_row[1].m128_f32[3] = t.getOrigin()[1];
             m_row[2].m128_f32[3] = t.getOrigin()[2];
+#endif
         }
 
         auto operator*(const btVector3& rhs) const->btVector3
@@ -322,7 +292,7 @@ namespace hdt
             return xmm0;
         }
 
-        __m128 m_row[3];
+        __m128 m_row[3]{};
     };
 
     ATTRIBUTE_ALIGNED16(class) btMatrix4x3T : public btMatrix3x3
@@ -361,7 +331,7 @@ namespace hdt
 
         [[nodiscard]] auto toTransform() const -> btTransform { return btTransform(this->transpose(), m_col[3]); }
 
-        btVector3 m_col[4];
+        btVector3 m_col[4]{};
     };
 
     // Ref counted base for objects that need RE::BSTSmartPointer compatibility but cannot inherit
@@ -390,7 +360,7 @@ namespace hdt
             }
         }
 
-        auto getRefCount() const -> long { return m_refCount; }
+        auto getRefCount() const -> std::uint32_t { return m_refCount; }
 
     private:
         mutable std::atomic<std::uint32_t> m_refCount;
@@ -399,7 +369,7 @@ namespace hdt
     template <>
     inline auto abs(const btVector3 rhs) -> btVector3
     {
-        return _mm_andnot_ps(_mm_set_ps1(-0.f), rhs.get128());
+        return _mm_andnot_ps(_mm_set_ps1(-0.F), rhs.get128());
     }
 
     template <class T>

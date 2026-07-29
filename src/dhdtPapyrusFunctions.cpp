@@ -30,7 +30,7 @@ auto hdt::papyrus::ReloadPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on_actor
                                      const RE::BSFixedString physics_file_path, const bool persist,
                                      const bool verbose_log) -> bool
 {
-    if (!(on_actor && on_item))
+    if ((on_actor == nullptr) || (on_item == nullptr))
     {
         if (verbose_log)
         {
@@ -51,7 +51,7 @@ auto hdt::papyrus::SwapPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on_actor,
                                    const RE::BSFixedString new_physics_file_path, const bool persist,
                                    const bool verbose_log) -> bool
 {
-    if (!on_actor)
+    if (on_actor == nullptr)
     {
         if (verbose_log)
         {
@@ -69,7 +69,7 @@ auto hdt::papyrus::SwapPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on_actor,
 auto hdt::papyrus::QueryCurrentPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on_actor, RE::TESObjectARMA* on_item,
                                            const bool verbose_log) -> RE::BSFixedString
 {
-    if (!(on_actor && on_item))
+    if ((on_actor == nullptr) || (on_item == nullptr))
     {
         if (verbose_log)
         {
@@ -87,7 +87,7 @@ auto hdt::papyrus::QueryCurrentPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on
 auto hdt::papyrus::TogglePhysics(RE::StaticFunctionTag*, const RE::Actor* actor,
                                  std::vector<RE::BSFixedString> boneNames, const bool on) -> std::vector<bool>
 {
-    if (!actor || boneNames.empty())
+    if ((actor == nullptr) || boneNames.empty())
     {
         return {};
     }
@@ -99,7 +99,7 @@ auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::ve
 {
     std::vector result(boneNames.size(), false);
 
-    const auto AM = ActorManager::instance();
+    auto* AM = ActorManager::instance();
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
@@ -110,21 +110,21 @@ auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::ve
             continue;
         }
 
-        auto owner = skeleton.skeleton->GetUserData();
-        if (!owner || owner->formID != actor->formID)
+        const auto* owner = skeleton.skeleton->GetUserData();
+        if ((owner == nullptr) || owner->formID != actor->formID)
         {
             continue;
         }
 
         {
-            auto world = SkyrimPhysicsWorld::get();
+            auto* world = SkyrimPhysicsWorld::get();
             auto simLock = world->lockSimulation();
 
             for (size_t i = 0; i < boneNames.size(); ++i)
             {
                 auto foundAny = false;
 
-                auto processBone = [&](SkinnedMeshBone* bone)
+                auto processBone = [&](SkinnedMeshBone* bone) -> void
                 {
                     if (!bone)
                     {
@@ -139,7 +139,7 @@ auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::ve
                     }
 
                     // Early out: Already in desired state, OR trying to make a 0 mass bone dynamic
-                    if (currentlyDynamic == on || (on && bone->m_rig.getInvMass() <= 0.0f))
+                    if (currentlyDynamic == on || (on && bone->m_rig.getInvMass() <= 0.0F))
                     {
                         return;
                     }
@@ -187,13 +187,13 @@ auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::ve
 
 auto hdt::papyrus::ResetPhysics(RE::StaticFunctionTag*, RE::Actor* actor, bool full) -> void
 {
-    if (!actor)
+    if (actor == nullptr)
     {
         return;
     }
 
     SKSE::GetTaskInterface()->AddTask(
-        [handle = RE::ActorHandle(actor), full]
+        [handle = RE::ActorHandle(actor), full] -> void
         {
             if (auto a = handle.get())
             {
@@ -204,7 +204,7 @@ auto hdt::papyrus::ResetPhysics(RE::StaticFunctionTag*, RE::Actor* actor, bool f
 
 auto hdt::papyrus::impl::ResetPhysicsImpl(const RE::Actor* actor, const bool full) -> void
 {
-    const auto AM = ActorManager::instance();
+    auto* AM = ActorManager::instance();
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
@@ -214,8 +214,8 @@ auto hdt::papyrus::impl::ResetPhysicsImpl(const RE::Actor* actor, const bool ful
         {
             continue;
         }
-        auto owner = skeleton.skeleton->GetUserData();
-        if (!owner || owner->formID != actor->formID)
+        const auto* owner = skeleton.skeleton->GetUserData();
+        if ((owner == nullptr) || owner->formID != actor->formID)
         {
             continue;
         }
@@ -270,11 +270,13 @@ auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, u
                                                const std::string_view physics_file_path, const bool persist,
                                                const bool verbose_log) -> bool
 {
-    const auto& AM = ActorManager::instance();
+    auto* AM = ActorManager::instance();
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
-    auto character_found = false, armor_addon_found = false, succeeded = false;
+    auto character_found = false;
+    auto armor_addon_found = false;
+    auto succeeded = false;
 
     std::string old_physics_file_path;
 
@@ -290,9 +292,9 @@ auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, u
             continue;
         }
 
-        auto owner = skeleton.skeleton->GetUserData();
+        const auto* owner = skeleton.skeleton->GetUserData();
 
-        if (owner && owner->formID == on_actor_formID)
+        if ((owner != nullptr) && owner->formID == on_actor_formID)
         {
             character_found = true;
 
@@ -394,7 +396,7 @@ auto hdt::papyrus::impl::ReloadPhysicsFileImpl(const uint32_t on_actor_formID, u
     // Push into global override data
     if (persist)
     {
-        auto OM = Override::OverrideManager::GetSingleton();
+        auto* OM = Override::OverrideManager::GetSingleton();
         OM->registerOverride(on_actor_formID, old_physics_file_path, std::string(physics_file_path));
     }
 
@@ -418,11 +420,13 @@ auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID,
                                              const std::string_view new_physics_file_path, const bool persist,
                                              const bool verbose_log) -> bool
 {
-    const auto& AM = ActorManager::instance();
+    auto* AM = ActorManager::instance();
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
-    auto character_found = false, armor_addon_found = false, succeeded = false;
+    auto character_found = false;
+    auto armor_addon_found = false;
+    auto succeeded = false;
 
     for (auto& skeleton : skeletons)
     {
@@ -436,9 +440,9 @@ auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID,
             continue;
         }
 
-        auto owner = skeleton.skeleton->GetUserData();
+        const auto* owner = skeleton.skeleton->GetUserData();
 
-        if (owner && owner->formID == on_actor_formID)
+        if ((owner != nullptr) && owner->formID == on_actor_formID)
         {
             character_found = true;
 
@@ -523,7 +527,7 @@ auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID,
 
     if (persist)
     {
-        auto OM = Override::OverrideManager::GetSingleton();
+        auto* OM = Override::OverrideManager::GetSingleton();
         OM->registerOverride(on_actor_formID, std::string(old_physics_file_path), std::string(new_physics_file_path));
     }
 
@@ -545,7 +549,7 @@ auto hdt::papyrus::impl::SwapPhysicsFileImpl(const uint32_t on_actor_formID,
 auto hdt::papyrus::impl::QueryCurrentPhysicsFileImpl(const uint32_t on_actor_formID, const uint32_t on_item_formID,
                                                      const bool verbose_log) -> std::string
 {
-    const auto& AM = ActorManager::instance();
+    auto* AM = ActorManager::instance();
     auto guard = AM->lockGuard();
     auto& skeletons = AM->getSkeletons();
 
@@ -567,9 +571,9 @@ auto hdt::papyrus::impl::QueryCurrentPhysicsFileImpl(const uint32_t on_actor_for
             continue;
         }
 
-        auto owner = skeleton.skeleton->GetUserData();
+        const auto* owner = skeleton.skeleton->GetUserData();
 
-        if (owner && owner->formID == on_actor_formID)
+        if ((owner != nullptr) && owner->formID == on_actor_formID)
         {
             character_found = true;
 

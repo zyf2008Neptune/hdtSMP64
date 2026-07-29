@@ -44,7 +44,8 @@ namespace hdt
                 m_timeSteps[i] = m_systems[i]->prepareForRead(timeStep);
             }
 
-            tbb::parallel_for(size_t{0}, n, [this](const size_t i) { m_systems[i]->readTransform(m_timeSteps[i]); });
+            tbb::parallel_for(size_t{0}, n,
+                              [this](const size_t i) -> void { m_systems[i]->readTransform(m_timeSteps[i]); });
         }
 
         auto writeTransform() const -> void
@@ -67,7 +68,7 @@ namespace hdt
         std::vector<RE::BSTSmartPointer<SkinnedMeshSystem>> m_systems;
 
         btVector3 m_windSpeed; // world windspeed
-        btScalar m_windTime = 0.0f; // wind simulation clock
+        btScalar m_windTime{}; // wind simulation clock
 
     private:
         std::vector<SkinnedMeshBody*> _bodies;

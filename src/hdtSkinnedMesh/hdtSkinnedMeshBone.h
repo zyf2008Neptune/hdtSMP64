@@ -16,11 +16,11 @@ namespace hdt
         virtual ~SkinnedMeshBone() = default;
 
         RE::BSFixedString m_name;
-        float m_marginMultipler;
-        float m_boudingSphereMultipler = 1.0f;
-        float m_gravityFactor = 1.0f;
-        float m_windFactor = 1.0f; // Mapped to <wind-factor> in the XML. Acts as a multiplier for the global wind force
-                                   // applied to this bone (0.0 = no wind, 2.0 = double wind)
+        float m_marginMultipler{};
+        float m_boudingSphereMultipler{1.0F};
+        float m_gravityFactor{1.0F};
+        float m_windFactor{1.0F}; // Mapped to <wind-factor> in the XML. Acts as a multiplier for the global wind force
+                                  // applied to this bone (0.0 = no wind, 2.0 = double wind)
 
         btRigidBody m_rig;
         btTransform m_localToRig;

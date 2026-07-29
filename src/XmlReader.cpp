@@ -1,6 +1,8 @@
 #include "XmlReader.h"
 
 #include <charconv>
+#include <cstddef>
+#include "XmlInspector/XmlInspector.hpp"
 
 namespace hdt
 {
@@ -11,8 +13,8 @@ namespace hdt
             float ret{};
             if (!str.contains(','))
             {
-                const auto begin = str.data();
-                const auto end = begin + str.size();
+                const auto* begin = str.data();
+                const auto* end = begin + str.size();
                 auto [ptr, ec] = std::from_chars(begin, end, ret);
                 if (ec != std::errc() || ptr != end)
                 {
@@ -24,8 +26,8 @@ namespace hdt
             std::string s = std::string(str);
             size_t start_pos = s.find(',');
             s.replace(start_pos, 1, ".");
-            const char* begin = s.data();
-            const char* end = begin + s.size();
+            const auto* begin = s.data();
+            const auto* end = begin + s.size();
             auto [ptr, ec] = std::from_chars(begin, end, ret);
             if (ec != std::errc() || ptr != end)
             {
@@ -82,7 +84,7 @@ namespace hdt
 
     auto XMLReader::Inspect() -> bool
     {
-        if (Base::GetInspected() == Inspected::EmptyElementTag && isEmptyStart == true)
+        if (Base::GetInspected() == Inspected::EmptyElementTag && isEmptyStart)
         {
             isEmptyStart = false;
             return true;
@@ -120,15 +122,30 @@ namespace hdt
         }
 
         int currentDepth = 1;
-        while (currentDepth && Inspect())
+        while ((currentDepth != 0) && Inspect())
         {
             switch (GetInspected())
             {
             case Inspected::StartTag:
+            {
                 ++currentDepth;
                 break;
+            }
             case Inspected::EndTag:
+            {
                 --currentDepth;
+                break;
+            }
+            case Inspected::CDATA:
+            case Inspected::Comment:
+            case Inspected::Whitespace:
+            case Inspected::EntityReference:
+            case Inspected::ProcessingInstruction:
+            case Inspected::DocumentType:
+            case Inspected::XmlDeclaration:
+            case Inspected::None:
+            case Inspected::EmptyElementTag:
+            case Inspected::Text:
                 break;
             }
         }
@@ -143,7 +160,7 @@ namespace hdt
 
     auto XMLReader::hasAttribute(const std::string& a_name) const -> bool
     {
-        for (int i = 0; i < GetAttributesCount(); ++i)
+        for (size_t i = 0; i < GetAttributesCount(); ++i)
         {
             auto attr = GetAttributeAt(i);
             if (attr.Name == a_name)
@@ -156,7 +173,7 @@ namespace hdt
 
     auto XMLReader::getAttribute(const std::string& a_name) const -> std::string
     {
-        for (int i = 0; i < GetAttributesCount(); ++i)
+        for (size_t i = 0; i < GetAttributesCount(); ++i)
         {
             auto attr = GetAttributeAt(i);
             if (attr.Name == a_name)
@@ -169,7 +186,7 @@ namespace hdt
 
     auto XMLReader::getAttribute(const std::string& a_name, const std::string& def) const -> std::string
     {
-        for (int i = 0; i < GetAttributesCount(); ++i)
+        for (size_t i = 0; i < GetAttributesCount(); ++i)
         {
             auto attr = GetAttributeAt(i);
             if (attr.Name == a_name)
@@ -285,6 +302,7 @@ namespace hdt
             switch (GetInspected())
             {
             case Inspected::StartTag:
+            {
                 if (GetName() == "basis")
                 {
                     ret.setRotation(readQuaternion());
@@ -298,8 +316,22 @@ namespace hdt
                     ret.setOrigin(readVector3());
                 }
                 break;
+            }
             case Inspected::EndTag:
+            {
                 return ret;
+            }
+            case Inspected::CDATA:
+            case Inspected::Comment:
+            case Inspected::Whitespace:
+            case Inspected::EntityReference:
+            case Inspected::ProcessingInstruction:
+            case Inspected::DocumentType:
+            case Inspected::XmlDeclaration:
+            case Inspected::None:
+            case Inspected::EmptyElementTag:
+            case Inspected::Text:
+                break;
             }
         }
         return ret;

@@ -83,7 +83,7 @@ namespace hdt
             currentLimitError = 0;
         }
 
-        if (!currentLimit)
+        if (currentLimit == 0)
         {
             // get current position of constraint
             const auto delta = distance - m_equilibriumPoint;

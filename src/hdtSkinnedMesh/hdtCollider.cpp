@@ -5,12 +5,12 @@
 namespace hdt
 {
 
-    auto ColliderTree::insertCollider(const U32* keys, const size_t keyCount, const Collider& c) -> void
+    auto ColliderTree::insertCollider(const std::span<U32> keys, const size_t keyCount, const Collider& c) -> void
     {
-        auto p = this;
+        auto* p = this;
         for (size_t i = 0; i < keyCount && i < 4; ++i)
         {
-            auto f = std::ranges::find_if(p->children, [=](const ColliderTree& n) { return n.key == keys[i]; });
+            auto f = std::ranges::find_if(p->children, [=](const ColliderTree& n) -> bool { return n.key == keys[i]; });
             if (f == p->children.end())
             {
                 p->children.emplace_back(keys[i]);
@@ -21,7 +21,7 @@ namespace hdt
                 p = std::addressof(*f);
             }
         }
-        p->colliders.push_back(c);
+        p->colliders.emplace_back(c);
     }
 
     // finds overlapping pairs between two collider trees
@@ -56,7 +56,7 @@ namespace hdt
             auto e = stack.back();
             stack.pop_back();
 
-            if (e.a->isKinematic && e.b->isKinematic)
+            if ((e.a->isKinematic != 0U) && (e.b->isKinematic != 0U))
             {
                 continue;
             }
@@ -69,26 +69,26 @@ namespace hdt
                 }
 
                 // a is a leaf — switch to R-mode and walk down b
-                if (e.a->numCollider && e.a->aabbMe.collideWith(e.b->aabbAll))
+                if ((e.a->numCollider != 0U) && e.a->aabbMe.collideWith(e.b->aabbAll))
                 {
                     if (e.a->aabbMe.collideWith(e.b->aabbMe))
                     {
                         ret.emplace_back(e.a, e.b);
                     }
 
-                    const auto begin = e.b->children.data();
+                    auto* begin = e.b->children.data();
                     // skip b's kinematic children if a is kinematic (would get culled above anyway)
-                    const auto end = begin + (e.a->isKinematic ? e.b->dynChild : e.b->children.size());
-                    for (auto i = begin; i < end; ++i)
+                    const auto* end = begin + ((e.a->isKinematic != 0U) ? e.b->dynChild : e.b->children.size());
+                    for (auto* i = begin; i < end; ++i)
                     {
                         stack.emplace_back(e.a, i, Mode::R);
                     }
                 }
 
                 // keep splitting a — same kinematic shortcut
-                const auto begin = e.a->children.data();
-                const auto end = begin + (e.b->isKinematic ? e.a->dynChild : e.a->children.size());
-                for (auto i = begin; i < end; ++i)
+                auto* begin = e.a->children.data();
+                const auto* end = begin + ((e.b->isKinematic != 0U) ? e.a->dynChild : e.a->children.size());
+                for (auto* i = begin; i < end; ++i)
                 {
                     stack.emplace_back(i, e.b, Mode::L);
                 }
@@ -97,7 +97,7 @@ namespace hdt
             {
                 // a is always a leaf here (L only pushes R when numCollider is set)
                 // numCollider check is technically redundant but whatever, it's cheap
-                if (!e.a->numCollider)
+                if (e.a->numCollider == 0U)
                 {
                     continue;
                 }
@@ -110,9 +110,9 @@ namespace hdt
                     ret.emplace_back(e.a, e.b);
                 }
 
-                const auto begin = e.b->children.data();
-                const auto end = begin + (e.a->isKinematic ? e.b->dynChild : e.b->children.size());
-                for (auto i = begin; i < end; ++i)
+                auto* begin = e.b->children.data();
+                const auto* end = begin + ((e.a->isKinematic != 0U) ? e.b->dynChild : e.b->children.size());
+                for (auto* i = begin; i < end; ++i)
                 {
                     stack.emplace_back(e.a, i, Mode::R);
                 }
@@ -124,12 +124,12 @@ namespace hdt
     auto ColliderTree::checkCollisionR(ColliderTree* r, std::vector<std::pair<ColliderTree*, ColliderTree*>>& ret)
         -> void
     {
-        if (isKinematic && r->isKinematic)
+        if ((isKinematic != 0U) && (r->isKinematic != 0U))
         {
             return;
         }
 
-        if (numCollider)
+        if (numCollider != 0U)
         {
             if (!aabbMe.collideWith(r->aabbAll))
             {
@@ -141,9 +141,9 @@ namespace hdt
                 ret.emplace_back(this, r);
             }
 
-            const auto begin = r->children.data();
-            const auto end = begin + (isKinematic ? r->dynChild : r->children.size());
-            for (auto i = begin; i < end; ++i)
+            auto* begin = r->children.data();
+            const auto* end = begin + ((isKinematic != 0U) ? r->dynChild : r->children.size());
+            for (auto* i = begin; i < end; ++i)
             {
                 checkCollisionR(i, ret);
             }
@@ -163,11 +163,11 @@ namespace hdt
 
     auto ColliderTree::updateKinematic(const std::function<float(const Collider*)>& func) -> void
     {
-        U32 k = true;
+        U32 k = 1U;
         for (auto& i : colliders)
         {
             i.flexible = func(&i);
-            k &= i.flexible < FLT_EPSILON;
+            k &= static_cast<U32>(i.flexible < FLT_EPSILON);
         }
 
         for (auto& i : children)
@@ -182,7 +182,7 @@ namespace hdt
 
         isKinematic = k;
 
-        if (k)
+        if (k != 0U)
         {
             dynChild = dynCollider = 0;
         }
@@ -190,7 +190,7 @@ namespace hdt
         {
             for (dynChild = 0; dynChild < children.size(); ++dynChild)
             {
-                if (children[dynChild].isKinematic)
+                if (children[dynChild].isKinematic != 0U)
                 {
                     break;
                 }
@@ -232,7 +232,7 @@ namespace hdt
 
             // old code merged into aabb[0] directly which nuked collider 0's actual bbox,
             // making it always pass narrow-phase checks. accumulate in registers instead
-            if (node->numCollider)
+            if (node->numCollider != 0U)
             {
                 __m128 mn = node->aabb[0].m_min;
                 __m128 mx = node->aabb[0].m_max;
@@ -321,7 +321,7 @@ namespace hdt
             const auto e = stack.back();
             stack.pop_back();
 
-            if (e.a->isKinematic && e.b->isKinematic)
+            if ((e.a->isKinematic != 0U) && (e.b->isKinematic != 0U))
             {
                 continue;
             }
@@ -333,31 +333,31 @@ namespace hdt
                     continue;
                 }
 
-                if (e.a->numCollider && e.a->aabbMe.collideWith(e.b->aabbAll))
+                if ((e.a->numCollider != 0U) && e.a->aabbMe.collideWith(e.b->aabbAll))
                 {
                     if (e.a->aabbMe.collideWith(e.b->aabbMe))
                     {
                         return true;
                     }
 
-                    const auto begin = e.b->children.data();
-                    const auto end = begin + (e.a->isKinematic ? e.b->dynChild : e.b->children.size());
-                    for (auto i = begin; i < end; ++i)
+                    auto* begin = e.b->children.data();
+                    const auto* end = begin + ((e.a->isKinematic != 0U) ? e.b->dynChild : e.b->children.size());
+                    for (auto* i = begin; i < end; ++i)
                     {
                         stack.emplace_back(e.a, i, Mode::R);
                     }
                 }
 
-                const auto begin = e.a->children.data();
-                const auto end = begin + (e.b->isKinematic ? e.a->dynChild : e.a->children.size());
-                for (auto i = begin; i < end; ++i)
+                auto* begin = e.a->children.data();
+                const auto* end = begin + ((e.b->isKinematic != 0U) ? e.a->dynChild : e.a->children.size());
+                for (auto* i = begin; i < end; ++i)
                 {
                     stack.emplace_back(i, e.b, Mode::L);
                 }
             }
             else
             {
-                if (!e.a->numCollider)
+                if (e.a->numCollider == 0U)
                 {
                     continue;
                 }
@@ -371,9 +371,9 @@ namespace hdt
                     return true;
                 }
 
-                const auto begin = e.b->children.data();
-                const auto end = begin + (e.a->isKinematic ? e.b->dynChild : e.b->children.size());
-                for (auto i = begin; i < end; ++i)
+                auto* begin = e.b->children.data();
+                const auto* end = begin + ((e.a->isKinematic != 0U) ? e.b->dynChild : e.b->children.size());
+                for (auto* i = begin; i < end; ++i)
                 {
                     stack.emplace_back(e.a, i, Mode::R);
                 }
@@ -385,12 +385,12 @@ namespace hdt
     // dead code.. collapseCollideL inlines R logic now. kept for API
     auto ColliderTree::collapseCollideR(ColliderTree* r) -> bool
     {
-        if (isKinematic && r->isKinematic)
+        if ((isKinematic != 0U) && (r->isKinematic != 0U))
         {
             return false;
         }
 
-        if (numCollider)
+        if (numCollider != 0U)
         {
             if (!aabbMe.collideWith(r->aabbAll))
             {
@@ -402,9 +402,9 @@ namespace hdt
                 return true;
             }
 
-            const auto begin = r->children.data();
-            const auto end = begin + (isKinematic ? r->dynChild : r->children.size());
-            for (auto i = begin; i < end; ++i)
+            auto* begin = r->children.data();
+            const auto* end = begin + ((isKinematic != 0U) ? r->dynChild : r->children.size());
+            for (auto* i = begin; i < end; ++i)
             {
                 if (collapseCollideR(i))
                 {

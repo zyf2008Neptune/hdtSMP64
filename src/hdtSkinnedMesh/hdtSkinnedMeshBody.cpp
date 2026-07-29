@@ -1,27 +1,17 @@
 #include "hdtSkinnedMeshBody.h"
 #include "hdtSkinnedMeshShape.h"
 
+#include <cstddef>
 #include <tbb/tbb.h>
 
 namespace hdt
 {
     SkinnedMeshBody::SkinnedMeshBody() { m_collisionShape = &m_bulletShape; }
 
-    SkinnedMeshBody::~SkinnedMeshBody()
-    {
-        // m_bonesGPU.discard_data();
-        // m_verticesGPU.discard_data();
-    }
+    SkinnedMeshBody::~SkinnedMeshBody() = default;
 
     namespace
     {
-        auto calcVertexState(__m128 skinPos, const Bone& bone, const __m128 w) -> __m128
-        {
-            auto p = bone.m_vertexToWorld * skinPos;
-            p = _mm_blend_ps(p.get128(), _mm_load_ps(bone.m_reserved), 0x8);
-            return _mm_mul_ps(w, p.get128());
-        }
-
 #ifdef __AVX2__
         auto calcVertexStateFMA(__m128 skinPos, const Bone& bone, __m128 w) -> __m128
         {
@@ -33,6 +23,13 @@ namespace hdt
             r = _mm_fmadd_ps(bone.m_vertexToWorld.m_col[0].get128(), px, r);
             r = _mm_blend_ps(r, _mm_load_ps(bone.m_reserved), 0x8);
             return _mm_mul_ps(w, r);
+        }
+#else
+        auto calcVertexState(__m128 skinPos, const Bone& bone, const __m128 w) -> __m128
+        {
+            auto p = bone.m_vertexToWorld * skinPos;
+            p = _mm_blend_ps(p.get128(), _mm_load_ps(bone.m_reserved), 0x8);
+            return _mm_mul_ps(w, p.get128());
         }
 #endif
     } // namespace
@@ -53,7 +50,7 @@ namespace hdt
             {
                 _mm_prefetch(reinterpret_cast<const char*>(skinnedBones[i + 4].ptr), _MM_HINT_T0);
             }
-            auto& v = skinnedBones[i];
+            const auto& v = skinnedBones[i];
             auto boneT = v.ptr->m_currentTransform;
             bonesDst[i].m_vertexToWorld = btMatrix4x3T(boneT) * v.vertexToBone;
             bonesDst[i].m_maginMultipler = v.ptr->m_marginMultipler * boneT.getScale();
@@ -78,35 +75,35 @@ namespace hdt
             }
 
             {
-                auto& v = verts[idx];
+                const auto& v = verts[idx];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
-                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w));
-                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w));
-                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w));
+                pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w)));
+                pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w)));
+                pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w)));
                 vpos[idx].set(pm);
             }
             {
-                auto& v = verts[idx + 1];
+                const auto& v = verts[idx + 1];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
-                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w));
-                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w));
-                pm += calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w));
+                pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w)));
+                pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w)));
+                pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w)));
                 vpos[idx + 1].set(pm);
             }
         }
         for (; idx < size; ++idx)
         {
-            auto& v = verts[idx];
+            const auto& v = verts[idx];
             auto p = v.m_skinPos.get128();
             auto w = _mm_load_ps(v.m_weight);
             auto pm = calcVertexStateFMA(p, bones[v.getBoneIdx(0)], setAll0(w));
-            pm += calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w));
-            pm += calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w));
-            pm += calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w));
+            pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(1)], setAll1(w)));
+            pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(2)], setAll2(w)));
+            pm = _mm_add_ps(pm, calcVertexStateFMA(p, bones[v.getBoneIdx(3)], setAll3(w)));
             vpos[idx].set(pm);
         }
 
@@ -125,55 +122,55 @@ namespace hdt
             }
 
             {
-                auto& v = verts[idx];
+                const auto& v = verts[idx];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w)));
                 vpos[idx].set(pm);
             }
             {
-                auto& v = verts[idx + 1];
+                const auto& v = verts[idx + 1];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w)));
                 vpos[idx + 1].set(pm);
             }
             {
-                auto& v = verts[idx + 2];
+                const auto& v = verts[idx + 2];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w)));
                 vpos[idx + 2].set(pm);
             }
             {
-                auto& v = verts[idx + 3];
+                const auto& v = verts[idx + 3];
                 auto p = v.m_skinPos.get128();
                 auto w = _mm_load_ps(v.m_weight);
                 auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
-                pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w)));
+                pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w)));
                 vpos[idx + 3].set(pm);
             }
         }
         for (; idx < size; ++idx)
         {
-            auto& v = verts[idx];
+            const auto& v = verts[idx];
             auto p = v.m_skinPos.get128();
             auto w = _mm_load_ps(v.m_weight);
             auto pm = calcVertexState(p, bones[v.getBoneIdx(0)], setAll0(w));
-            pm += calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w));
-            pm += calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w));
-            pm += calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w));
+            pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(1)], setAll1(w)));
+            pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(2)], setAll2(w)));
+            pm = _mm_add_ps(pm, calcVertexState(p, bones[v.getBoneIdx(3)], setAll3(w)));
             vpos[idx].set(pm);
         }
 
@@ -185,14 +182,14 @@ namespace hdt
 
     auto SkinnedMeshBody::flexible(const Vertex& v) const -> float
     {
-        float ret = 0.f;
+        float ret = 0.F;
         for (int i = 0; i < 4; ++i)
         {
             if (v.m_weight[i] < FLT_EPSILON)
             {
                 break;
             }
-            int boneIdx = v.getBoneIdx(i);
+            auto boneIdx = v.getBoneIdx(i);
             if (!m_skinnedBones[boneIdx].isKinematic)
             {
                 ret += v.m_weight[i];
@@ -238,7 +235,7 @@ namespace hdt
 
         UINT numUsed = 0;
         std::vector<UINT> map(m_vertices.size());
-        for (int i = 0; i < m_vertices.size(); ++i)
+        for (size_t i = 0; i < m_vertices.size(); ++i)
         {
             if (flags[i])
             {
@@ -258,7 +255,7 @@ namespace hdt
     auto SkinnedMeshBody::canCollideWith(const SkinnedMeshBody* body) const -> bool
     {
         // TODO: whether it's needed or not
-        if (!body)
+        if (body == nullptr)
         {
             return false;
         }
@@ -270,7 +267,7 @@ namespace hdt
 
         if (m_canCollideWithTags.empty())
         {
-            for (auto& i : body->m_tags)
+            for (const auto& i : body->m_tags)
             {
                 if (m_noCollideWithTags.contains(i))
                 {
@@ -279,7 +276,7 @@ namespace hdt
             }
             return true;
         }
-        for (auto& i : body->m_tags)
+        for (const auto& i : body->m_tags)
         {
             if (m_canCollideWithTags.contains(i))
             {
@@ -308,10 +305,6 @@ namespace hdt
 
     auto SkinnedMeshBody::isBoundingSphereCollided(const SkinnedMeshBody* rhs) const -> bool
     {
-        if (canCollideWith(rhs) && rhs->canCollideWith(this))
-        {
-            return true;
-        }
-        return false;
+        return canCollideWith(rhs) && rhs->canCollideWith(this);
     }
 } // namespace hdt

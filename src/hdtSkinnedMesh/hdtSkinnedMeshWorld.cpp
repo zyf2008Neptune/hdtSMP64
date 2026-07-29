@@ -21,7 +21,7 @@ namespace hdt
             auto* scheduler = btGetTBBTaskScheduler();
             btSetTaskScheduler(scheduler);
 
-            int concurrency = std::max(1, scheduler->getMaxNumThreads());
+            auto concurrency = std::max(1, scheduler->getMaxNumThreads());
 
             logger::info("Physics simulation is using {} threads", concurrency);
 
@@ -40,8 +40,8 @@ namespace hdt
     {
         m_windSpeed = _mm_setzero_ps();
 
-        const auto collisionConfiguration = new btDefaultCollisionConfiguration;
-        const auto collisionDispatcher = new CollisionDispatcher(collisionConfiguration);
+        auto* collisionConfiguration = new btDefaultCollisionConfiguration;
+        auto* collisionDispatcher = new CollisionDispatcher(collisionConfiguration);
 
         m_dispatcher1 = collisionDispatcher;
         m_broadphasePairCache = new btDbvtBroadphase();
@@ -58,7 +58,7 @@ namespace hdt
 
             for (const auto& m_constraint : system->m_constraints)
             {
-                if (m_constraint->m_constraint)
+                if (m_constraint->m_constraint != nullptr)
                 {
                     btDiscreteDynamicsWorld::removeConstraint(m_constraint->m_constraint);
                 }
@@ -83,7 +83,7 @@ namespace hdt
 
         m_systems.clear();
 
-        const auto solver = m_constraintSolver;
+        const auto* solver = m_constraintSolver;
         m_constraintSolver = nullptr;
         delete solver;
     }
@@ -152,7 +152,7 @@ namespace hdt
         }
         for (const auto& m_constraint : system->m_constraints)
         {
-            if (m_constraint->m_constraint)
+            if (m_constraint->m_constraint != nullptr)
             {
                 removeConstraint(m_constraint->m_constraint);
             }
@@ -170,13 +170,13 @@ namespace hdt
 
     auto SkinnedMeshWorld::updateConstraintsForBone(SkinnedMeshBone* bone) -> void
     {
-        if (!bone)
+        if (bone == nullptr)
         {
             return;
         }
 
         const int numConstraints = m_constraints.size();
-        for (auto i = 0; i < numConstraints; i++)
+        for (auto i = 0; i < numConstraints; ++i)
         {
             btTypedConstraint* constraint = m_constraints[i];
 
@@ -240,7 +240,7 @@ namespace hdt
 
         const btDispatcherInfo& dispatchInfo = getDispatchInfo();
 
-        for (auto i = 0; i < m_collisionObjects.size(); i++)
+        for (auto i = 0; i < m_collisionObjects.size(); ++i)
         {
             btCollisionObject* colObj = m_collisionObjects[i];
             btBroadphaseProxy* proxy = colObj->getBroadphaseHandle();
@@ -259,7 +259,7 @@ namespace hdt
 
         m_broadphasePairCache->calculateOverlappingPairs(m_dispatcher1);
 
-        if (m_dispatcher1)
+        if (m_dispatcher1 != nullptr)
         {
             m_dispatcher1->dispatchAllCollisionPairs(m_broadphasePairCache->getOverlappingPairCache(), dispatchInfo,
                                                      m_dispatcher1);
@@ -272,8 +272,8 @@ namespace hdt
         {
             for (const auto& j : i->m_bones)
             {
-                const auto body = &j->m_rig;
-                if (!body->isStaticOrKinematicObject() && !(body->getFlags() & BT_DISABLE_WORLD_GRAVITY))
+                auto* body = &j->m_rig;
+                if (!body->isStaticOrKinematicObject() && ((body->getFlags() & BT_DISABLE_WORLD_GRAVITY) == 0))
                 {
                     body->setGravity(m_gravity * j->m_gravityFactor);
                 }
@@ -325,14 +325,14 @@ namespace hdt
 
         for (auto& i : m_systems)
         {
-            const auto system = static_cast<SkyrimSystem*>(i.get());
+            const auto* system = static_cast<SkyrimSystem*>(i.get());
             if (btFuzzyZero(system->m_windFactor)) // skip any systems that aren't affected by wind
             {
                 continue;
             }
             for (const auto& j : i->m_bones)
             {
-                const auto body = &j->m_rig;
+                auto* body = &j->m_rig;
                 if (body->isStaticOrKinematicObject() || btFuzzyZero(j->m_windFactor))
                 {
                     continue;
@@ -413,7 +413,7 @@ namespace hdt
     {
         for (auto i = 0; i < m_collisionObjects.size(); ++i)
         {
-            const auto body = m_collisionObjects[i];
+            auto* body = m_collisionObjects[i];
             if (body->isKinematicObject())
             {
                 btTransformUtil::integrateTransform(body->getWorldTransform(), body->getInterpolationLinearVelocity(),
@@ -425,7 +425,7 @@ namespace hdt
 
         const btVector3 limitMin(-1e+9f, -1e+9f, -1e+9f);
         const btVector3 limitMax(1e+9f, 1e+9f, 1e+9f);
-        for (auto i = 0; i < m_nonStaticRigidBodies.size(); i++)
+        for (auto i = 0; i < m_nonStaticRigidBodies.size(); ++i)
         {
             btRigidBody* body = m_nonStaticRigidBodies[i];
             auto lv = body->getLinearVelocity();
@@ -447,28 +447,29 @@ namespace hdt
         BT_PROFILE("calculateSimulationIslands");
         getSimulationIslandManager()->updateActivationState(getCollisionWorld(), getCollisionWorld()->getDispatcher());
 
-        const auto unionFind = &getSimulationIslandManager()->getUnionFind();
+        auto* unionFind = &getSimulationIslandManager()->getUnionFind();
 
-        for (auto i = 0; i < m_predictiveManifolds.size(); i++)
+        for (auto i = 0; i < m_predictiveManifolds.size(); ++i)
         {
             const btPersistentManifold* manifold = m_predictiveManifolds[i];
             const btCollisionObject* colObj0 = manifold->getBody0();
             const btCollisionObject* colObj1 = manifold->getBody1();
-            if (colObj0 && !colObj0->isStaticOrKinematicObject() && colObj1 && !colObj1->isStaticOrKinematicObject())
+            if ((colObj0 != nullptr) && !colObj0->isStaticOrKinematicObject() && (colObj1 != nullptr) &&
+                !colObj1->isStaticOrKinematicObject())
             {
                 unionFind->unite(colObj0->getIslandTag(), colObj1->getIslandTag());
             }
         }
 
         const int numConstraints = m_constraints.size();
-        for (auto i = 0; i < numConstraints; i++)
+        for (auto i = 0; i < numConstraints; ++i)
         {
             btTypedConstraint* constraint = m_constraints[i];
             if (constraint->isEnabled())
             {
                 const btRigidBody* colObj0 = &constraint->getRigidBodyA();
                 const btRigidBody* colObj1 = &constraint->getRigidBodyB();
-                if (colObj0 && !colObj0->isStaticOrKinematicObject() && colObj1 &&
+                if ((colObj0 != nullptr) && !colObj0->isStaticOrKinematicObject() && (colObj1 != nullptr) &&
                     !colObj1->isStaticOrKinematicObject())
                 {
                     unionFind->unite(colObj0->getIslandTag(), colObj1->getIslandTag());
@@ -480,7 +481,7 @@ namespace hdt
         // cause an EXCEPTION_ACCESS_VIOLATION reading m_tmpSolverBodyPool :(
         btDispatcher* dispatcher = getCollisionWorld()->getDispatcher();
         const int numManifolds = dispatcher->getNumManifolds();
-        for (auto i = 0; i < numManifolds; i++)
+        for (auto i = 0; i < numManifolds; ++i)
         {
             const btPersistentManifold* manifold = dispatcher->getManifoldByIndexInternal(i);
 
@@ -490,7 +491,7 @@ namespace hdt
                 const btCollisionObject* colObj0 = manifold->getBody0();
                 const btCollisionObject* colObj1 = manifold->getBody1();
 
-                if (colObj0 && !colObj0->isStaticOrKinematicObject() && colObj1 &&
+                if ((colObj0 != nullptr) && !colObj0->isStaticOrKinematicObject() && (colObj1 != nullptr) &&
                     !colObj1->isStaticOrKinematicObject())
                 {
                     unionFind->unite(colObj0->getIslandTag(), colObj1->getIslandTag());
@@ -507,14 +508,14 @@ namespace hdt
     auto SkinnedMeshWorld::solveConstraints(btContactSolverInfo& solverInfo) -> void
     {
         BT_PROFILE("solveConstraints");
-        if (!m_collisionObjects.size())
+        if (m_collisionObjects.size() == 0)
         {
             return;
         }
 
         // Kinematic objects should never be able to collide, or move. Because: They're kinematic?
         // This avoids broken configs, API misuse - etc. Better to check it every cycle for safety
-        for (auto i = 0; i < m_constraints.size(); i++)
+        for (auto i = 0; i < m_constraints.size(); ++i)
         {
             btTypedConstraint* constraint = m_constraints[i];
             if (constraint->isEnabled())
