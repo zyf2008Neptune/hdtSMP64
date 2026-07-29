@@ -85,6 +85,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
  -Wno-c++17-compat
  -Wno-c++20-compat
  "/Z7"
+ "/utf-8"
  "$<$<CONFIG:DEBUG>:>"
  "$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:PROFILE>>:/Zc:inline;/JMC-;/Ob3>"
 )

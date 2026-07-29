@@ -1,29 +1,29 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(
-	hdtsmp64
-	VERSION 3.1.0
-	LANGUAGES CXX)
+ hdtsmp64
+ VERSION 3.2.0
+ LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Pre-release build identifier (e.g. "dev-abc1234"). Empty for production builds.
 set(PROJECT_BUILD_INFO
-	""
-	CACHE STRING "Pre-release build info injected by CI (e.g. dev-abc1234)")
+ ""
+ CACHE STRING "Pre-release build info injected by CI (e.g. dev-abc1234)")
 
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-	message(FATAL_ERROR "in-source builds are not allowed")
+  message(FATAL_ERROR "in-source builds are not allowed")
 endif()
 
 macro(set_from_environment VARIABLE)
-	if(NOT DEFINED ${VARIABLE} AND DEFINED ENV{${VARIABLE}})
-		set(${VARIABLE} $ENV{${VARIABLE}})
-	endif()
+  if(NOT DEFINED ${VARIABLE} AND DEFINED ENV{${VARIABLE}})
+    set(${VARIABLE} $ENV{${VARIABLE}})
+  endif()
 endmacro()
 set_from_environment(CompiledPluginsPath)
 if(NOT DEFINED CompiledPluginsPath)
-	set(CompiledPluginsPath "${PROJECT_BINARY_DIR}/build/${buildPresets}/plugins")
+  set(CompiledPluginsPath "${PROJECT_BINARY_DIR}/build/${buildPresets}/plugins")
 endif()
 
 option(COPY_OUTPUT "Copy the output of build operations to the game directory" ON)
