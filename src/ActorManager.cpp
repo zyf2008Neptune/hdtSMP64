@@ -941,8 +941,8 @@ namespace hdt
                 }
                 auto* rawChild = childPtr.get();
 
-                const char* cname = rawChild->name.c_str();
-                std::string_view childName = cname && cname[0] ? std::string_view(cname) : std::string_view{};
+                const auto* cname = rawChild->name.c_str();
+                const auto childName = cname && cname[0] ? std::string_view(cname) : std::string_view{};
 
                 if (childName.size() >= prefix.size() && childName.starts_with(prefix))
                 {

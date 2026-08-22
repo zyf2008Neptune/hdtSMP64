@@ -19,7 +19,7 @@ auto hdt::util::UInt32toString(uint32_t formID) -> std::string { return fmt::for
 auto _deprefix(const std::string_view str_with_prefix) -> std::string
 {
     std::string str_no_prefix{str_with_prefix};
-    std::string_view autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;
+    static constexpr auto autoRenameSubstr = "hdtSSEPhysics_AutoRename_"sv;
 
     // follows case-insensitivity semantics of BSFixedString
     if (str_with_prefix.size() >= autoRenameSubstr.size() &&

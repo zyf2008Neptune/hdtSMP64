@@ -157,7 +157,7 @@ namespace Hooks
     class BipedAnimHooks
     {
     public:
-        static inline std::vector<std::string> BackupNodes{};
+        static inline std::vector<std::string> BackupNodes;
 
     public:
         static auto Hook() -> void
@@ -165,7 +165,7 @@ namespace Hooks
             logger::debug("Applying BipedAnimHooks hooks!");
 
             //
-            DetourAttach(reinterpret_cast<PVOID*>(&_func), (PVOID)func);
+            DetourAttach(reinterpret_cast<PVOID*>(&_func), PVOID(func));
 
             //
             logger::debug("...success");
@@ -178,7 +178,7 @@ namespace Hooks
         using func_t = decltype(func);
 
     private:
-        static inline func_t* _func{(func_t*)REL::VariantID(15535, 15712, 0x01DB9E0).address()};
+        static inline func_t* _func{reinterpret_cast<func_t*>(REL::VariantID(15535, 15712, 0x01DB9E0).address())};
         // 0x01CAFB0, 0x01D83B0, 0x01DB9E0 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
     };
 

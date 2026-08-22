@@ -52,7 +52,25 @@
         }
       },
       "hidden": true,
-      "name": "windows"
+      "name": "msvc"
+    },
+    {
+      "cacheVariables": {
+        "AVX_VARIANT": {
+          "type": "STRING",
+          "value": "noavx"
+        },
+        "CMAKE_MSVC_RUNTIME_LIBRARY": {
+          "type": "STRING",
+          "value": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        },
+        "VCPKG_TARGET_TRIPLET": {
+          "type": "STRING",
+          "value": "x64-win-llvm-static-md"
+        }
+      },
+      "hidden": true,
+      "name": "clang"
     },
     {
       "cacheVariables": {
@@ -84,8 +102,8 @@
         }
       },
       "hidden": true,
-      "inherits": ["windows"],
-      "name": "windows-avx"
+      "inherits": ["msvc"],
+      "name": "msvc-avx"
     },
     {
       "cacheVariables": {
@@ -99,8 +117,8 @@
         }
       },
       "hidden": true,
-      "inherits": ["windows"],
-      "name": "windows-avx2"
+      "inherits": ["msvc"],
+      "name": "msvc-avx2"
     },
     {
       "cacheVariables": {
@@ -114,61 +132,53 @@
         }
       },
       "hidden": true,
-      "inherits": ["windows"],
-      "name": "windows-avx512"
-    },
-
-    {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
-      "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4"
-      },
-      "generator": "Visual Studio 17 2022",
-      "inherits": ["cmake-dev", "vcpkg", "windows", "skyrim-runtimes"],
-      "name": "vs2022-windows",
-      "toolset": "v143"
+      "inherits": ["msvc"],
+      "name": "msvc-avx512"
     },
     {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX"
+        "AVX_VARIANT": {
+          "type": "STRING",
+          "value": "avx"
+        },
+        "VCPKG_TARGET_TRIPLET": {
+          "type": "STRING",
+          "value": "x64-win-llvm-static-md-avx"
+        }
       },
-      "generator": "Visual Studio 17 2022",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx", "skyrim-runtimes"],
-      "name": "vs2022-windows-avx",
-      "toolset": "v143"
+      "hidden": true,
+      "inherits": ["clang"],
+      "name": "clang-avx"
     },
     {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX2"
+        "AVX_VARIANT": {
+          "type": "STRING",
+          "value": "avx2"
+        },
+        "VCPKG_TARGET_TRIPLET": {
+          "type": "STRING",
+          "value": "x64-win-llvm-static-md-avx2"
+        }
       },
-      "generator": "Visual Studio 17 2022",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx2", "skyrim-runtimes"],
-      "name": "vs2022-windows-avx2",
-      "toolset": "v143"
+      "hidden": true,
+      "inherits": ["clang"],
+      "name": "clang-avx2"
     },
     {
-      "architecture": {
-        "strategy": "set",
-        "value": "x64"
-      },
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /arch:AVX512"
+        "AVX_VARIANT": {
+          "type": "STRING",
+          "value": "avx512"
+        },
+        "VCPKG_TARGET_TRIPLET": {
+          "type": "STRING",
+          "value": "x64-win-llvm-static-md-avx512"
+        }
       },
-      "generator": "Visual Studio 17 2022",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx512", "skyrim-runtimes"],
-      "name": "vs2022-windows-avx512",
-      "toolset": "v143"
+      "hidden": true,
+      "inherits": ["clang"],
+      "name": "clang-avx512"
     },
     {
       "cacheVariables": {
@@ -177,7 +187,7 @@
         "CMAKE_CXX_COMPILER": "cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "msvc", "skyrim-runtimes"],
       "name": "msvc-windows"
     },
     {
@@ -187,7 +197,7 @@
         "CMAKE_CXX_COMPILER": "cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "msvc-avx", "skyrim-runtimes"],
       "name": "msvc-windows-avx"
     },
     {
@@ -197,7 +207,7 @@
         "CMAKE_CXX_COMPILER": "cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx2", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "msvc-avx2", "skyrim-runtimes"],
       "name": "msvc-windows-avx2"
     },
     {
@@ -207,7 +217,7 @@
         "CMAKE_CXX_COMPILER": "cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx512", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "msvc-avx512", "skyrim-runtimes"],
       "name": "msvc-windows-avx512"
     },
     {
@@ -217,7 +227,7 @@
         "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "clang", "skyrim-runtimes"],
       "name": "clang-windows"
     },
     {
@@ -227,7 +237,7 @@
         "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "clang-avx", "skyrim-runtimes"],
       "name": "clang-windows-avx"
     },
     {
@@ -237,7 +247,7 @@
         "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx2", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "clang-avx2", "skyrim-runtimes"],
       "name": "clang-windows-avx2"
     },
     {
@@ -247,7 +257,7 @@
         "CMAKE_CXX_COMPILER": "clang-cl"
       },
       "generator": "Ninja Multi-Config",
-      "inherits": ["cmake-dev", "vcpkg", "windows-avx512", "skyrim-runtimes"],
+      "inherits": ["cmake-dev", "vcpkg", "clang-avx512", "skyrim-runtimes"],
       "name": "clang-windows-avx512"
     }
   ],
