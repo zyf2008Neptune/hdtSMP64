@@ -342,7 +342,7 @@ namespace hdt
     {
         std::scoped_lock l(m_lock);
 
-        for (int i = 0; i < m_systems.size();)
+        for (uint64_t i = 0; i < m_systems.size();)
         {
             RE::BSTSmartPointer<SkyrimSystem> s =
                 hdt::make_smart(static_cast<SkyrimSystem*>(m_systems[i].get())); // use downcast is safety here

@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <detours/detours.h>
+#include "REL/Module.h"
+#include "SKSE/Version.h"
 
 namespace Hooks
 {
@@ -100,8 +103,10 @@ namespace Hooks
             REL::Relocation<uintptr_t> UpdateHook1{REL::VariantID(35551, 36544, 0x05B6D70),
                                                    REL::VariantOffset(0x11F, 0x160, 0x11F)};
             // 0x05AF3D0, 0x05E7EE0, 0x05B6D70 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
+
+            std::size_t updatehook2aeoffset = REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 0x9EE : 0x9DC;
             REL::Relocation<uintptr_t> UpdateHook2{REL::VariantID(35565, 36564, 0x05BAB10),
-                                                   REL::VariantOffset(0x56D, 0x9DC, 0x611)};
+                                                   REL::VariantOffset(0x56D, updatehook2aeoffset, 0x611)};
             // 0x05B2FF0, 0x05EC240, 0x05BAB10 (SE/1.5.97.0, AE/1.6.640.0, VR/1.4.15.0)
 
             logger::debug("Applying MainHooks hooks!");
