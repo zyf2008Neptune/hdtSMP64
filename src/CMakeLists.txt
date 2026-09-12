@@ -55,7 +55,7 @@ endif()
 add_library("${PROJECT_NAME}" SHARED ${SOURCE_FILES} "${VERSION_HEADER}" "${CMAKE_CURRENT_BINARY_DIR}/version.rc"
           "${ROOT_DIR}/.clang-format" "${ROOT_DIR}/.editorconfig")
 
-target_compile_features("${PROJECT_NAME}" PRIVATE cxx_std_20)
+target_compile_features("${PROJECT_NAME}" PRIVATE cxx_std_23)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   target_compile_options(
@@ -84,6 +84,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
  -Wno-c++14-compat
  -Wno-c++17-compat
  -Wno-c++20-compat
+ -Wno-c++23-compat
  "/Z7"
  "/utf-8"
  "$<$<CONFIG:DEBUG>:>"

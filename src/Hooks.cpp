@@ -1,10 +1,9 @@
 #include "ActorManager.h"
 
+#include <xbyak/xbyak.h>
+
 #include "Events.h"
 #include "Hooks.h"
-
-//
-#include <xbyak/xbyak.h>
 
 namespace Hooks
 {
@@ -14,9 +13,9 @@ namespace Hooks
         //
         if (headPart != nullptr)
         {
-            if (RE::NiAVObject* headNode = a_this->GetObjectByName(headPart->formEditorID))
+            if (auto* headNode = a_this->GetObjectByName(headPart->formEditorID))
             {
-                if (RE::BSGeometry* headGeometry = headNode->AsGeometry())
+                if (auto* headGeometry = headNode->AsGeometry())
                 {
                     SkinSingleGeometry__Hook(a_this, a_skeleton, headGeometry, a_unk);
                 }
@@ -38,8 +37,8 @@ namespace Hooks
         {
             if (const auto* userData = a_skeleton->GetUserData())
             {
-                RE::TESForm* form = RE::TESForm::LookupByID(userData->formID);
-                if (const RE::Actor* actor = skyrim_cast<RE::Actor*>(form))
+                auto* form = RE::TESForm::LookupByID(userData->formID);
+                if (const auto* actor = skyrim_cast<RE::Actor*>(form))
                 {
                     auto* actorBase = skyrim_cast<RE::TESNPC*>(actor->data.objectReference);
                     uint32_t numHeadParts = 0;
@@ -249,7 +248,7 @@ namespace Hooks
 
         if (runtimeData.quitGame)
         {
-            static constexpr Events::ShutdownEvent e;
+            const Events::ShutdownEvent e;
             Events::Sources::ShutdownEventEventSource::GetSingleton()->SendEvent(&e);
         }
         else
@@ -265,7 +264,7 @@ namespace Hooks
         _Unk_sub(a_this);
 
         //
-        static constexpr Events::FrameSyncEvent framesyncEvent;
+        const Events::FrameSyncEvent framesyncEvent;
         Events::Sources::FrameSyncEventSource::GetSingleton()->SendEvent(&framesyncEvent);
     }
 
@@ -322,11 +321,11 @@ namespace Hooks
                 std::vector<RE::NiPointer<RE::NiAVObject>> result;
 
                 //
-                RE::NiAVObject* object = armor->GetObjectByName(NodeName);
-                if (RE::BSTriShape* triShape = (object != nullptr) ? object->AsTriShape() : nullptr)
+                auto* object = armor->GetObjectByName(NodeName);
+                if (auto* triShape = (object != nullptr) ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
-                    for (uint32_t idx = 0; idx < size; idx++) // all good here
+                    for (uint32_t idx = 0; idx < size; ++idx) // all good here
                     {
                         auto* bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
                         result.emplace_back(hdt::make_nismart(bone));
@@ -341,18 +340,18 @@ namespace Hooks
         }
 
         //
-        RE::NiAVObject* ret = _func(a_this, armor, skeleton, a_unk1, a_unk2, a_unk3, a_unk4);
+        auto* ret = _func(a_this, armor, skeleton, a_unk1, a_unk2, a_unk3, a_unk4);
 
         //
         if (ret != nullptr)
         {
             for (auto& NodeName : BackupNodes)
             {
-                RE::NiAVObject* object = ret->GetObjectByName(NodeName);
-                if (RE::BSTriShape* triShape = (object != nullptr) ? object->AsTriShape() : nullptr)
+                auto* object = ret->GetObjectByName(NodeName);
+                if (auto* triShape = (object != nullptr) ? object->AsTriShape() : nullptr)
                 {
                     const auto size = triShape->GetGeometryRuntimeData().skinInstance->skinData->GetBoneCount();
-                    for (uint32_t idx = 0; idx < size; idx++)
+                    for (uint32_t idx = 0; idx < size; ++idx)
                     {
                         auto* bone = triShape->GetGeometryRuntimeData().skinInstance->bones[idx];
                         if (bone == nullptr)
@@ -396,7 +395,7 @@ namespace Hooks
     {
         static REL::Relocation<uintptr_t> addr{REL::VariantID(26303, 26886, 0x3E44E0)};
         _SetBoneName = reinterpret_cast<SetBoneName_t*>(addr.address());
-        DetourAttach(reinterpret_cast<PVOID*>(&_SetBoneName), (PVOID)SetBoneName_Hook);
+        DetourAttach(reinterpret_cast<PVOID*>(&_SetBoneName), reinterpret_cast<PVOID>(&SetBoneName_Hook));
     }
 
     auto InstallHighPriority() -> void
@@ -421,7 +420,7 @@ namespace Hooks
         // We use a detour on this instead of modifying the vtable to avoid breaking compatibility with other mods like
         // Mu Joint Fix
         DetourAttach(reinterpret_cast<PVOID*>(&BSFaceGenNiNodeHooks::_SkinAllGeometry_Orig),
-                     PVOID(BSFaceGenNiNodeHooks::SkinAllGeometry__Hook));
+                     reinterpret_cast<PVOID>(&BSFaceGenNiNodeHooks::SkinAllGeometry__Hook));
         DetourTransactionCommit();
 
         DetourTransactionBegin();
