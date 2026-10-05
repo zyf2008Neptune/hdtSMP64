@@ -608,7 +608,7 @@ namespace
     }
 } // namespace
 
-extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info) -> bool
+extern "C" DLLEXPORT auto __cdecl SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info) -> bool
 {
     a_info->infoVersion = SKSE::PluginInfo::kVersion;
     a_info->name = Plugin::NAME.data();
@@ -631,7 +631,7 @@ extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
     return true;
 }
 
-extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []()
+extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []
 {
     SKSE::PluginVersionData v;
 
@@ -645,7 +645,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []()
     return v;
 }();
 
-extern "C" DLLEXPORT auto SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse) -> bool
+extern "C" DLLEXPORT auto __cdecl SKSEPlugin_Load(const SKSE::LoadInterface* a_skse) -> bool
 {
 #ifndef NDEBUG
     auto start = std::chrono::high_resolution_clock::now();

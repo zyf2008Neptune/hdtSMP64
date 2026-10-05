@@ -18,8 +18,8 @@ namespace hdt
         float m_scaleA{};
         float m_scaleB{};
 
-        SkinnedMeshBone* m_boneA;
-        SkinnedMeshBone* m_boneB;
-        btTypedConstraint* m_constraint;
+        SkinnedMeshBone* m_boneA{nullptr};
+        SkinnedMeshBone* m_boneB{nullptr};
+        btTypedConstraint* m_constraint{nullptr};
     };
 } // namespace hdt

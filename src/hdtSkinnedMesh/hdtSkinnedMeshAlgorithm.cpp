@@ -1,5 +1,6 @@
 #include "hdtSkinnedMeshAlgorithm.h"
 
+#include <array>
 #include <tbb/task_arena.h>
 
 #include "hdtCollider.h"
@@ -29,15 +30,15 @@ namespace hdt
                 numResults = 0;
             }
 
-            VertexPos* v0{};
-            VertexPos* v1{};
-            ColliderTree* c0{};
-            ColliderTree* c1{};
-            SP0* sp0{};
-            SP1* sp1{};
+            VertexPos* v0{nullptr};
+            VertexPos* v1{nullptr};
+            ColliderTree* c0{nullptr};
+            ColliderTree* c1{nullptr};
+            SP0* sp0{nullptr};
+            SP1* sp1{nullptr};
 
             std::atomic_long numResults{};
-            CollisionResult* results{};
+            CollisionResult* results{nullptr};
         };
 
     } // namespace
@@ -597,7 +598,7 @@ namespace hdt
         // is called from CollisionCheckAlgorithm::operator() (hdtSkinnedMeshAlgorithm.cpp),
         // which wraps its inner parallel_for_each in tbb::this_task_arena::isolate.
         thread_local MergeBuffer merge;
-        thread_local auto collision = std::make_unique<CollisionResult[]>(MaxCollisionCount);
+        thread_local auto collision = std::array<CollisionResult, MaxCollisionCount>();
 
         merge.resize(static_cast<int>(body0->m_skinnedBones.size()), static_cast<int>(body1->m_skinnedBones.size()));
 
@@ -606,24 +607,24 @@ namespace hdt
             // Todo: This can actually be further optimized, but would need a re-factor.. However, would the performance
             // increase be worth the extra boilerplate code..?
             processCollision(body0->m_shape->asPerTriangleShape(), body1->m_shape->asPerVertexShape(), merge,
-                             collision.get());
+                             collision.data());
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerTriangleShape(), merge,
-                             collision.get());
+                             collision.data());
         }
         else if (body0->m_shape->asPerTriangleShape() != nullptr)
         {
             processCollision(body0->m_shape->asPerTriangleShape(), body1->m_shape->asPerVertexShape(), merge,
-                             collision.get());
+                             collision.data());
         }
         else if (body1->m_shape->asPerTriangleShape() != nullptr)
         {
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerTriangleShape(), merge,
-                             collision.get());
+                             collision.data());
         }
         else
         {
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerVertexShape(), merge,
-                             collision.get());
+                             collision.data());
         }
 
         merge.apply(body0, body1, dispatcher);
