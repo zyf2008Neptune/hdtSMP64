@@ -28,7 +28,7 @@ namespace hdt
         auto calcVertexState(__m128 skinPos, const Bone& bone, const __m128 w) -> __m128
         {
             auto p = bone.m_vertexToWorld * skinPos;
-            p = _mm_blend_ps(p.get128(), _mm_load_ps(bone.m_reserved), 0x8);
+            p = _mm_blend_ps(p.get128(), _mm_load_ps(bone.m_reserved.data()), 0x8);
             return _mm_mul_ps(w, p.get128());
         }
 #endif
