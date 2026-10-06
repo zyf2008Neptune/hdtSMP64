@@ -1,6 +1,7 @@
 #include "hdtCollider.h"
 
 #include <algorithm>
+#include <vector>
 
 namespace hdt
 {
@@ -283,7 +284,7 @@ namespace hdt
 
         while (children.size() == 1 && children[0].colliders.empty())
         {
-            vectorA16<ColliderTree> temp;
+            std::vector<ColliderTree> temp;
             temp.swap(children.front().children);
             children.swap(temp);
         }
@@ -292,7 +293,7 @@ namespace hdt
         {
             colliders = children[0].colliders;
 
-            vectorA16<ColliderTree> temp;
+            std::vector<ColliderTree> temp;
             temp.swap(children[0].children);
             children.swap(temp);
         }
@@ -416,7 +417,7 @@ namespace hdt
         return false;
     }
 
-    auto ColliderTree::exportColliders(vectorA16<Collider>& exportTo) -> void
+    auto ColliderTree::exportColliders(std::vector<Collider>& exportTo) -> void
     {
         numCollider = static_cast<u32>(colliders.size());
         cbuf = reinterpret_cast<Collider*>(exportTo.size());
@@ -433,7 +434,7 @@ namespace hdt
 
     auto ColliderTree::remapColliders(Collider* start, Aabb* startAabb) -> void
     {
-        vectorA16<Collider> tmp;
+        std::vector<Collider> tmp;
         colliders.swap(tmp);
         const auto offset = reinterpret_cast<size_t>(cbuf);
         cbuf = start + offset;

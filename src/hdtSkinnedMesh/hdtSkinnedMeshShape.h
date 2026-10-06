@@ -37,8 +37,8 @@ namespace hdt
         virtual auto getBonePerCollider() -> int = 0;
 
         SkinnedMeshBody* m_owner{nullptr};
-        vectorA16<Aabb> m_aabb;
-        vectorA16<Collider> m_colliders;
+        std::vector<Aabb> m_aabb;
+        std::vector<Collider> m_colliders;
         ColliderTree m_tree;
     };
 

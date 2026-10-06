@@ -335,7 +335,7 @@ namespace hdt
     class RefObject
     {
     public:
-        RefObject() : m_refCount{0} {}
+        RefObject() = default;
 
         virtual ~RefObject() = default;
 
@@ -359,13 +359,10 @@ namespace hdt
         auto getRefCount() const -> std::uint32_t { return m_refCount; }
 
     private:
-        mutable std::atomic<std::uint32_t> m_refCount;
+        mutable std::atomic<std::uint32_t> m_refCount{0};
     };
 
     inline auto abs(const btVector3& rhs) -> btVector3 { return _mm_andnot_ps(_mm_set_ps1(-0.f), rhs.get128()); }
-
-    template <class T>
-    using vectorA16 = std::vector<T>;
 
     class SpinLock
     {

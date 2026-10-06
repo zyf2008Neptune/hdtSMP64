@@ -598,7 +598,7 @@ namespace hdt
         // is called from CollisionCheckAlgorithm::operator() (hdtSkinnedMeshAlgorithm.cpp),
         // which wraps its inner parallel_for_each in tbb::this_task_arena::isolate.
         thread_local MergeBuffer merge;
-        thread_local auto collision = std::array<CollisionResult, MaxCollisionCount>();
+        thread_local auto collision = std::make_unique<std::array<CollisionResult, MaxCollisionCount>>();
 
         merge.resize(static_cast<int>(body0->m_skinnedBones.size()), static_cast<int>(body1->m_skinnedBones.size()));
 
@@ -607,24 +607,24 @@ namespace hdt
             // Todo: This can actually be further optimized, but would need a re-factor.. However, would the performance
             // increase be worth the extra boilerplate code..?
             processCollision(body0->m_shape->asPerTriangleShape(), body1->m_shape->asPerVertexShape(), merge,
-                             collision.data());
+                             collision->data());
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerTriangleShape(), merge,
-                             collision.data());
+                             collision->data());
         }
         else if (body0->m_shape->asPerTriangleShape() != nullptr)
         {
             processCollision(body0->m_shape->asPerTriangleShape(), body1->m_shape->asPerVertexShape(), merge,
-                             collision.data());
+                             collision->data());
         }
         else if (body1->m_shape->asPerTriangleShape() != nullptr)
         {
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerTriangleShape(), merge,
-                             collision.data());
+                             collision->data());
         }
         else
         {
             processCollision(body0->m_shape->asPerVertexShape(), body1->m_shape->asPerVertexShape(), merge,
-                             collision.data());
+                             collision->data());
         }
 
         merge.apply(body0, body1, dispatcher);
