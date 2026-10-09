@@ -96,15 +96,15 @@ namespace hdt
         }
     }
 
-    auto PerVertexShape::markUsedVertices(std::vector<bool>& flags) -> void
+    auto PerVertexShape::markUsedVertices(std::vector<u8>& flags) -> void
     {
         for (const auto& i : m_colliders)
         {
-            flags[i.vertex] = true;
+            flags[i.vertex] = 1;
         }
     }
 
-    auto PerVertexShape::remapVertices(UINT* map) -> void
+    auto PerVertexShape::remapVertices(u32* map) -> void
     {
         for (auto& i : m_colliders)
         {
@@ -192,19 +192,19 @@ namespace hdt
         m_verticesCollision->markUsedVertices(flags);
     }
 
-    auto PerTriangleShape::markUsedVertices(std::vector<bool>& flags) -> void
+    auto PerTriangleShape::markUsedVertices(std::vector<u8>& flags) -> void
     {
         for (const auto& i : m_colliders)
         {
-            flags[i.vertices[0]] = true;
-            flags[i.vertices[1]] = true;
-            flags[i.vertices[2]] = true;
+            flags[i.vertices[0]] = 1;
+            flags[i.vertices[1]] = 1;
+            flags[i.vertices[2]] = 1;
         }
 
         m_verticesCollision->markUsedVertices(flags);
     }
 
-    auto PerTriangleShape::remapVertices(UINT* map) -> void
+    auto PerTriangleShape::remapVertices(u32* map) -> void
     {
         for (auto& i : m_colliders)
         {

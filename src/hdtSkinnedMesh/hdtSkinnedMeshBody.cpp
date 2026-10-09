@@ -1,7 +1,10 @@
 #include "hdtSkinnedMeshBody.h"
 #include "hdtSkinnedMeshShape.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <memory>
+#include <ranges>
 #include <tbb/tbb.h>
 
 namespace hdt
@@ -230,14 +233,14 @@ namespace hdt
 
         // bool* flags = new bool[m_vertices.size()];
         // ZeroMemory(flags, m_vertices.size());
-        auto flags = std::vector<bool>(m_vertices.size());
+        auto flags = std::vector<u8>(m_vertices.size());
         m_shape->markUsedVertices(flags);
 
         u32 numUsed = 0;
         std::vector<u32> map(m_vertices.size());
         for (size_t i = 0; i < m_vertices.size(); ++i)
         {
-            if (flags[i])
+            if (flags[i] != 0)
             {
                 m_vertices[numUsed] = m_vertices[i];
                 m_vpos[numUsed] = m_vpos[i];

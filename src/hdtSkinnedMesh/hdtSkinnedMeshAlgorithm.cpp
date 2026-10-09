@@ -2,6 +2,7 @@
 
 #include <array>
 #include <tbb/task_arena.h>
+#include <vector>
 
 #include "hdtCollider.h"
 

@@ -27,7 +27,7 @@ namespace hdt
         virtual auto finishBuild() -> void = 0;
         virtual auto internalUpdate() -> void = 0;
         virtual auto markUsedVertices(bool* flags) -> void = 0;
-        virtual auto markUsedVertices(std::vector<bool>& flags) -> void = 0;
+        virtual auto markUsedVertices(std::vector<u8>& flags) -> void = 0;
         virtual auto remapVertices(u32* map) -> void = 0;
 
         virtual auto getColliderBoneWeight(const Collider* c, const int boneIdx) -> float = 0;
@@ -72,7 +72,7 @@ namespace hdt
 
         auto finishBuild() -> void override;
         auto markUsedVertices(bool* flags) -> void override;
-        auto markUsedVertices(std::vector<bool>& flags) -> void override;
+        auto markUsedVertices(std::vector<u8>& flags) -> void override;
         auto remapVertices(u32* map) -> void override;
         auto autoGen() -> void;
 
@@ -130,7 +130,7 @@ namespace hdt
 
         auto finishBuild() -> void override;
         auto markUsedVertices(bool* flags) -> void override;
-        auto markUsedVertices(std::vector<bool>& flags) -> void override;
+        auto markUsedVertices(std::vector<u8>& flags) -> void override;
         auto remapVertices(u32* map) -> void override;
 
         auto addTriangle(int p0, int p1, int p2) -> void;
