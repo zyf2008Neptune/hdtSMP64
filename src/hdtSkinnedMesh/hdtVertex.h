@@ -12,12 +12,12 @@ namespace hdt
 
         // skin info;
         btVector3 m_skinPos;
-        float m_weight[4]{};
-        U32 m_boneIdx[4]{};
+        std::array<float, 4> m_weight{};
+        std::array<u32, 4> m_boneIdx{};
 
-        [[nodiscard]] auto getBoneIdx(const int i) const -> U32 { return m_boneIdx[i]; }
+        [[nodiscard]] auto getBoneIdx(const int i) const -> u32 { return m_boneIdx[i]; }
 
-        auto setBoneIdx(const int i, const U32 idx) -> void { m_boneIdx[i] = idx; }
+        auto setBoneIdx(const int i, const u32 idx) -> void { m_boneIdx[i] = idx; }
 
         auto sortWeight() -> void;
     };

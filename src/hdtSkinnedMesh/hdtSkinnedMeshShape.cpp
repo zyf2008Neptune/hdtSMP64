@@ -31,14 +31,14 @@ namespace hdt
             });
     }
 
-    PerVertexShape::PerVertexShape(SkinnedMeshBody* body) : SkinnedMeshShape(body) {}
+    PerVertexShape::PerVertexShape(SkinnedMeshBody* body) : SkinnedMeshShape{body} {}
 
     auto PerVertexShape::finishBuild() -> void
     {
         m_tree.optimize();
         m_tree.updateKinematic([this](const Collider* n) { return m_owner->flexible(m_owner->m_vertices[n->vertex]); });
 
-        m_owner->setCollisionFlags((m_tree.isKinematic != 0U) ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
+        m_owner->setCollisionFlags((m_tree.isKinematic != 0u) ? btCollisionObject::CF_KINEMATIC_OBJECT : 0);
 
         m_tree.exportColliders(m_colliders);
         m_aabb.resize(m_colliders.size());
@@ -73,8 +73,8 @@ namespace hdt
     auto PerVertexShape::autoGen() -> void
     {
         m_tree.children.clear();
-        std::vector<U32> keys;
-        for (U32 i = 0; i < m_owner->m_vertices.size(); ++i)
+        std::vector<u32> keys;
+        for (u32 i = 0; i < m_owner->m_vertices.size(); ++i)
         {
             keys.clear();
             for (int j = 0; j < 4; ++j)
@@ -96,15 +96,15 @@ namespace hdt
         }
     }
 
-    auto PerVertexShape::markUsedVertices(std::vector<bool>& flags) -> void
+    auto PerVertexShape::markUsedVertices(std::vector<u8>& flags) -> void
     {
         for (const auto& i : m_colliders)
         {
-            flags[i.vertex] = true;
+            flags[i.vertex] = 1;
         }
     }
 
-    auto PerVertexShape::remapVertices(UINT* map) -> void
+    auto PerVertexShape::remapVertices(u32* map) -> void
     {
         for (auto& i : m_colliders)
         {
@@ -112,7 +112,7 @@ namespace hdt
         }
     }
 
-    PerTriangleShape::PerTriangleShape(SkinnedMeshBody* body) : SkinnedMeshShape(body) {}
+    PerTriangleShape::PerTriangleShape(SkinnedMeshBody* body) : SkinnedMeshShape{body} {}
 
     // Note: Don't waste your time trying to optimize this...
     // 1: The compiler auto-vertorizes, unrolls, and broadcasts W already (Very sensitive to changes)
@@ -192,19 +192,19 @@ namespace hdt
         m_verticesCollision->markUsedVertices(flags);
     }
 
-    auto PerTriangleShape::markUsedVertices(std::vector<bool>& flags) -> void
+    auto PerTriangleShape::markUsedVertices(std::vector<u8>& flags) -> void
     {
         for (const auto& i : m_colliders)
         {
-            flags[i.vertices[0]] = true;
-            flags[i.vertices[1]] = true;
-            flags[i.vertices[2]] = true;
+            flags[i.vertices[0]] = 1;
+            flags[i.vertices[1]] = 1;
+            flags[i.vertices[2]] = 1;
         }
 
         m_verticesCollision->markUsedVertices(flags);
     }
 
-    auto PerTriangleShape::remapVertices(UINT* map) -> void
+    auto PerTriangleShape::remapVertices(u32* map) -> void
     {
         for (auto& i : m_colliders)
         {
@@ -224,8 +224,8 @@ namespace hdt
         const Collider collider(p0, p1, p2);
 
         // Stacklocal fixed arrays, max 12 unique bones (3 verts * 4 weights)
-        std::array<U32, 12> keys;
-        std::array<float, 12> w;
+        std::array<u32, 12> keys{};
+        std::array<float, 12> w{};
         int count = 0;
 
         const auto& v0 = m_owner->m_vertices[p0];
@@ -242,7 +242,7 @@ namespace hdt
                 {
                     continue;
                 }
-                const U32 bone = verts[vi]->getBoneIdx(wi);
+                const u32 bone = verts[vi]->getBoneIdx(wi);
 
                 int found = -1;
                 for (int k = 0; k < count; ++k)
@@ -269,7 +269,7 @@ namespace hdt
         for (int i = 1; i < count; ++i)
         {
             const float wTemp = w[i];
-            const U32 kTemp = keys[i];
+            const u32 kTemp = keys[i];
             int j = i;
             while (j > 0 && (w[j - 1] < wTemp || (w[j - 1] == wTemp && keys[j - 1] > kTemp)))
             {

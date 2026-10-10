@@ -206,7 +206,7 @@ namespace Hooks
 
         struct BoneLimitFix : Xbyak::CodeGenerator
         {
-            BoneLimitFix(const uintptr_t a_returnAddr)
+            explicit BoneLimitFix(const uintptr_t a_returnAddr)
             {
                 Xbyak::Label ret;
 
@@ -248,7 +248,7 @@ namespace Hooks
 
         if (runtimeData.quitGame)
         {
-            const Events::ShutdownEvent e;
+            constexpr Events::ShutdownEvent e;
             Events::Sources::ShutdownEventEventSource::GetSingleton()->SendEvent(&e);
         }
         else
@@ -264,7 +264,7 @@ namespace Hooks
         _Unk_sub(a_this);
 
         //
-        const Events::FrameSyncEvent framesyncEvent;
+        constexpr Events::FrameSyncEvent framesyncEvent;
         Events::Sources::FrameSyncEventSource::GetSingleton()->SendEvent(&framesyncEvent);
     }
 

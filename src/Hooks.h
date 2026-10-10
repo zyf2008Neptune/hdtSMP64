@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <detours/detours.h>
 #include "REL/Module.h"
 #include "SKSE/Version.h"

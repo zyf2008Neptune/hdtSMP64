@@ -13,7 +13,7 @@ namespace hdt
     inline constexpr uintptr_t kCanonicalUserSpaceMax = 0x00007FFFFFFFFFFFull;
     inline auto isValidNiObject(const RE::NiAVObject* obj) -> bool
     {
-        if (!obj)
+        if (obj == nullptr)
         {
             return false;
         }
@@ -21,8 +21,8 @@ namespace hdt
         {
             return false;
         }
-        auto vtbl = *reinterpret_cast<void* const* const*>(obj);
-        if (!vtbl || reinterpret_cast<uintptr_t>(vtbl) > kCanonicalUserSpaceMax)
+        const auto vtbl = *reinterpret_cast<void* const* const*>(obj);
+        if ((vtbl == nullptr) || reinterpret_cast<uintptr_t>(vtbl) > kCanonicalUserSpaceMax)
         {
             return false;
         }
@@ -51,7 +51,7 @@ namespace hdt
     {
         if (!isValidNiObject(obj))
         {
-            if (obj)
+            if (obj != nullptr)
             {
                 logger::warn(
                     "castNiNode: skipping object at {:p} with invalid vtable (VR NiStream stub or unresolved bone ref)",
@@ -62,11 +62,14 @@ namespace hdt
         return obj->AsNode();
     }
 
-    inline auto castBSTriShape(RE::NiAVObject* obj) -> RE::BSTriShape* { return obj ? obj->AsTriShape() : nullptr; }
+    inline auto castBSTriShape(RE::NiAVObject* obj) -> RE::BSTriShape*
+    {
+        return (obj != nullptr) ? obj->AsTriShape() : nullptr;
+    }
 
     inline auto castBSDynamicTriShape(RE::NiAVObject* obj) -> RE::BSDynamicTriShape*
     {
-        return obj ? obj->AsDynamicTriShape() : nullptr;
+        return (obj != nullptr) ? obj->AsDynamicTriShape() : nullptr;
     }
 
     inline auto findObject(RE::NiAVObject* obj, const RE::BSFixedString& name) -> RE::NiAVObject*
@@ -77,7 +80,7 @@ namespace hdt
     inline auto findNode(RE::NiNode* obj, const RE::BSFixedString& name) -> RE::NiNode*
     {
         const auto ret = obj->GetObjectByName(name);
-        return ret ? ret->AsNode() : nullptr;
+        return (ret != nullptr) ? ret->AsNode() : nullptr;
     }
 
     inline auto readAllFile(const char* path) -> std::string
@@ -123,7 +126,7 @@ namespace hdt
 
     inline auto updateTransformUpDown(RE::NiAVObject* obj, const bool dirty) -> void
     {
-        if (!obj)
+        if (obj == nullptr)
         {
             return;
         }

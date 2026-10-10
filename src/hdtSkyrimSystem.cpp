@@ -44,7 +44,7 @@ namespace hdt
 {
     [[maybe_unused]] static constexpr auto PI = std::numbers::pi_v<float>;
 
-    btEmptyShape SkyrimSystemCreator::BoneTemplate::emptyShape[1];
+    std::array<btEmptyShape, 1> SkyrimSystemCreator::BoneTemplate::emptyShape;
 
     auto SkyrimSystem::findBone(const RE::BSFixedString& name) const -> SkinnedMeshBone*
     {
@@ -588,7 +588,7 @@ namespace hdt
                     }
                     else
                     {
-                        cinfo.m_collisionShape = BoneTemplate::emptyShape;
+                        cinfo.m_collisionShape = BoneTemplate::emptyShape.data();
                     }
                 }
                 else if (name == "collision-filter")
@@ -1030,8 +1030,8 @@ namespace hdt
 
 #if defined(__AVX2__) || defined(__AVX512F__)
                 // batch convert all 4 bone weights FP16 to FP32 through F16C hardware instruction
-                __m128i halfWeights = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(boneData->boneWeights));
-                _mm_storeu_ps(body->m_vertices[j + vertexStart].m_weight, _mm_cvtph_ps(halfWeights));
+                __m128i halfWeights = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(boneData->boneWeights.data()));
+                _mm_storeu_ps(body->m_vertices[j + vertexStart].m_weight.data(), _mm_cvtph_ps(halfWeights));
                 // cleanse garbage NIF data for unused bones
                 for (int k = partition->bonesPerVertex; k < 4; ++k)
                 {
@@ -1629,14 +1629,14 @@ namespace hdt
         case FrameType::FrameInA:
         {
             frameA = frame;
-            frameInWorld = trA * frame;
+            frameInWorld = trA * btQsTransform(frame);
             frameB = (trB.inverse() * frameInWorld).asTransform();
             break;
         }
         case FrameType::FrameInB:
         {
             frameB = frame;
-            frameInWorld = trB * frameB;
+            frameInWorld = trB * btQsTransform(frameB);
             frameA = (trA.inverse() * frameInWorld).asTransform();
             break;
         }

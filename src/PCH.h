@@ -13,6 +13,7 @@
 #pragma warning(pop)
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cinttypes>
 #include <clocale>
