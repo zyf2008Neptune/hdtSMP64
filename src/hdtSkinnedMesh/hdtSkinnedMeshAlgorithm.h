@@ -29,7 +29,7 @@ namespace hdt
         struct CollisionMerge
         {
             btVector3 normal; // accumulated weighted normal: length encodes depth, direction encodes contact normal
-            btVector3 pos[2];
+            std::array<btVector3, 2> pos;
             float weight{};
 
             CollisionMerge()
@@ -118,8 +118,8 @@ namespace hdt
             int mergeStride{};
             int mergeSize{};
             uint32_t currentGen{};
-            CollisionMerge* buffer = nullptr;
-            uint32_t* generations = nullptr;
+            CollisionMerge* buffer{nullptr};
+            uint32_t* generations{nullptr};
             std::vector<int> activeCells;
         };
 

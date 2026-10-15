@@ -59,7 +59,7 @@ namespace hdt
             btMatrix4x3T vertexToBone;
             BoundingSphere localBoundingSphere;
             BoundingSphere worldBoundingSphere;
-            SkinnedMeshBone* ptr = nullptr;
+            SkinnedMeshBone* ptr{nullptr};
             float weightThreshold{};
             bool isKinematic{};
         };
@@ -67,8 +67,8 @@ namespace hdt
         RE::BSFixedString m_name;
 
         //		int m_priority;
-        bool m_isKinematic = false;
-        bool m_useBoundingSphere = false;
+        bool m_isKinematic{false};
+        bool m_useBoundingSphere{false};
         RE::BSTSmartPointer<SkinnedMeshShape> m_shape;
 
         auto addBone(SkinnedMeshBone* bone, const btQsTransform& verticesToBone, const BoundingSphere& boundingSphere)

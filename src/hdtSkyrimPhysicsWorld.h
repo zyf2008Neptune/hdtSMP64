@@ -7,7 +7,7 @@
 
 namespace hdt
 {
-    constexpr float RESET_PHYSICS = -10.0f;
+    inline constexpr float RESET_PHYSICS = -10.0f;
 
     class SkyrimPhysicsWorld : protected SkinnedMeshWorld,
                                public RE::BSTEventSink<Events::FrameEvent>,
@@ -77,30 +77,30 @@ namespace hdt
 
         tbb::task_group m_tasks;
 
-        bool m_pendingTransformUpdate = false;
-        bool m_useRealTime = false;
-        int min_fps = 60;
-        float m_budgetMs = 3.5f;
-        float m_timeTick = 1 / 60.f;
-        int m_maxSubSteps = 4;
-        bool m_clampRotations = true;
+        bool m_pendingTransformUpdate{false};
+        bool m_useRealTime{false};
+        int min_fps{60};
+        float m_budgetMs{3.5f};
+        float m_timeTick{1 / 60.f};
+        int m_maxSubSteps{4};
+        bool m_clampRotations{true};
         // @brief rotation speed limit of the PC in radians per second. Must be positive.
-        float m_rotationSpeedLimit = 10.f;
-        bool m_unclampedResets = true;
-        float m_unclampedResetAngle = 120.0f;
-        float m_2ndStepAverageProcessingTime = 0;
-        float m_averageSMPProcessingTimeInMainLoop = 0;
-        bool disabled = false;
-        uint8_t m_resetPc;
-        bool m_doMetrics = false;
-        int m_sampleSize = 5;
+        float m_rotationSpeedLimit{10.f};
+        bool m_unclampedResets{true};
+        float m_unclampedResetAngle{120.0f};
+        float m_2ndStepAverageProcessingTime{};
+        float m_averageSMPProcessingTimeInMainLoop{};
+        bool disabled{false};
+        uint8_t m_resetPc{};
+        bool m_doMetrics{false};
+        int m_sampleSize{5};
         // how many samples (each sample taken every second) for determining average time per activeSkeleton.
 
         // wind settings
-        bool m_enableWind = true;
-        float m_windStrength = 2.0f; // compare to gravity acceleration of 9.8
-        float m_distanceForNoWind = 50.0f; // how close to wind obstruction to fully block wind
-        float m_distanceForMaxWind = 3000.0f; // how far to wind obstruction to not block wind
+        bool m_enableWind{true};
+        float m_windStrength{2.0f}; // compare to gravity acceleration of 9.8
+        float m_distanceForNoWind{50.0f}; // how close to wind obstruction to fully block wind
+        float m_distanceForMaxWind{3000.0f}; // how far to wind obstruction to not block wind
 
     private:
         SkyrimPhysicsWorld();
@@ -110,8 +110,8 @@ namespace hdt
 
         std::atomic_bool m_suspended;
         std::atomic_bool m_loading;
-        float m_accumulatedInterval;
-        float m_averageInterval;
-        float m_SMPProcessingTimeInMainLoop = 0;
+        float m_accumulatedInterval{};
+        float m_averageInterval{};
+        float m_SMPProcessingTimeInMainLoop{};
     };
 } // namespace hdt

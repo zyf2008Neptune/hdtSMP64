@@ -85,7 +85,7 @@ auto hdt::papyrus::QueryCurrentPhysicsFile(RE::StaticFunctionTag*, RE::Actor* on
 }
 
 auto hdt::papyrus::TogglePhysics(RE::StaticFunctionTag*, const RE::Actor* actor,
-                                 std::vector<RE::BSFixedString> boneNames, const bool on) -> std::vector<bool>
+                                 std::vector<RE::BSFixedString> boneNames, const bool on) -> std::vector<u8>
 {
     if ((actor == nullptr) || boneNames.empty())
     {
@@ -95,9 +95,9 @@ auto hdt::papyrus::TogglePhysics(RE::StaticFunctionTag*, const RE::Actor* actor,
 }
 
 auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::vector<RE::BSFixedString>& boneNames,
-                                           const bool on) -> std::vector<bool>
+                                           const bool on) -> std::vector<u8>
 {
-    std::vector result(boneNames.size(), false);
+    std::vector<u8> result(boneNames.size(), 0);
 
     auto* AM = ActorManager::instance();
     auto guard = AM->lockGuard();
@@ -135,7 +135,7 @@ auto hdt::papyrus::impl::TogglePhysicsImpl(const RE::Actor* actor, const std::ve
 
                     if (!std::exchange(foundAny, true))
                     {
-                        result[i] = currentlyDynamic;
+                        result[i] = static_cast<u8>(currentlyDynamic);
                     }
 
                     // Early out: Already in desired state, OR trying to make a 0 mass bone dynamic

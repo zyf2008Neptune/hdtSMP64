@@ -27,8 +27,8 @@ namespace hdt
         virtual auto finishBuild() -> void = 0;
         virtual auto internalUpdate() -> void = 0;
         virtual auto markUsedVertices(bool* flags) -> void = 0;
-        virtual auto markUsedVertices(std::vector<bool>& flags) -> void = 0;
-        virtual auto remapVertices(UINT* map) -> void = 0;
+        virtual auto markUsedVertices(std::vector<u8>& flags) -> void = 0;
+        virtual auto remapVertices(u32* map) -> void = 0;
 
         virtual auto getColliderBoneWeight(const Collider* c, const int boneIdx) -> float = 0;
         virtual auto getColliderBoneIndex(const Collider* c, const int boneIdx) -> int = 0;
@@ -36,9 +36,9 @@ namespace hdt
         virtual auto baryWeight(const btVector3& w, const int boneIdx) -> float = 0;
         virtual auto getBonePerCollider() -> int = 0;
 
-        SkinnedMeshBody* m_owner;
-        vectorA16<Aabb> m_aabb;
-        vectorA16<Collider> m_colliders;
+        SkinnedMeshBody* m_owner{nullptr};
+        std::vector<Aabb> m_aabb;
+        std::vector<Collider> m_colliders;
         ColliderTree m_tree;
     };
 
@@ -72,8 +72,8 @@ namespace hdt
 
         auto finishBuild() -> void override;
         auto markUsedVertices(bool* flags) -> void override;
-        auto markUsedVertices(std::vector<bool>& flags) -> void override;
-        auto remapVertices(UINT* map) -> void override;
+        auto markUsedVertices(std::vector<u8>& flags) -> void override;
+        auto remapVertices(u32* map) -> void override;
         auto autoGen() -> void;
 
         struct ShapeProp
@@ -130,8 +130,8 @@ namespace hdt
 
         auto finishBuild() -> void override;
         auto markUsedVertices(bool* flags) -> void override;
-        auto markUsedVertices(std::vector<bool>& flags) -> void override;
-        auto remapVertices(UINT* map) -> void override;
+        auto markUsedVertices(std::vector<u8>& flags) -> void override;
+        auto remapVertices(u32* map) -> void override;
 
         auto addTriangle(int p0, int p1, int p2) -> void;
 

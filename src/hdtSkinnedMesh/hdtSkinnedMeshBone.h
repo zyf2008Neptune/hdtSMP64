@@ -12,7 +12,7 @@ namespace hdt
     {
         BT_DECLARE_ALIGNED_ALLOCATOR()
 
-        SkinnedMeshBone(const RE::BSFixedString& name, const btRigidBody::btRigidBodyConstructionInfo& ci);
+        SkinnedMeshBone(RE::BSFixedString name, const btRigidBody::btRigidBodyConstructionInfo& ci);
         virtual ~SkinnedMeshBone() = default;
 
         RE::BSFixedString m_name;

@@ -52,15 +52,15 @@ namespace hdt
 
         struct Version
         {
-            int major;
-            int minor;
-            int patch;
+            int major{};
+            int minor{};
+            int patch{};
         };
 
         struct VersionInfo
         {
-            Version interfaceVersion;
-            Version bulletVersion;
+            Version interfaceVersion{};
+            Version bulletVersion{};
         };
 
     public:
@@ -70,7 +70,7 @@ namespace hdt
     public:
         virtual ~PluginInterface() = default;
 
-        virtual auto getVersionInfo() const -> const VersionInfo& = 0;
+        [[nodiscard]] virtual auto getVersionInfo() const -> const VersionInfo& = 0;
 
         virtual auto addListener(IPreStepListener*) -> void = 0;
         virtual auto removeListener(IPreStepListener*) -> void = 0;

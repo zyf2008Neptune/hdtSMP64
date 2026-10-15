@@ -20,11 +20,11 @@ namespace hdt
     public:
         struct BoneData
         {
-            uint16_t boneWeights[4];
-            uint8_t boneIndices[4];
+            std::array<u16, 4> boneWeights{};
+            std::array<u8, 4> boneIndices{};
         };
 
-        SkyrimSystem(RE::NiNode* skeleton);
+        explicit SkyrimSystem(RE::NiNode* skeleton);
         ~SkyrimSystem() override = default;
 
         auto findBone(const RE::BSFixedString& name) const -> SkinnedMeshBone*;
@@ -37,8 +37,8 @@ namespace hdt
 
         RE::NiPointer<RE::NiNode> m_skeleton;
         RE::NiPointer<RE::NiNode> m_oldRoot;
-        bool m_initialized = false;
-        float m_windFactor = 1.f;
+        bool m_initialized{false};
+        float m_windFactor{1.f};
         // wind factor for the system (i.e., full actor/skeleton) (calculated based off obstructions)
 
         // angular velocity damper
@@ -75,17 +75,17 @@ namespace hdt
 
         struct DeferredBuild
         {
-            SkinnedMeshBody* body;
-            PerVertexShape* vertexShape;
+            SkinnedMeshBody* body{nullptr};
+            PerVertexShape* vertexShape{nullptr};
         };
 
         std::vector<DeferredBuild> m_deferredBuilds;
 
         struct BoneTemplate : btRigidBody::btRigidBodyConstructionInfo
         {
-            static btEmptyShape emptyShape[1];
+            static std::array<btEmptyShape, 1> emptyShape;
 
-            BoneTemplate() : btRigidBodyConstructionInfo(0, nullptr, emptyShape)
+            BoneTemplate() : btRigidBodyConstructionInfo(0, nullptr, emptyShape.data())
             {
                 m_centerOfMassTransform = btTransform::getIdentity();
                 m_marginMultipler = 1.f;
@@ -95,10 +95,10 @@ namespace hdt
             std::vector<RE::BSFixedString> m_canCollideWithBone;
             std::vector<RE::BSFixedString> m_noCollideWithBone;
             btTransform m_centerOfMassTransform;
-            float m_marginMultipler;
-            float m_gravityFactor = 1.0f;
-            float m_windFactor = 1.0f;
-            U32 m_collisionFilter = 0;
+            float m_marginMultipler{};
+            float m_gravityFactor{1.0f};
+            float m_windFactor{1.0f};
+            u32 m_collisionFilter{0};
         };
 
         enum struct FrameType : uint8_t
@@ -108,70 +108,70 @@ namespace hdt
             FrameInLerp,
             AWithXPointToB,
             AWithYPointToB,
-            AWithZPointToB
+            AWithZPointToB,
         };
 
         struct GenericConstraintTemplate
         {
-            FrameType frameType = FrameType::FrameInB;
-            bool useLinearReferenceFrameA = false;
-            btTransform frame = btTransform::getIdentity();
-            btVector3 linearLowerLimit = btVector3(1, 1, 1);
-            btVector3 linearUpperLimit = btVector3(-1, -1, -1);
-            btVector3 angularLowerLimit = btVector3(1, 1, 1);
-            btVector3 angularUpperLimit = btVector3(-1, -1, -1);
-            btVector3 linearStiffness = btVector3(0, 0, 0);
-            btVector3 angularStiffness = btVector3(0, 0, 0);
-            btVector3 linearDamping = btVector3(0, 0, 0);
-            btVector3 angularDamping = btVector3(0, 0, 0);
-            btVector3 linearEquilibrium = btVector3(0, 0, 0);
-            btVector3 angularEquilibrium = btVector3(0, 0, 0);
-            btVector3 linearBounce = btVector3(0, 0, 0);
-            btVector3 angularBounce = btVector3(0, 0, 0);
-            bool enableLinearSprings = true;
-            bool enableAngularSprings = true;
-            bool linearStiffnessLimited = true;
-            bool angularStiffnessLimited = true;
-            bool springDampingLimited = true;
-            bool linearMotors = false;
-            bool angularMotors = false;
+            FrameType frameType{FrameType::FrameInB};
+            bool useLinearReferenceFrameA{false};
+            btTransform frame{btTransform::getIdentity()};
+            btVector3 linearLowerLimit{btVector3(1, 1, 1)};
+            btVector3 linearUpperLimit{btVector3(-1, -1, -1)};
+            btVector3 angularLowerLimit{btVector3(1, 1, 1)};
+            btVector3 angularUpperLimit{btVector3(-1, -1, -1)};
+            btVector3 linearStiffness{btVector3(0, 0, 0)};
+            btVector3 angularStiffness{btVector3(0, 0, 0)};
+            btVector3 linearDamping{btVector3(0, 0, 0)};
+            btVector3 angularDamping{btVector3(0, 0, 0)};
+            btVector3 linearEquilibrium{btVector3(0, 0, 0)};
+            btVector3 angularEquilibrium{btVector3(0, 0, 0)};
+            btVector3 linearBounce{btVector3(0, 0, 0)};
+            btVector3 angularBounce{btVector3(0, 0, 0)};
+            bool enableLinearSprings{true};
+            bool enableAngularSprings{true};
+            bool linearStiffnessLimited{true};
+            bool angularStiffnessLimited{true};
+            bool springDampingLimited{true};
+            bool linearMotors{false};
+            bool angularMotors{false};
             // TODO: Test if servo motors go to [0, 0, 0], or whatever equilibrium is.  Provide option to set server
             // motor target.  Hard coded to equilibrium right now.
-            bool linearServoMotors = false;
-            bool angularServoMotors = false;
-            btVector3 linearNonHookeanDamping = btVector3(0, 0, 0);
-            btVector3 angularNonHookeanDamping = btVector3(0, 0, 0);
-            btVector3 linearNonHookeanStiffness = btVector3(0, 0, 0);
-            btVector3 angularNonHookeanStiffness = btVector3(0, 0, 0);
-            btVector3 linearTargetVelocity = btVector3(0, 0, 0);
-            btVector3 angularTargetVelocity = btVector3(0, 0, 0);
-            btVector3 linearMaxMotorForce = btVector3(0, 0, 0);
-            btVector3 angularMaxMotorForce = btVector3(0, 0, 0);
-            btScalar motorERP = 0.9f;
-            btScalar motorCFM = 0;
-            btScalar stopERP = 0.2f;
-            btScalar stopCFM = 0;
+            bool linearServoMotors{false};
+            bool angularServoMotors{false};
+            btVector3 linearNonHookeanDamping{btVector3(0, 0, 0)};
+            btVector3 angularNonHookeanDamping{btVector3(0, 0, 0)};
+            btVector3 linearNonHookeanStiffness{btVector3(0, 0, 0)};
+            btVector3 angularNonHookeanStiffness{btVector3(0, 0, 0)};
+            btVector3 linearTargetVelocity{btVector3(0, 0, 0)};
+            btVector3 angularTargetVelocity{btVector3(0, 0, 0)};
+            btVector3 linearMaxMotorForce{btVector3(0, 0, 0)};
+            btVector3 angularMaxMotorForce{btVector3(0, 0, 0)};
+            btScalar motorERP{0.9f};
+            btScalar motorCFM{};
+            btScalar stopERP{0.2f};
+            btScalar stopCFM{};
         };
 
         struct StiffSpringConstraintTemplate
         {
-            float minDistanceFactor = 1;
-            float maxDistanceFactor = 1;
-            float stiffness = 0;
-            float damping = 0;
-            float equilibriumFactor = 0.5;
+            float minDistanceFactor{1.0f};
+            float maxDistanceFactor{1.0f};
+            float stiffness{};
+            float damping{};
+            float equilibriumFactor{0.5f};
         };
 
         struct ConeTwistConstraintTemplate
         {
-            btTransform frame = btTransform::getIdentity();
-            FrameType frameType = FrameType::FrameInB;
-            float swingSpan1 = 0;
-            float swingSpan2 = 0;
-            float twistSpan = 0;
-            float limitSoftness = 1.0f;
-            float biasFactor = 0.3f;
-            float relaxationFactor = 1.0f;
+            btTransform frame{btTransform::getIdentity()};
+            FrameType frameType{FrameType::FrameInB};
+            float swingSpan1{};
+            float swingSpan2{};
+            float twistSpan{};
+            float limitSoftness{1.0f};
+            float biasFactor{0.3f};
+            float relaxationFactor{1.0f};
         };
 
         using VertexOffsetMap = std::unordered_map<std::string, int>;

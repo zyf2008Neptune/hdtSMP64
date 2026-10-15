@@ -23,7 +23,7 @@ namespace hdt
         };
 
         SkyrimSystem* m_mesh;
-        SharedType m_shared;
+        SharedType m_shared{};
         bool m_disabled = false;
         int m_disablePriority = 0;
         RE::BSFixedString m_disableTag;

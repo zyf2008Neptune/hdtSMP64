@@ -20,7 +20,7 @@ namespace hdt::papyrus
     // - true  = bone was dynamic (physics was ON)
     // - false = bone was kinematic (physics was OFF / not found)
     auto TogglePhysics(RE::StaticFunctionTag* base, const RE::Actor* actor, std::vector<RE::BSFixedString> boneNames,
-                       bool on) -> std::vector<bool>;
+                       bool on) -> std::vector<u8>;
 
     // Reset an actor's SMP physics systems
     // - full = true  -> complete reset, bones snap to reference pose
@@ -39,7 +39,7 @@ namespace hdt::papyrus
             -> std::string;
 
         auto TogglePhysicsImpl(const RE::Actor* actor, const std::vector<RE::BSFixedString>& boneNames, bool on)
-            -> std::vector<bool>;
+            -> std::vector<u8>;
 
         auto ResetPhysicsImpl(const RE::Actor* actor, bool full) -> void;
     } // namespace impl

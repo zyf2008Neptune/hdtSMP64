@@ -14,11 +14,11 @@ namespace hdt
         auto readTransform(float timeStep) -> void override;
         auto writeTransform() -> void override;
 
-        int m_depth;
+        int m_depth{};
         RE::NiPointer<RE::NiNode> m_node;
         RE::NiPointer<RE::NiNode> m_skeleton;
 
     private:
-        int m_forceUpdateType;
+        int m_forceUpdateType{};
     };
 } // namespace hdt
