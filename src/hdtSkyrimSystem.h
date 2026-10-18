@@ -43,6 +43,28 @@ namespace hdt
 
         // angular velocity damper
         btQuaternion m_lastRootRotation;
+
+    protected:
+        // PC root rotation damper (m_resetPc / clampRotations / unclampedResets).
+        virtual auto dampRootRotation(float timeStep) -> float;
+    };
+
+    // Player skeleton: while a mod declares the body camera-driven
+    // (PluginInterface::setPlayerBodyCameraDriven), the damper is replaced by body-local space
+    // simulation - whole-body motion is cancelled out of the rigid bodies and injects no velocity.
+    class PlayerSkyrimSystem final : public SkyrimSystem
+    {
+    public:
+        explicit PlayerSkyrimSystem(RE::NiNode* skeleton);
+
+    protected:
+        auto dampRootRotation(float timeStep) -> float override;
+
+    private:
+        RE::NiPointer<RE::NiNode> m_localSpaceRef;
+        btQuaternion m_localSpaceRotation;
+        btVector3 m_localSpacePosition;
+        bool m_localSpaceActive{false};
     };
 
     class XMLReader;
@@ -71,7 +93,7 @@ namespace hdt
         std::unordered_map<const char*, SkyrimBone*, PooledStringHash, PooledStringEqual> m_boneIndex;
 
         auto indexBone(SkyrimBone* bone) -> void;
-        auto findBoneFromIndex(const RE::BSFixedString& name) const -> SkyrimBone*;
+        [[nodiscard]] auto findBoneFromIndex(const RE::BSFixedString& name) const -> SkyrimBone*;
 
         struct DeferredBuild
         {
@@ -184,7 +206,7 @@ namespace hdt
         XMLReader* m_reader;
         std::unordered_map<RE::BSFixedString, RE::BSFixedString> m_renameMap;
 
-        auto findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*;
+        [[nodiscard]] auto findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*;
         auto getOrCreateBone(const RE::BSFixedString& name) -> SkyrimBone*;
 
         std::string m_filePath;

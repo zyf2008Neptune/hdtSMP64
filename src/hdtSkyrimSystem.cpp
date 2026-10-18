@@ -5,9 +5,11 @@
 #include <utility>
 
 #include "HavokUtils.h"
+#include "PluginInterfaceImpl.h"
 #include "XmlReader.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshShape.h"
 #include "hdtSkyrimPhysicsWorld.h"
+
 
 // F16C isn't supported on super old processors. AVX2+ (AVX processors can have it, but not guaranteed)
 #if defined(__AVX2__) || defined(__AVX512F__)
@@ -109,6 +111,8 @@ namespace hdt
             m_initialized = true;
         }
 
+        timeStep = dampRootRotation(timeStep);
+
         if (timeStep <= RESET_PHYSICS)
         {
             if (!this->block_resetting)
@@ -118,63 +122,134 @@ namespace hdt
 
             m_lastRootRotation = convertNi(m_skeleton->world.rotate);
         }
-        else if (m_skeleton->parent == RE::PlayerCharacter::GetSingleton()->Get3D2())
+
+        m_oldRoot = hdt::make_nismart(newRoot);
+        return timeStep;
+    }
+    auto SkyrimSystem::dampRootRotation(float timeStep) -> float
+    {
+        if (timeStep <= RESET_PHYSICS || m_skeleton->parent != RE::PlayerCharacter::GetSingleton()->Get3D2())
         {
-            if (SkyrimPhysicsWorld::get()->m_resetPc > 0)
-            {
-                timeStep = RESET_PHYSICS;
-                updateTransformUpDown(m_skeleton.get(), true);
-                m_lastRootRotation = convertNi(m_skeleton->world.rotate);
-            }
-            else if (!RE::PlayerCamera::GetSingleton()->GetRuntimeData2().isWeapSheathed ||
-                     RE::PlayerCamera::GetSingleton()->currentState->id == RE::CameraState::kFirstPerson)
-            // isWeaponSheathed or potentially isCameraFree || cameraState is first person
-            {
-                m_lastRootRotation = convertNi(m_skeleton->world.rotate);
-            }
-            else
-            {
-                const btQuaternion newRot = convertNi(m_skeleton->world.rotate);
-                btVector3 rotAxis;
-                float rotAngle;
-                btTransformUtil::calculateDiffAxisAngleQuaternion(m_lastRootRotation, newRot, rotAxis, rotAngle);
+            return timeStep;
+        }
 
-                if (SkyrimPhysicsWorld::get()->m_clampRotations)
+        if (SkyrimPhysicsWorld::get()->m_resetPc > 0)
+        {
+            timeStep = RESET_PHYSICS;
+        }
+        else if (!RE::PlayerCamera::GetSingleton()->GetRuntimeData2().isWeapSheathed ||
+                 RE::PlayerCamera::GetSingleton()->currentState->id ==
+                     RE::CameraState::kFirstPerson) // isWeaponSheathed or potentially isCameraFree || cameraState is
+                                                    // first person
+        {
+            m_lastRootRotation = convertNi(m_skeleton->world.rotate);
+        }
+        else
+        {
+            btQuaternion newRot = convertNi(m_skeleton->world.rotate);
+            btVector3 rotAxis;
+            float rotAngle;
+            btTransformUtil::calculateDiffAxisAngleQuaternion(m_lastRootRotation, newRot, rotAxis, rotAngle);
+
+            if (SkyrimPhysicsWorld::get()->m_clampRotations)
+            {
+                const float limit = SkyrimPhysicsWorld::get()->m_rotationSpeedLimit * timeStep;
+
+                if (rotAngle < -limit || rotAngle > limit)
                 {
-                    const float limit = SkyrimPhysicsWorld::get()->m_rotationSpeedLimit * timeStep;
+                    rotAngle = btClamped(rotAngle, -limit, limit);
+                    btQuaternion clampedRot(rotAxis, rotAngle);
+                    m_lastRootRotation = clampedRot * m_lastRootRotation;
+                    m_skeleton->world.rotate = convertBt(m_lastRootRotation);
 
-                    if (rotAngle < -limit || rotAngle > limit)
+                    const auto& children = m_skeleton->GetChildren();
+                    for (const auto& i : children)
                     {
-                        rotAngle = btClamped(rotAngle, -limit, limit);
-                        const btQuaternion clampedRot(rotAxis, rotAngle);
-                        m_lastRootRotation = clampedRot * m_lastRootRotation;
-                        m_skeleton->world.rotate = convertBt(m_lastRootRotation);
-
-                        const auto& children = m_skeleton->GetChildren();
-                        for (const auto& i : children)
+                        auto node = castNiNode(i.get());
+                        if (node != nullptr)
                         {
-                            if (auto* const node = castNiNode(i.get()))
-                            {
-                                updateTransformUpDown(node, true);
-                            }
+                            updateTransformUpDown(node, true);
                         }
                     }
                 }
-                else if (SkyrimPhysicsWorld::get()->m_unclampedResets)
-                {
-                    const float limit = SkyrimPhysicsWorld::get()->m_unclampedResetAngle * timeStep;
+            }
+            else if (SkyrimPhysicsWorld::get()->m_unclampedResets)
+            {
+                const float limit = SkyrimPhysicsWorld::get()->m_unclampedResetAngle * timeStep;
 
-                    if (rotAngle < -limit || rotAngle > limit)
-                    {
-                        timeStep = RESET_PHYSICS;
-                        updateTransformUpDown(m_skeleton.get(), true);
-                        m_lastRootRotation = convertNi(m_skeleton->world.rotate);
-                    }
+                if (rotAngle < -limit || rotAngle > limit)
+                {
+                    timeStep = RESET_PHYSICS;
+                }
+            }
+        }
+        return timeStep;
+    }
+
+    PlayerSkyrimSystem::PlayerSkyrimSystem(RE::NiNode* skeleton) : SkyrimSystem{skeleton} {}
+
+    auto PlayerSkyrimSystem::dampRootRotation(float timeStep) -> float
+    {
+        if (!g_pluginInterface.isPlayerBodyCameraDriven())
+        {
+            if (m_localSpaceActive)
+            {
+                // Don't turn the snap back to the native pose into velocity.
+                m_localSpaceActive = false;
+                m_localSpaceRef = nullptr;
+                return RESET_PHYSICS;
+            }
+            return SkyrimSystem::dampRootRotation(timeStep);
+        }
+
+        if (!m_localSpaceActive || timeStep <= RESET_PHYSICS)
+        {
+            // Snap on engage/reset instead of cancelling a partial delta.
+            m_localSpaceActive = true;
+            m_localSpaceRef = nullptr; // re-resolve in case the skeleton was rebuilt
+            timeStep = RESET_PHYSICS;
+        }
+
+        if (!m_localSpaceRef)
+        {
+            const auto ref = findNode(m_skeleton.get(), "NPC Root [Root]");
+            m_localSpaceRef = hdt::make_nismart((ref != nullptr) ? ref : m_skeleton.get());
+        }
+
+        const btQuaternion rotation = convertNi(m_localSpaceRef->world.rotate);
+        const btVector3 position = convertNi(m_localSpaceRef->world.translate);
+
+        if (timeStep > RESET_PHYSICS)
+        {
+            // Move every rigid body along with the reference bone's frame delta: only
+            // animation-relative bone motion reaches the solver.
+            const btQuaternion deltaRotation = rotation * m_localSpaceRotation.inverse();
+            const btVector3 deltaPosition = position - m_localSpacePosition;
+
+            if (deltaRotation.getAngleShortestPath() > 1e-6f || deltaPosition.length2() > 1e-8f)
+            {
+                const btMatrix3x3 basis(deltaRotation);
+                btTransform delta;
+                delta.setBasis(basis);
+                // Rotate about the reference bone, not the world origin.
+                delta.setOrigin(m_localSpacePosition - basis * m_localSpacePosition + deltaPosition);
+
+                for (const auto& bone : m_bones)
+                {
+                    auto& rig = bone->m_rig;
+                    rig.setWorldTransform(delta * rig.getWorldTransform());
+                    rig.setInterpolationWorldTransform(delta * rig.getInterpolationWorldTransform());
+                    rig.setLinearVelocity(basis * rig.getLinearVelocity());
+                    rig.setAngularVelocity(basis * rig.getAngularVelocity());
+                    rig.setInterpolationLinearVelocity(basis * rig.getInterpolationLinearVelocity());
+                    rig.setInterpolationAngularVelocity(basis * rig.getInterpolationAngularVelocity());
+                    rig.updateInertiaTensor();
                 }
             }
         }
 
-        m_oldRoot = hdt::make_nismart(newRoot);
+        m_localSpaceRotation = rotation;
+        m_localSpacePosition = position;
         return timeStep;
     }
 

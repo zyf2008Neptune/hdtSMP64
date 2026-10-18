@@ -64,7 +64,7 @@ namespace hdt
         };
 
     public:
-        static constexpr Version INTERFACE_VERSION{.major = 2, .minor = 0, .patch = 0};
+        static constexpr Version INTERFACE_VERSION{.major = 2, .minor = 1, .patch = 0};
         static constexpr Version BULLET_VERSION{.major = 3, .minor = 24, .patch = 0};
 
     public:
@@ -77,5 +77,12 @@ namespace hdt
 
         virtual auto addListener(IPostStepListener*) -> void = 0;
         virtual auto removeListener(IPostStepListener*) -> void = 0;
+
+        // Since 2.1.
+        // Declares that the caller drives the player's visible body with the camera (a first
+        // person body mod). While active, the player simulates in body-local space: whole-body
+        // motion injects no velocity; gravity and animation-relative motion still apply.
+        // Main thread, any time after MSG_STARTUP.
+        virtual auto setPlayerBodyCameraDriven(bool) -> void = 0;
     };
 } // namespace hdt

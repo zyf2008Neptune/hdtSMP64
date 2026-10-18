@@ -4,7 +4,7 @@ hdt::PluginInterfaceImpl hdt::g_pluginInterface;
 
 auto hdt::PluginInterfaceImpl::addListener(IPreStepListener* l) -> void
 {
-    if (l)
+    if (l != nullptr)
     {
         m_preStepDispatcher.AddEventSink(l);
     }
@@ -12,7 +12,7 @@ auto hdt::PluginInterfaceImpl::addListener(IPreStepListener* l) -> void
 
 auto hdt::PluginInterfaceImpl::removeListener(IPreStepListener* l) -> void
 {
-    if (l)
+    if (l != nullptr)
     {
         m_preStepDispatcher.RemoveEventSink(l);
     }
@@ -20,7 +20,7 @@ auto hdt::PluginInterfaceImpl::removeListener(IPreStepListener* l) -> void
 
 auto hdt::PluginInterfaceImpl::addListener(IPostStepListener* l) -> void
 {
-    if (l)
+    if (l != nullptr)
     {
         m_postStepDispatcher.AddEventSink(l);
     }
@@ -28,16 +28,18 @@ auto hdt::PluginInterfaceImpl::addListener(IPostStepListener* l) -> void
 
 auto hdt::PluginInterfaceImpl::removeListener(IPostStepListener* l) -> void
 {
-    if (l)
+    if (l != nullptr)
     {
         m_postStepDispatcher.RemoveEventSink(l);
     }
 }
 
+auto hdt::PluginInterfaceImpl::setPlayerBodyCameraDriven(bool active) -> void { m_playerBodyCameraDriven = active; }
+
 auto hdt::PluginInterfaceImpl::onPostPostLoad() -> void
 {
     // Send ourselves to any plugin that registered during the PostLoad event
-    if (m_skseMessagingInterface)
+    if (m_skseMessagingInterface != nullptr)
     {
         m_skseMessagingInterface->Dispatch(MSG_STARTUP, this, 0, nullptr);
     }
@@ -46,13 +48,13 @@ auto hdt::PluginInterfaceImpl::onPostPostLoad() -> void
 auto hdt::PluginInterfaceImpl::init(const SKSE::LoadInterface* skse) -> void
 {
     // We need to have our SKSE plugin handle and the messaging interface in order to reach our plugins later
-    if (skse)
+    if (skse != nullptr)
     {
         m_sksePluginHandle = skse->GetPluginHandle();
         m_skseMessagingInterface =
             static_cast<SKSE::MessagingInterface*>(skse->QueryInterface(SKSE::LoadInterface::kMessaging));
     }
-    if (!m_skseMessagingInterface)
+    if (m_skseMessagingInterface == nullptr)
     {
         logger::warn("Failed to get a messaging interface. Plugins will not work.");
     }
