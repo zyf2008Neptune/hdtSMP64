@@ -1,13 +1,16 @@
 #include "hdtSkyrimSystem.h"
 
-#include <bit>
 #include <cstddef>
+#include <memory>
 #include <utility>
 
 #include "HavokUtils.h"
+#include "PCH.h"
 #include "PluginInterfaceImpl.h"
+#include "RE/B/BSTSmartPointer.h"
 #include "XmlReader.h"
 #include "hdtSkinnedMesh/hdtSkinnedMeshShape.h"
+#include "hdtSkyrimBone.h"
 #include "hdtSkyrimPhysicsWorld.h"
 
 
@@ -15,6 +18,7 @@
 #if defined(__AVX2__) || defined(__AVX512F__)
 #include <immintrin.h>
 #else
+#include <bit>
 // float32
 // Martin Kallman
 //
@@ -87,7 +91,7 @@ namespace hdt
         return -1;
     }
 
-    SkyrimSystem::SkyrimSystem(RE::NiNode* skeleton) : m_skeleton(skeleton), m_oldRoot(nullptr)
+    SkyrimSystem::SkyrimSystem(RE::NiNode* skeleton) : m_skeleton{skeleton}, m_oldRoot{nullptr}
     {
         m_oldRoot = m_skeleton;
     }
@@ -165,7 +169,7 @@ namespace hdt
                     const auto& children = m_skeleton->GetChildren();
                     for (const auto& i : children)
                     {
-                        auto node = castNiNode(i.get());
+                        auto* node = castNiNode(i.get());
                         if (node != nullptr)
                         {
                             updateTransformUpDown(node, true);
@@ -212,7 +216,7 @@ namespace hdt
 
         if (!m_localSpaceRef)
         {
-            const auto ref = findNode(m_skeleton.get(), "NPC Root [Root]");
+            auto* const ref = findNode(m_skeleton.get(), "NPC Root [Root]");
             m_localSpaceRef = hdt::make_nismart((ref != nullptr) ? ref : m_skeleton.get());
         }
 
@@ -267,11 +271,11 @@ namespace hdt
         return findNode(m_skeleton, name);
     }
 
-    auto SkyrimSystemCreator::getOrCreateBone(const RE::BSFixedString& name) -> SkyrimBone*
+    auto SkyrimSystemCreator::getOrCreateBone(const RE::BSFixedString& name) -> RE::BSTSmartPointer<SkyrimBone>
     {
-        if (auto* const bone = findBoneFromIndex(getRenamedBone(name)))
+        if (auto* bone = findBoneFromIndex(getRenamedBone(name)))
         {
-            return bone;
+            return RE::BSTSmartPointer<SkyrimBone>(bone);
         }
 
         logger::warn("Bone {} used before being created, trying to create it with current default values",
@@ -958,7 +962,7 @@ namespace hdt
 
     auto SkyrimSystemCreator::createBoneFromNodeName(const RE::BSFixedString& bodyName,
                                                      const RE::BSFixedString& templateName, const bool readTemplate)
-        -> SkyrimBone*
+        -> RE::BSTSmartPointer<SkyrimBone>
     {
         if (auto* const node = findObjectByName(bodyName))
         {
@@ -968,7 +972,7 @@ namespace hdt
             {
                 readBoneTemplate(boneTemplate);
             }
-            auto* const bone = new SkyrimBone(node->name.c_str(), node, this->m_skeleton, boneTemplate);
+            auto bone = RE::make_smart<SkyrimBone>(node->name.c_str(), node, this->m_skeleton, boneTemplate);
             bone->m_localToRig = boneTemplate.m_centerOfMassTransform;
             bone->m_rigToLocal = boneTemplate.m_centerOfMassTransform.inverse();
             bone->m_marginMultipler = boneTemplate.m_marginMultipler;
@@ -977,8 +981,8 @@ namespace hdt
 
             bone->readTransform(RESET_PHYSICS);
 
-            m_mesh->m_bones.emplace_back(hdt::make_smart(bone));
-            indexBone(bone);
+            m_mesh->m_bones.emplace_back(bone);
+            indexBone(bone.get());
             return bone;
         }
         logger::warn("Node named {} doesn't exist, skipped, no bone created", bodyName.c_str());
@@ -988,7 +992,7 @@ namespace hdt
     auto SkyrimSystemCreator::generateMeshBody(const std::string_view name, DefaultBBP::NameSet_t* names)
         -> std::pair<RE::BSTSmartPointer<SkyrimBody>, VertexOffsetMap>
     {
-        RE::BSTSmartPointer<SkyrimBody> body = RE::make_smart<SkyrimBody>();
+        auto body = RE::make_smart<SkyrimBody>();
         body->m_name = name;
 
         auto vertexStart = 0;
@@ -1028,10 +1032,11 @@ namespace hdt
                 if (bone == nullptr)
                 {
                     auto defaultBoneInfo = getBoneTemplate("");
-                    auto* const newBone = new SkyrimBone(boneName, node->AsNode(), this->m_skeleton, defaultBoneInfo);
-                    m_mesh->m_bones.emplace_back(hdt::make_smart(newBone));
-                    indexBone(newBone);
-                    bone = newBone;
+                    auto newBone =
+                        RE::make_smart<SkyrimBone>(boneName, node->AsNode(), this->m_skeleton, defaultBoneInfo);
+                    m_mesh->m_bones.emplace_back(newBone);
+                    indexBone(newBone.get());
+                    bone = newBone.get();
                     logger::info("Created bone {} added to body {}, created without default values", boneName.c_str(),
                                  name);
                 }
@@ -1213,16 +1218,16 @@ namespace hdt
                 }
                 else if (nodeName == "can-collide-with-bone")
                 {
-                    if (auto* const bone = getOrCreateBone(m_reader->readText()))
+                    if (auto bone = getOrCreateBone(m_reader->readText()))
                     {
-                        body->m_canCollideWithBones.insert(bone);
+                        body->m_canCollideWithBones.insert(bone.get());
                     }
                 }
                 else if (nodeName == "no-collide-with-bone")
                 {
-                    if (auto* const bone = getOrCreateBone(m_reader->readText()))
+                    if (auto bone = getOrCreateBone(m_reader->readText()))
                     {
-                        body->m_noCollideWithBones.insert(bone);
+                        body->m_noCollideWithBones.insert(bone.get());
                     }
                 }
                 else if (nodeName == "weight-threshold")
@@ -1271,9 +1276,8 @@ namespace hdt
         auto it = meshNameMap->find(name);
         auto names = (it == meshNameMap->end()) ? DefaultBBP::NameSet_t({name}) : it->second;
 
-        auto bodyData = generateMeshBody(name, &names);
-        auto body = bodyData.first;
-        auto vertexOffsetMap = bodyData.second;
+        auto [body, vertexOffsetMap] = generateMeshBody(name, &names);
+
         if (!body)
         {
             return nullptr;
@@ -1284,7 +1288,7 @@ namespace hdt
         for (const auto& entry : vertexOffsetMap)
         {
             auto* g = castBSTriShape(findObject(m_model, entry.first.c_str()));
-            if (!g)
+            if (g == nullptr)
             {
                 continue;
             }
@@ -1365,16 +1369,16 @@ namespace hdt
                 }
                 else if (nodeName == "can-collide-with-bone")
                 {
-                    if (auto* bone = getOrCreateBone(m_reader->readText()))
+                    if (auto bone = getOrCreateBone(m_reader->readText()))
                     {
-                        body->m_canCollideWithBones.insert(bone);
+                        body->m_canCollideWithBones.insert(bone.get());
                     }
                 }
                 else if (nodeName == "no-collide-with-bone")
                 {
-                    if (auto* bone = getOrCreateBone(m_reader->readText()))
+                    if (auto bone = getOrCreateBone(m_reader->readText()))
                     {
-                        body->m_noCollideWithBones.insert(bone);
+                        body->m_noCollideWithBones.insert(bone.get());
                     }
                 }
                 else if (nodeName == "weight-threshold")
@@ -1642,7 +1646,7 @@ namespace hdt
         {
             logger::warn("constraint {} <-> {} : bone for bodyA doesn't exist, will try to create it",
                          bodyAName.c_str(), bodyBName.c_str());
-            bodyA = createBoneFromNodeName(bodyAName);
+            bodyA = createBoneFromNodeName(bodyAName).get();
             if (bodyA == nullptr)
             {
                 m_reader->skipCurrentElement();
@@ -1653,7 +1657,7 @@ namespace hdt
         {
             logger::warn("constraint {} <-> {} : bone for bodyB doesn't exist, will try to create it",
                          bodyAName.c_str(), bodyBName.c_str());
-            bodyB = createBoneFromNodeName(bodyBName);
+            bodyB = createBoneFromNodeName(bodyBName).get();
             if (bodyB == nullptr)
             {
                 m_reader->skipCurrentElement();
@@ -1769,8 +1773,8 @@ namespace hdt
         auto bodyBName = getRenamedBone(m_reader->getAttribute("bodyB"));
         auto clsname = m_reader->getAttribute("template", "");
 
-        SkyrimBone* bodyA;
-        SkyrimBone* bodyB;
+        SkyrimBone* bodyA = nullptr;
+        SkyrimBone* bodyB = nullptr;
         if (!findBones(bodyAName, bodyBName, bodyA, bodyB))
         {
             return nullptr;
@@ -1991,17 +1995,17 @@ namespace hdt
         const auto bodyBName = getRenamedBone(m_reader->getAttribute("bodyB"));
         const auto clsname = m_reader->getAttribute("template", "");
 
-        SkyrimBone* bodyA;
-        SkyrimBone* bodyB;
+        SkyrimBone* bodyA = nullptr;
+        SkyrimBone* bodyB = nullptr;
         if (!findBones(bodyAName, bodyBName, bodyA, bodyB))
         {
             return nullptr;
         }
 
-        StiffSpringConstraintTemplate cinfo = getStiffSpringConstraintTemplate(clsname);
+        auto cinfo = getStiffSpringConstraintTemplate(clsname);
         readStiffSpringConstraintTemplate(cinfo);
 
-        RE::BSTSmartPointer<StiffSpringConstraint> constraint = RE::make_smart<StiffSpringConstraint>(bodyA, bodyB);
+        auto constraint = RE::make_smart<StiffSpringConstraint>(bodyA, bodyB);
         constraint->m_minDistance *= cinfo.minDistanceFactor;
         constraint->m_maxDistance *= cinfo.maxDistanceFactor;
         constraint->m_stiffness = cinfo.stiffness;
@@ -2033,8 +2037,7 @@ namespace hdt
         btTransform frameB;
         calcFrame(cinfo.frameType, cinfo.frame, trA, trB, frameA, frameB);
 
-        RE::BSTSmartPointer<ConeTwistConstraint> constraint =
-            RE::make_smart<ConeTwistConstraint>(bodyA, bodyB, frameA, frameB);
+        auto constraint = RE::make_smart<ConeTwistConstraint>(bodyA, bodyB, frameA, frameB);
         constraint->setLimit(cinfo.swingSpan1, cinfo.swingSpan2, cinfo.twistSpan, cinfo.limitSoftness, cinfo.biasFactor,
                              cinfo.relaxationFactor);
 

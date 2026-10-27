@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include "RE/B/BSTSmartPointer.h"
 #include "hdtConvertNi.h"
 #include "hdtDefaultBBP.h"
 #include "hdtSkinnedMesh/hdtConeTwistConstraint.h"
@@ -18,12 +20,6 @@ namespace hdt
         friend class SkyrimSystemCreator;
 
     public:
-        struct BoneData
-        {
-            std::array<u16, 4> boneWeights{};
-            std::array<u8, 4> boneIndices{};
-        };
-
         explicit SkyrimSystem(RE::NiNode* skeleton);
         ~SkyrimSystem() override = default;
 
@@ -35,14 +31,20 @@ namespace hdt
 
         auto meshes() const -> const std::vector<RE::BSTSmartPointer<SkinnedMeshBody>>& { return m_meshes; }
 
-        RE::NiPointer<RE::NiNode> m_skeleton;
-        RE::NiPointer<RE::NiNode> m_oldRoot;
-        bool m_initialized{false};
-        float m_windFactor{1.f};
-        // wind factor for the system (i.e., full actor/skeleton) (calculated based off obstructions)
-
         // angular velocity damper
         btQuaternion m_lastRootRotation;
+
+        struct BoneData
+        {
+            std::array<u16, 4> boneWeights{};
+            std::array<u8, 4> boneIndices{};
+        };
+
+        RE::NiPointer<RE::NiNode> m_skeleton;
+        RE::NiPointer<RE::NiNode> m_oldRoot;
+        float m_windFactor{1.f};
+        // wind factor for the system (i.e., full actor/skeleton) (calculated based off obstructions)
+        bool m_initialized{false};
 
     protected:
         // PC root rotation damper (m_resetPc / clampRotations / unclampedResets).
@@ -61,9 +63,9 @@ namespace hdt
         auto dampRootRotation(float timeStep) -> float override;
 
     private:
-        RE::NiPointer<RE::NiNode> m_localSpaceRef;
         btQuaternion m_localSpaceRotation;
         btVector3 m_localSpacePosition;
+        RE::NiPointer<RE::NiNode> m_localSpaceRef;
         bool m_localSpaceActive{false};
     };
 
@@ -113,10 +115,10 @@ namespace hdt
                 m_marginMultipler = 1.f;
             }
 
-            std::shared_ptr<btCollisionShape> m_shape;
+            btTransform m_centerOfMassTransform;
             std::vector<RE::BSFixedString> m_canCollideWithBone;
             std::vector<RE::BSFixedString> m_noCollideWithBone;
-            btTransform m_centerOfMassTransform;
+            std::shared_ptr<btCollisionShape> m_shape;
             float m_marginMultipler{};
             float m_gravityFactor{1.0f};
             float m_windFactor{1.0f};
@@ -207,7 +209,7 @@ namespace hdt
         std::unordered_map<RE::BSFixedString, RE::BSFixedString> m_renameMap;
 
         [[nodiscard]] auto findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*;
-        auto getOrCreateBone(const RE::BSFixedString& name) -> SkyrimBone*;
+        auto getOrCreateBone(const RE::BSFixedString& name) -> RE::BSTSmartPointer<SkyrimBone>;
 
         std::string m_filePath;
 
@@ -238,7 +240,7 @@ namespace hdt
         auto getConeTwistConstraintTemplate(const RE::BSFixedString& name) -> const ConeTwistConstraintTemplate&;
 
         auto createBoneFromNodeName(const RE::BSFixedString& bodyName, const RE::BSFixedString& templateName = "",
-                                    bool readTemplate = false) -> SkyrimBone*;
+                                    bool readTemplate = false) -> RE::BSTSmartPointer<SkyrimBone>;
         auto readOrUpdateBone() -> void;
         auto readPerVertexShape(DefaultBBP::NameMap_t meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readPerTriangleShape(DefaultBBP::NameMap_t* meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;

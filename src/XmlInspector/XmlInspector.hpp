@@ -109,7 +109,7 @@ namespace Xml
         /**
             @brief White space between markup.
         */
-        Whitespace
+        Whitespace,
     };
 
     /**
@@ -263,7 +263,7 @@ namespace Xml
             @brief Prefix 'xml' is reserved for use by the XML and has a fixed
                 namespace URI http://www.w3.org/XML/1998/namespace.
         */
-        InvalidXmlPrefixDeclaration
+        InvalidXmlPrefixDeclaration,
     };
 
     /**
@@ -279,7 +279,7 @@ namespace Xml
         /**
             @brief Attribute is delimited by a double-quote characters (for example <tt>&lt;a name="value"&gt;</tt> ).
         */
-        DoubleQuote
+        DoubleQuote,
     };
 
     /**
@@ -375,7 +375,7 @@ namespace Xml
             Utf16BE,
             Utf16LE,
             Utf32BE,
-            Utf32LE
+            Utf32LE,
         };
 
         auto ReadBom(std::istream* inputStream) -> Bom;
@@ -558,18 +558,22 @@ namespace Xml
         static constexpr std::array<uint8_t, 3> UpperXml{0x58, 0x4D, 0x4C}; // "XML"
         static constexpr std::array<uint8_t, 5> Xmlns{0x78, 0x6D, 0x6C, 0x6E, 0x73}; // "xmlns"
         static constexpr std::array<uint8_t, 36> XmlUri{
-            0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E, 0x77, 0x33,
-            0x2E, 0x6F, 0x72, 0x67, 0x2F, 0x58, 0x4D, 0x4C, 0x2F, 0x31, 0x39, 0x39, 0x38,
-            0x2F, 0x6E, 0x61, 0x6D, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65}; // "http://www.w3.org/XML/1998/namespace"
+            0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E, 0x77, 0x33, 0x2E, 0x6F, 0x72, 0x67, 0x2F,
+            0x58, 0x4D, 0x4C, 0x2F, 0x31, 0x39, 0x39, 0x38, 0x2F, 0x6E, 0x61, 0x6D, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65,
+        }; // "http://www.w3.org/XML/1998/namespace"
         static constexpr std::array<uint8_t, 29> XmlnsUri{
             0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E, 0x77, 0x33, 0x2E, 0x6F,
-            0x72, 0x67, 0x2F, 0x32, 0x30, 0x30, 0x30, 0x2F, 0x78, 0x6D, 0x6C, 0x6E, 0x73, 0x2F}; // "http://www.w3.org/2000/xmlns/"
-        static constexpr std::array<uint8_t, 7> XmlDeclarationVersion{0x76, 0x65, 0x72, 0x73,
-                                                                      0x69, 0x6F, 0x6E}; // "version"
-        static constexpr std::array<uint8_t, 8> XmlDeclarationEncoding{0x65, 0x6E, 0x63, 0x6F,
-                                                                       0x64, 0x69, 0x6E, 0x67}; // "encoding"
-        static constexpr std::array<uint8_t, 10> XmlDeclarationStandalone{0x73, 0x74, 0x61, 0x6E, 0x64,
-                                                                          0x61, 0x6C, 0x6F, 0x6E, 0x65}; // "standalone"
+            0x72, 0x67, 0x2F, 0x32, 0x30, 0x30, 0x30, 0x2F, 0x78, 0x6D, 0x6C, 0x6E, 0x73, 0x2F,
+        }; // "http://www.w3.org/2000/xmlns/"
+        static constexpr std::array<uint8_t, 7> XmlDeclarationVersion{
+            0x76, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E,
+        }; // "version"
+        static constexpr std::array<uint8_t, 8> XmlDeclarationEncoding{
+            0x65, 0x6E, 0x63, 0x6F, 0x64, 0x69, 0x6E, 0x67,
+        }; // "encoding"
+        static constexpr std::array<uint8_t, 10> XmlDeclarationStandalone{
+            0x73, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x6C, 0x6F, 0x6E, 0x65,
+        }; // "standalone"
         static constexpr std::array<uint8_t, 3> Yes{0x79, 0x65, 0x73}; // "yes"
         static constexpr std::array<uint8_t, 2> No{0x6E, 0x6F}; // "no"
         static constexpr std::array<uint8_t, 5> CDATA{0x43, 0x44, 0x41, 0x54, 0x41}; // "CDATA"
@@ -596,7 +600,8 @@ namespace Xml
             0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7,
             0xD8, 0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF, 0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9,
             0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB,
-            0xFC, 0xFD, 0xFE, 0xFF};
+            0xFC, 0xFD, 0xFE, 0xFF,
+        };
 
         // Source types.
         static constexpr int SourceNone = 0; // Inspector() constructor.
@@ -611,47 +616,47 @@ namespace Xml
         static constexpr StringSizeType PrefixReserve = 15;
         static constexpr StringSizeType NamespaceUriReserve = 63;
 
-        SizeType row;
-        SizeType column;
-        SizeType currentRow;
-        SizeType currentColumn;
-        Inspected node;
-        ErrorCode err;
-        const char* errMsg;
+        SizeType row{0};
+        SizeType column{0};
+        SizeType currentRow{0};
+        SizeType currentColumn{0};
+        Inspected node{Inspected::None};
+        ErrorCode err{ErrorCode::None};
+        const char* errMsg{nullptr};
         std::string fPath;
         std::ifstream fileStream;
-        std::istream* inputStreamPtr;
-        Encoding::CharactersReader* reader;
-        int sourceType;
-        bool afterBom;
-        Details::Bom bom;
-        StringType name;
-        StringType value;
-        StringType localName;
-        StringType prefix;
-        StringType namespaceUri;
-        StringType entityName;
-        std::u32string comparingName;
-        SizeType entityNameCharCount;
-        char32_t currentCharacter;
-        char32_t bufferedCharacter;
-        bool foundElement;
-        bool foundDOCTYPE;
-        bool eof;
-        StringType lowerXmlString;
-        StringType xmlnsString;
-        StringType xmlUriString;
-        StringType xmlnsUriString;
+        std::istream* inputStreamPtr{nullptr};
+        Encoding::CharactersReader* reader{nullptr};
+        int sourceType{SourceNone};
+        bool afterBom{false};
+        Details::Bom bom{Details::Bom::None};
+        StringType name{};
+        StringType value{};
+        StringType localName{};
+        StringType prefix{};
+        StringType namespaceUri{};
+        StringType entityName{};
+        std::u32string comparingName{};
+        SizeType entityNameCharCount{0};
+        char32_t currentCharacter{0};
+        char32_t bufferedCharacter{0};
+        bool foundElement{false};
+        bool foundDOCTYPE{false};
+        bool eof{false};
+        StringType lowerXmlString{};
+        StringType xmlnsString{};
+        StringType xmlUriString{};
+        StringType xmlnsUriString{};
         // Instead of removing objects from collection I decrement size.
         // It's a fake size, but I don't want to
         // allocate strings in objects after each element node and each XML document.
         // To clear these collections you can call Inspector::Clear method.
         std::deque<AttributeType> attributes;
-        AttributesSizeType attributesSize;
+        AttributesSizeType attributesSize{0};
         std::deque<UnclosedTagType> unclosedTags;
-        UnclosedTagsSizeType unclosedTagsSize;
+        UnclosedTagsSizeType unclosedTagsSize{0};
         std::deque<NamespaceDeclarationType> namespaces;
-        NamespacesSizeType namespacesSize;
+        NamespacesSizeType namespacesSize{0};
 
         // We don't need to check carriage return
         // while NextCharBad method removes them for us.
@@ -776,9 +781,9 @@ namespace Xml
 
         auto NewNamespace() -> NamespaceDeclarationType&;
 
-        auto CharsetEqual(const char32_t* charset) -> bool;
+        auto CharsetEqual(std::span<const unsigned char> charset, const size_t len) -> bool;
 
-        auto CharsetEqual(const unsigned char* charset, std::size_t len) -> bool;
+        auto CharsetEqual(std::span<const char32_t> charset) -> bool;
 
         auto InitStrings() -> void;
 
@@ -1053,55 +1058,31 @@ namespace Xml
     template <typename TCharactersWriter>
     inline auto Inspector<TCharactersWriter>::IsWhiteSpace(const char32_t codePoint) -> bool
     {
-        return (codePoint == 0x20 || codePoint == 0x0A || codePoint == 0x09);
+        return codePoint == 0x20 || codePoint == 0x0A || codePoint == 0x09;
     }
 
     template <typename TCharactersWriter>
-    inline Inspector<TCharactersWriter>::Inspector() :
-        row(0), column(0), currentRow(0), currentColumn(0), node(Inspected::None), err(ErrorCode::None),
-        errMsg(nullptr), fPath(), fileStream(), inputStreamPtr(nullptr), reader(nullptr), sourceType(SourceNone),
-        afterBom(false), bom(Details::Bom::None), name(), value(), localName(), prefix(), namespaceUri(), entityName(),
-        comparingName(), entityNameCharCount(0), currentCharacter(0), bufferedCharacter(0), foundElement(false),
-        foundDOCTYPE(false), eof(false), lowerXmlString(), xmlnsString(), xmlUriString(), xmlnsUriString(),
-        attributes(), attributesSize(0), unclosedTags(), unclosedTagsSize(0), namespaces(), namespacesSize(0)
+    inline Inspector<TCharactersWriter>::Inspector()
     {
         InitStrings();
     }
 
     template <typename TCharactersWriter>
-    inline Inspector<TCharactersWriter>::Inspector(const char* filePath) :
-        row(0), column(0), currentRow(0), currentColumn(0), node(Inspected::None), err(ErrorCode::None),
-        errMsg(nullptr), fPath(), fileStream(), inputStreamPtr(nullptr), reader(nullptr), sourceType(SourceNone),
-        afterBom(false), bom(Details::Bom::None), name(), value(), localName(), prefix(), namespaceUri(), entityName(),
-        comparingName(), entityNameCharCount(0), currentCharacter(0), bufferedCharacter(0), foundElement(false),
-        foundDOCTYPE(false), eof(false), lowerXmlString(), xmlnsString(), xmlUriString(), xmlnsUriString(),
-        attributes(), attributesSize(0), unclosedTags(), unclosedTagsSize(0), namespaces(), namespacesSize(0)
+    inline Inspector<TCharactersWriter>::Inspector(const char* filePath)
     {
         InitStrings();
         Reset(filePath);
     }
 
     template <typename TCharactersWriter>
-    inline Inspector<TCharactersWriter>::Inspector(const std::string& filePath) :
-        row(0), column(0), currentRow(0), currentColumn(0), node(Inspected::None), err(ErrorCode::None),
-        errMsg(nullptr), fPath(), fileStream(), inputStreamPtr(nullptr), reader(nullptr), sourceType(SourceNone),
-        afterBom(false), bom(Details::Bom::None), name(), value(), localName(), prefix(), namespaceUri(), entityName(),
-        comparingName(), entityNameCharCount(0), currentCharacter(0), bufferedCharacter(0), foundElement(false),
-        foundDOCTYPE(false), eof(false), lowerXmlString(), xmlnsString(), xmlUriString(), xmlnsUriString(),
-        attributes(), attributesSize(0), unclosedTags(), unclosedTagsSize(0), namespaces(), namespacesSize(0)
+    inline Inspector<TCharactersWriter>::Inspector(const std::string& filePath)
     {
         InitStrings();
         Reset(filePath);
     }
 
     template <typename TCharactersWriter>
-    inline Inspector<TCharactersWriter>::Inspector(std::istream* inputStream) :
-        row(0), column(0), currentRow(0), currentColumn(0), node(Inspected::None), err(ErrorCode::None),
-        errMsg(nullptr), fPath(), fileStream(), inputStreamPtr(nullptr), reader(nullptr), sourceType(SourceNone),
-        afterBom(false), bom(Details::Bom::None), name(), value(), localName(), prefix(), namespaceUri(), entityName(),
-        comparingName(), entityNameCharCount(0), currentCharacter(0), bufferedCharacter(0), foundElement(false),
-        foundDOCTYPE(false), eof(false), lowerXmlString(), xmlnsString(), xmlUriString(), xmlnsUriString(),
-        attributes(), attributesSize(0), unclosedTags(), unclosedTagsSize(0), namespaces(), namespacesSize(0)
+    inline Inspector<TCharactersWriter>::Inspector(std::istream* inputStream)
     {
         InitStrings();
         Reset(inputStream);
@@ -1109,26 +1090,14 @@ namespace Xml
 
     template <typename TCharactersWriter>
     template <typename TInputIterator>
-    inline Inspector<TCharactersWriter>::Inspector(TInputIterator first, TInputIterator last) :
-        row(0), column(0), currentRow(0), currentColumn(0), node(Inspected::None), err(ErrorCode::None),
-        errMsg(nullptr), fPath(), fileStream(), inputStreamPtr(nullptr), reader(nullptr), sourceType(SourceNone),
-        afterBom(false), bom(Details::Bom::None), name(), value(), localName(), prefix(), namespaceUri(), entityName(),
-        comparingName(), entityNameCharCount(0), currentCharacter(0), bufferedCharacter(0), foundElement(false),
-        foundDOCTYPE(false), eof(false), lowerXmlString(), xmlnsString(), xmlUriString(), xmlnsUriString(),
-        attributes(), attributesSize(0), unclosedTags(), unclosedTagsSize(0), namespaces(), namespacesSize(0)
+    inline Inspector<TCharactersWriter>::Inspector(TInputIterator first, TInputIterator last)
     {
         InitStrings();
         Reset(first, last);
     }
 
     template <typename TCharactersWriter>
-    inline Inspector<TCharactersWriter>::Inspector(Encoding::CharactersReader* reader) :
-        row(0), column(0), currentRow(0), currentColumn(0), node(Inspected::None), err(ErrorCode::None),
-        errMsg(nullptr), fPath(), fileStream(), inputStreamPtr(nullptr), reader(nullptr), sourceType(SourceNone),
-        afterBom(false), bom(Details::Bom::None), name(), value(), localName(), prefix(), namespaceUri(), entityName(),
-        comparingName(), entityNameCharCount(0), currentCharacter(0), bufferedCharacter(0), foundElement(false),
-        foundDOCTYPE(false), eof(false), lowerXmlString(), xmlnsString(), xmlUriString(), xmlnsUriString(),
-        attributes(), attributesSize(0), unclosedTags(), unclosedTagsSize(0), namespaces(), namespacesSize(0)
+    inline Inspector<TCharactersWriter>::Inspector(Encoding::CharactersReader* reader)
     {
         InitStrings();
         Reset(reader);
@@ -1271,7 +1240,7 @@ namespace Xml
                 err = ErrorCode::None;
                 afterBom = true;
                 bom = tempBom;
-                eof = ((fileStream.rdstate() & std::istream::eofbit) != 0);
+                eof = (fileStream.rdstate() & std::istream::eofbit) != 0;
                 return;
             }
 
@@ -1288,7 +1257,7 @@ namespace Xml
                 fileStream.close();
                 fileStream.clear();
                 SetError(ErrorCode::InvalidByteSequence);
-                eof = ((fileStream.rdstate() & std::istream::eofbit) != 0);
+                eof = (fileStream.rdstate() & std::istream::eofbit) != 0;
                 return;
             }
 
@@ -1366,7 +1335,7 @@ namespace Xml
                 err = ErrorCode::None;
                 afterBom = true;
                 bom = tempBom;
-                eof = ((inputStreamPtr->rdstate() & std::istream::eofbit) != 0);
+                eof = (inputStreamPtr->rdstate() & std::istream::eofbit) != 0;
                 return;
             }
 
@@ -1379,7 +1348,7 @@ namespace Xml
             if (tempBom == Details::Bom::Invalid)
             {
                 SetError(ErrorCode::InvalidByteSequence);
-                eof = ((inputStreamPtr->rdstate() & std::istream::eofbit) != 0);
+                eof = (inputStreamPtr->rdstate() & std::istream::eofbit) != 0;
                 return;
             }
 
@@ -3898,7 +3867,7 @@ namespace Xml
         NamespaceIter namespaceLast = namespaces.begin();
         if (namespacesSize != 0)
         {
-            namespaceLast += (namespacesSize - 1);
+            namespaceLast += namespacesSize - 1;
         }
         for (AttrIter attr = attributes.begin(); attr != attrEnd; ++attr)
         {
@@ -5164,10 +5133,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsUtf8Charset() -> bool
     {
         // UTF-8
-        static const unsigned char c1[5] = {0x55, 0x54, 0x46, 0x2D, 0x38};
+        static constexpr std::array<unsigned char, 5> c1 = {0x55, 0x54, 0x46, 0x2D, 0x38};
         // csUTF8
-        static const unsigned char c2[6] = {0x63, 0x73, 0x55, 0x54, 0x46, 0x38};
-        return (CharsetEqual(c1, 5) || CharsetEqual(c2, 6));
+        static constexpr std::array<unsigned char, 6> c2 = {0x63, 0x73, 0x55, 0x54, 0x46, 0x38};
+        return CharsetEqual(c1, 5) || CharsetEqual(c2, 6);
         /*
         return (
             CharsetEqual(U"UTF-8") ||
@@ -5179,10 +5148,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsUtf16Charset() -> bool
     {
         // UTF-16
-        static const unsigned char c1[6] = {0x55, 0x54, 0x46, 0x2D, 0x31, 0x36};
+        static constexpr std::array<unsigned char, 6> c1 = {0x55, 0x54, 0x46, 0x2D, 0x31, 0x36};
         // csUTF16
-        static const unsigned char c2[7] = {0x63, 0x73, 0x55, 0x54, 0x46, 0x31, 0x36};
-        return (CharsetEqual(c1, 6) || CharsetEqual(c2, 7));
+        static constexpr std::array<unsigned char, 7> c2 = {0x63, 0x73, 0x55, 0x54, 0x46, 0x31, 0x36};
+        return CharsetEqual(c1, 6) || CharsetEqual(c2, 7);
         /*
         return (
             CharsetEqual(U"UTF-16") ||
@@ -5194,10 +5163,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsUtf16BECharset() -> bool
     {
         // UTF-16BE
-        static const unsigned char c1[8] = {0x55, 0x54, 0x46, 0x2D, 0x31, 0x36, 0x42, 0x45};
+        static constexpr std::array<unsigned char, 8> c1 = {0x55, 0x54, 0x46, 0x2D, 0x31, 0x36, 0x42, 0x45};
         // csUTF16BE
-        static const unsigned char c2[9] = {0x63, 0x73, 0x55, 0x54, 0x46, 0x31, 0x36, 0x42, 0x45};
-        return (CharsetEqual(c1, 8) || CharsetEqual(c2, 9));
+        static constexpr std::array<unsigned char, 9> c2 = {0x63, 0x73, 0x55, 0x54, 0x46, 0x31, 0x36, 0x42, 0x45};
+        return CharsetEqual(c1, 8) || CharsetEqual(c2, 9);
         /*
         return (
             CharsetEqual(U"UTF-16BE") ||
@@ -5209,10 +5178,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsUtf16LECharset() -> bool
     {
         // UTF-16LE
-        static const unsigned char c1[8] = {0x55, 0x54, 0x46, 0x2D, 0x31, 0x36, 0x4C, 0x45};
+        static constexpr std::array<unsigned char, 8> c1 = {0x55, 0x54, 0x46, 0x2D, 0x31, 0x36, 0x4C, 0x45};
         // csUTF16LE
-        static const unsigned char c2[9] = {0x63, 0x73, 0x55, 0x54, 0x46, 0x31, 0x36, 0x4C, 0x45};
-        return (CharsetEqual(c1, 8) || CharsetEqual(c2, 9));
+        static constexpr std::array<unsigned char, 9> c2 = {0x63, 0x73, 0x55, 0x54, 0x46, 0x31, 0x36, 0x4C, 0x45};
+        return CharsetEqual(c1, 8) || CharsetEqual(c2, 9);
         /*
         return (
             CharsetEqual(U"UTF-16LE") ||
@@ -5224,10 +5193,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsUtf32Charset() -> bool
     {
         // UTF-32
-        static const unsigned char c1[6] = {0x55, 0x54, 0x46, 0x2D, 0x33, 0x32};
+        static constexpr std::array<unsigned char, 6> c1 = {0x55, 0x54, 0x46, 0x2D, 0x33, 0x32};
         // csUTF32
-        static const unsigned char c2[7] = {0x63, 0x73, 0x55, 0x54, 0x46, 0x33, 0x32};
-        return (CharsetEqual(c1, 6) || CharsetEqual(c2, 7));
+        static constexpr std::array<unsigned char, 7> c2 = {0x63, 0x73, 0x55, 0x54, 0x46, 0x33, 0x32};
+        return CharsetEqual(c1, 6) || CharsetEqual(c2, 7);
         /*
         return (
             CharsetEqual(U"UTF-32") ||
@@ -5239,10 +5208,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsUtf32BECharset() -> bool
     {
         // UTF-32BE
-        static const unsigned char c1[8] = {0x55, 0x54, 0x46, 0x2D, 0x33, 0x32, 0x42, 0x45};
+        static constexpr std::array<unsigned char, 8> c1 = {0x55, 0x54, 0x46, 0x2D, 0x33, 0x32, 0x42, 0x45};
         // csUTF32BE
-        static const unsigned char c2[9] = {0x63, 0x73, 0x55, 0x54, 0x46, 0x33, 0x32, 0x42, 0x45};
-        return (CharsetEqual(c1, 8) || CharsetEqual(c2, 9));
+        static constexpr std::array<unsigned char, 9> c2 = {0x63, 0x73, 0x55, 0x54, 0x46, 0x33, 0x32, 0x42, 0x45};
+        return CharsetEqual(c1, 8) || CharsetEqual(c2, 9);
         /*
         return (
             CharsetEqual(U"UTF-32BE") ||
@@ -5254,10 +5223,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsUtf32LECharset() -> bool
     {
         // UTF-32LE
-        static const unsigned char c1[8] = {0x55, 0x54, 0x46, 0x2D, 0x33, 0x32, 0x4C, 0x45};
+        static constexpr std::array<unsigned char, 8> c1 = {0x55, 0x54, 0x46, 0x2D, 0x33, 0x32, 0x4C, 0x45};
         // csUTF32LE
-        static const unsigned char c2[9] = {0x63, 0x73, 0x55, 0x54, 0x46, 0x33, 0x32, 0x4C, 0x45};
-        return (CharsetEqual(c1, 8) || CharsetEqual(c2, 9));
+        static constexpr std::array<unsigned char, 9> c2 = {0x63, 0x73, 0x55, 0x54, 0x46, 0x33, 0x32, 0x4C, 0x45};
+        return CharsetEqual(c1, 8) || CharsetEqual(c2, 9);
         /*
         return (
             CharsetEqual(U"UTF-32LE") ||
@@ -5269,23 +5238,28 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_1_Charset() -> bool
     {
         // ISO-8859-1
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x31};
         // iso-ir-100
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x30, 0x30};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x30, 0x30};
         // ISO_8859-1
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x31};
         // latin1
-        static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x31};
+        static constexpr std::array<unsigned char, 6> c4 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x31};
         // l1
-        static constexpr unsigned char c5[2] = {0x6C, 0x31};
+        static constexpr std::array<unsigned char, 2> c5 = {0x6C, 0x31};
         // IBM819
-        static const unsigned char c6[6] = {0x49, 0x42, 0x4D, 0x38, 0x31, 0x39};
+        static constexpr std::array<unsigned char, 6> c6 = {0x49, 0x42, 0x4D, 0x38, 0x31, 0x39};
         // CP819
-        static const unsigned char c7[5] = {0x43, 0x50, 0x38, 0x31, 0x39};
+        static constexpr std::array<unsigned char, 5> c7 = {0x43, 0x50, 0x38, 0x31, 0x39};
         // csISOLatin1
-        static const unsigned char c8[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x31};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
-                CharsetEqual(c5, 2) || CharsetEqual(c6, 6) || CharsetEqual(c7, 5) || CharsetEqual(c8, 11));
+        static constexpr std::array<unsigned char, 11> c8 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C,
+                                                             0x61, 0x74, 0x69, 0x6E, 0x31};
+
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
+            CharsetEqual(c5, 2) || CharsetEqual(c6, 6) || CharsetEqual(c7, 5) || CharsetEqual(c8, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-1") ||
@@ -5303,19 +5277,24 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_2_Charset() -> bool
     {
         // ISO-8859-2
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x32};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x32};
         // iso-ir-101
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x30, 0x31};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x30, 0x31};
         // ISO_8859-2
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x32};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x32};
         // latin2
-        static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x32};
+        static constexpr std::array<unsigned char, 6> c4 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x32};
         // l2
-        static constexpr unsigned char c5[2] = {0x6C, 0x32};
+        static constexpr std::array<unsigned char, 2> c5 = {0x6C, 0x32};
         // csISOLatin2
-        static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x32};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
-                CharsetEqual(c5, 2) || CharsetEqual(c6, 11));
+        static constexpr std::array<unsigned char, 11> c6 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C,
+                                                             0x61, 0x74, 0x69, 0x6E, 0x32};
+
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
+            CharsetEqual(c5, 2) || CharsetEqual(c6, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-2") ||
@@ -5331,19 +5310,24 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_3_Charset() -> bool
     {
         // ISO-8859-3
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x33};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x33};
         // iso-ir-109
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x30, 0x39};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x30, 0x39};
         // ISO_8859-3
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x33};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x33};
         // latin3
-        static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x33};
+        static constexpr std::array<unsigned char, 6> c4 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x33};
         // l3
-        static constexpr unsigned char c5[2] = {0x6C, 0x33};
+        static constexpr std::array<unsigned char, 2> c5 = {0x6C, 0x33};
         // csISOLatin3
-        static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x33};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
-                CharsetEqual(c5, 2) || CharsetEqual(c6, 11));
+        static constexpr std::array<unsigned char, 11> c6 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C,
+                                                             0x61, 0x74, 0x69, 0x6E, 0x33};
+
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
+            CharsetEqual(c5, 2) || CharsetEqual(c6, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-3") ||
@@ -5359,19 +5343,24 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_4_Charset() -> bool
     {
         // ISO-8859-4
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x34};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x34};
         // iso-ir-110
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x31, 0x30};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x31, 0x30};
         // ISO_8859-4
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x34};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x34};
         // latin4
-        static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x34};
+        static constexpr std::array<unsigned char, 6> c4 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x34};
         // l4
-        static constexpr unsigned char c5[2] = {0x6C, 0x34};
+        static constexpr std::array<unsigned char, 2> c5 = {0x6C, 0x34};
         // csISOLatin4
-        static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x34};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
-                CharsetEqual(c5, 2) || CharsetEqual(c6, 11));
+        static constexpr std::array<unsigned char, 11> c6 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C,
+                                                             0x61, 0x74, 0x69, 0x6E, 0x34};
+
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
+            CharsetEqual(c5, 2) || CharsetEqual(c6, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-4") ||
@@ -5387,18 +5376,22 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_5_Charset() -> bool
     {
         // ISO-8859-5
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x35};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x35};
         // iso-ir-144
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x34, 0x34};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x34, 0x34};
         // ISO_8859-5
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x35};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x35};
         // cyrillic
-        static const unsigned char c4[8] = {0x63, 0x79, 0x72, 0x69, 0x6C, 0x6C, 0x69, 0x63};
+        static constexpr std::array<unsigned char, 8> c4 = {0x63, 0x79, 0x72, 0x69, 0x6C, 0x6C, 0x69, 0x63};
         // csISOLatinCyrillic
-        static const unsigned char c5[18] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69,
-                                             0x6E, 0x43, 0x79, 0x72, 0x69, 0x6C, 0x6C, 0x69, 0x63};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 8) ||
-                CharsetEqual(c5, 18));
+        static constexpr std::array<unsigned char, 18> c5 = {
+            0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x43, 0x79, 0x72, 0x69, 0x6C, 0x6C, 0x69, 0x63,
+        };
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 8) ||
+            CharsetEqual(c5, 18);
         /*
         return (
             CharsetEqual(U"ISO-8859-5") ||
@@ -5413,22 +5406,26 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_6_Charset() -> bool
     {
         // ISO-8859-6
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x36};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x36};
         // iso-ir-127
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x32, 0x37};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x32, 0x37};
         // ISO_8859-6
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x36};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x36};
         // ECMA-114
-        static const unsigned char c4[8] = {0x45, 0x43, 0x4D, 0x41, 0x2D, 0x31, 0x31, 0x34};
+        static constexpr std::array<unsigned char, 8> c4 = {0x45, 0x43, 0x4D, 0x41, 0x2D, 0x31, 0x31, 0x34};
         // ASMO-708
-        static const unsigned char c5[8] = {0x41, 0x53, 0x4D, 0x4F, 0x2D, 0x37, 0x30, 0x38};
+        static constexpr std::array<unsigned char, 8> c5 = {0x41, 0x53, 0x4D, 0x4F, 0x2D, 0x37, 0x30, 0x38};
         // arabic
-        static const unsigned char c6[6] = {0x61, 0x72, 0x61, 0x62, 0x69, 0x63};
+        static constexpr std::array<unsigned char, 6> c6 = {0x61, 0x72, 0x61, 0x62, 0x69, 0x63};
         // csISOLatinArabic
-        static const unsigned char c7[16] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74,
-                                             0x69, 0x6E, 0x41, 0x72, 0x61, 0x62, 0x69, 0x63};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 8) ||
-                CharsetEqual(c5, 8) || CharsetEqual(c6, 6) || CharsetEqual(c7, 16));
+        static constexpr std::array<unsigned char, 16> c7 = {
+            0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x41, 0x72, 0x61, 0x62, 0x69, 0x63,
+        };
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 8) ||
+            CharsetEqual(c5, 8) || CharsetEqual(c6, 6) || CharsetEqual(c7, 16);
         /*
         return (
             CharsetEqual(U"ISO-8859-6") ||
@@ -5445,24 +5442,28 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_7_Charset() -> bool
     {
         // ISO-8859-7
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x37};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x37};
         // iso-ir-126
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x32, 0x36};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x32, 0x36};
         // ISO_8859-7
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x37};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x37};
         // ELOT_928
-        static const unsigned char c4[8] = {0x45, 0x4C, 0x4F, 0x54, 0x5F, 0x39, 0x32, 0x38};
+        static constexpr std::array<unsigned char, 8> c4 = {0x45, 0x4C, 0x4F, 0x54, 0x5F, 0x39, 0x32, 0x38};
         // ECMA-118
-        static const unsigned char c5[8] = {0x45, 0x43, 0x4D, 0x41, 0x2D, 0x31, 0x31, 0x38};
+        static constexpr std::array<unsigned char, 8> c5 = {0x45, 0x43, 0x4D, 0x41, 0x2D, 0x31, 0x31, 0x38};
         // greek
-        static const unsigned char c6[5] = {0x67, 0x72, 0x65, 0x65, 0x6B};
+        static constexpr std::array<unsigned char, 5> c6 = {0x67, 0x72, 0x65, 0x65, 0x6B};
         // greek8
-        static const unsigned char c7[6] = {0x67, 0x72, 0x65, 0x65, 0x6B, 0x38};
+        static constexpr std::array<unsigned char, 6> c7 = {0x67, 0x72, 0x65, 0x65, 0x6B, 0x38};
         // csISOLatinGreek
-        static const unsigned char c8[15] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74,
-                                             0x69, 0x6E, 0x47, 0x72, 0x65, 0x65, 0x6B};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 8) ||
-                CharsetEqual(c5, 8) || CharsetEqual(c6, 5) || CharsetEqual(c7, 6) || CharsetEqual(c8, 15));
+        static constexpr std::array<unsigned char, 15> c8 = {
+            0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x47, 0x72, 0x65, 0x65, 0x6B,
+        };
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 8) ||
+            CharsetEqual(c5, 8) || CharsetEqual(c6, 5) || CharsetEqual(c7, 6) || CharsetEqual(c8, 15);
         /*
         return (
             CharsetEqual(U"ISO-8859-7") ||
@@ -5480,18 +5481,22 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_8_Charset() -> bool
     {
         // ISO-8859-8
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x38};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x38};
         // iso-ir-138
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x33, 0x38};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x33, 0x38};
         // ISO_8859-8
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x38};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x38};
         // hebrew
-        static const unsigned char c4[6] = {0x68, 0x65, 0x62, 0x72, 0x65, 0x77};
+        static constexpr std::array<unsigned char, 6> c4 = {0x68, 0x65, 0x62, 0x72, 0x65, 0x77};
         // csISOLatinHebrew
-        static const unsigned char c5[16] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74,
-                                             0x69, 0x6E, 0x48, 0x65, 0x62, 0x72, 0x65, 0x77};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
-                CharsetEqual(c5, 16));
+        static constexpr std::array<unsigned char, 16> c5 = {
+            0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x48, 0x65, 0x62, 0x72, 0x65, 0x77,
+        };
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
+            CharsetEqual(c5, 16);
         /*
         return (
             CharsetEqual(U"ISO-8859-8") ||
@@ -5506,19 +5511,23 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_9_Charset() -> bool
     {
         // ISO-8859-9
-        static const unsigned char c1[10] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x39};
+        static constexpr std::array<unsigned char, 10> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x39};
         // iso-ir-148
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x34, 0x38};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x34, 0x38};
         // ISO_8859-9
-        static const unsigned char c3[10] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x39};
+        static constexpr std::array<unsigned char, 10> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x2D, 0x39};
         // latin5
-        static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x35};
+        static constexpr std::array<unsigned char, 6> c4 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x35};
         // l5
-        static constexpr unsigned char c5[2] = {0x6C, 0x35};
+        static constexpr std::array<unsigned char, 2> c5 = {0x6C, 0x35};
         // csISOLatin5
-        static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x35};
-        return (CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
-                CharsetEqual(c5, 2) || CharsetEqual(c6, 11));
+        static constexpr std::array<unsigned char, 11> c6 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C,
+                                                             0x61, 0x74, 0x69, 0x6E, 0x35};
+        return CharsetEqual(c1, 10) || CharsetEqual(c2, 10) || CharsetEqual(c3, 10) || CharsetEqual(c4, 6) ||
+            CharsetEqual(c5, 2) || CharsetEqual(c6, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-9") ||
@@ -5534,19 +5543,23 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_10_Charset() -> bool
     {
         // ISO-8859-10
-        static const unsigned char c1[11] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x30};
+        static constexpr std::array<unsigned char, 11> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x30};
         // iso-ir-157
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x35, 0x37};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x35, 0x37};
         // l6
-        static constexpr unsigned char c3[2] = {0x6C, 0x36};
+        static constexpr std::array<unsigned char, 2> c3 = {0x6C, 0x36};
         // ISO_8859-10
-        static const unsigned char c4[11] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x30};
+        static constexpr std::array<unsigned char, 11> c4 = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x30};
         // csISOLatin6
-        static const unsigned char c5[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C, 0x61, 0x74, 0x69, 0x6E, 0x36};
+        static constexpr std::array<unsigned char, 11> c5 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x4C,
+                                                             0x61, 0x74, 0x69, 0x6E, 0x36};
         // latin6
-        static const unsigned char c6[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x36};
-        return (CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 2) || CharsetEqual(c4, 11) ||
-                CharsetEqual(c5, 11) || CharsetEqual(c6, 6));
+        static constexpr std::array<unsigned char, 6> c6 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x36};
+        return CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 2) || CharsetEqual(c4, 11) ||
+            CharsetEqual(c5, 11) || CharsetEqual(c6, 6);
         /*
         return (
             CharsetEqual(U"ISO-8859-10") ||
@@ -5562,10 +5575,12 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_13_Charset() -> bool
     {
         // ISO-8859-13
-        static const unsigned char c1[11] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x33};
+        static constexpr std::array<unsigned char, 11> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x33};
         // csISO885913
-        static const unsigned char c2[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38, 0x38, 0x35, 0x39, 0x31, 0x33};
-        return (CharsetEqual(c1, 11) || CharsetEqual(c2, 11));
+        static constexpr std::array<unsigned char, 11> c2 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x31, 0x33};
+        return CharsetEqual(c1, 11) || CharsetEqual(c2, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-13") ||
@@ -5577,21 +5592,26 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_14_Charset() -> bool
     {
         // ISO-8859-14
-        static const unsigned char c1[11] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x34};
+        static constexpr std::array<unsigned char, 11> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x34};
         // iso-ir-199
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x31, 0x39, 0x39};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x31, 0x39, 0x39};
         // ISO_8859-14
-        static const unsigned char c3[11] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x34};
+        static constexpr std::array<unsigned char, 11> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x34};
         // latin8
-        static const unsigned char c4[6] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x38};
+        static constexpr std::array<unsigned char, 6> c4 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x38};
         // iso-celtic
-        static const unsigned char c5[10] = {0x69, 0x73, 0x6F, 0x2D, 0x63, 0x65, 0x6C, 0x74, 0x69, 0x63};
+        static constexpr std::array<unsigned char, 10> c5 = {0x69, 0x73, 0x6F, 0x2D, 0x63,
+                                                             0x65, 0x6C, 0x74, 0x69, 0x63};
         // l8
-        static constexpr unsigned char c6[2] = {0x6C, 0x38};
+        static constexpr std::array<unsigned char, 2> c6 = {0x6C, 0x38};
         // csISO885914
-        static const unsigned char c7[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38, 0x38, 0x35, 0x39, 0x31, 0x34};
-        return (CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 11) || CharsetEqual(c4, 6) ||
-                CharsetEqual(c5, 10) || CharsetEqual(c6, 2) || CharsetEqual(c7, 11));
+        static constexpr std::array<unsigned char, 11> c7 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x31, 0x34};
+        return CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 11) || CharsetEqual(c4, 6) ||
+            CharsetEqual(c5, 10) || CharsetEqual(c6, 2) || CharsetEqual(c7, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-14") ||
@@ -5608,14 +5628,17 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_15_Charset() -> bool
     {
         // ISO-8859-15
-        static const unsigned char c1[11] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x35};
+        static constexpr std::array<unsigned char, 11> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x35};
         // ISO_8859-15
-        static const unsigned char c2[11] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x35};
+        static constexpr std::array<unsigned char, 11> c2 = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x35};
         // Latin-9
-        static const unsigned char c3[7] = {0x4C, 0x61, 0x74, 0x69, 0x6E, 0x2D, 0x39};
+        static constexpr std::array<unsigned char, 7> c3 = {0x4C, 0x61, 0x74, 0x69, 0x6E, 0x2D, 0x39};
         // csISO885915
-        static const unsigned char c4[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38, 0x38, 0x35, 0x39, 0x31, 0x35};
-        return (CharsetEqual(c1, 11) || CharsetEqual(c2, 11) || CharsetEqual(c3, 7) || CharsetEqual(c4, 11));
+        static constexpr std::array<unsigned char, 11> c4 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x31, 0x35};
+        return CharsetEqual(c1, 11) || CharsetEqual(c2, 11) || CharsetEqual(c3, 7) || CharsetEqual(c4, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-15") ||
@@ -5629,19 +5652,23 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsISO_8859_16_Charset() -> bool
     {
         // ISO-8859-16
-        static const unsigned char c1[11] = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x36};
+        static constexpr std::array<unsigned char, 11> c1 = {0x49, 0x53, 0x4F, 0x2D, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x36};
         // iso-ir-226
-        static const unsigned char c2[10] = {0x69, 0x73, 0x6F, 0x2D, 0x69, 0x72, 0x2D, 0x32, 0x32, 0x36};
+        static constexpr std::array<unsigned char, 10> c2 = {0x69, 0x73, 0x6F, 0x2D, 0x69,
+                                                             0x72, 0x2D, 0x32, 0x32, 0x36};
         // ISO_8859-16
-        static const unsigned char c3[11] = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38, 0x35, 0x39, 0x2D, 0x31, 0x36};
+        static constexpr std::array<unsigned char, 11> c3 = {0x49, 0x53, 0x4F, 0x5F, 0x38, 0x38,
+                                                             0x35, 0x39, 0x2D, 0x31, 0x36};
         // latin10
-        static const unsigned char c4[7] = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x31, 0x30};
+        static constexpr std::array<unsigned char, 7> c4 = {0x6C, 0x61, 0x74, 0x69, 0x6E, 0x31, 0x30};
         // l10
-        static constexpr unsigned char c5[3] = {0x6C, 0x31, 0x30};
+        static constexpr std::array<unsigned char, 3> c5 = {0x6C, 0x31, 0x30};
         // csISO885916
-        static const unsigned char c6[11] = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38, 0x38, 0x35, 0x39, 0x31, 0x36};
-        return (CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 11) || CharsetEqual(c4, 7) ||
-                CharsetEqual(c5, 3) || CharsetEqual(c6, 11));
+        static constexpr std::array<unsigned char, 11> c6 = {0x63, 0x73, 0x49, 0x53, 0x4F, 0x38,
+                                                             0x38, 0x35, 0x39, 0x31, 0x36};
+        return CharsetEqual(c1, 11) || CharsetEqual(c2, 10) || CharsetEqual(c3, 11) || CharsetEqual(c4, 7) ||
+            CharsetEqual(c5, 3) || CharsetEqual(c6, 11);
         /*
         return (
             CharsetEqual(U"ISO-8859-16") ||
@@ -5657,10 +5684,10 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsTIS620Charset() -> bool
     {
         // TIS-620
-        static const unsigned char c1[7] = {0x54, 0x49, 0x53, 0x2D, 0x36, 0x32, 0x30};
+        static constexpr std::array<unsigned char, 7> c1 = {0x54, 0x49, 0x53, 0x2D, 0x36, 0x32, 0x30};
         // csTIS620
-        static const unsigned char c2[8] = {0x63, 0x73, 0x54, 0x49, 0x53, 0x36, 0x32, 0x30};
-        return (CharsetEqual(c1, 7) || CharsetEqual(c2, 8));
+        static constexpr std::array<unsigned char, 8> c2 = {0x63, 0x73, 0x54, 0x49, 0x53, 0x36, 0x32, 0x30};
+        return CharsetEqual(c1, 7) || CharsetEqual(c2, 8);
         /*
         return (
             CharsetEqual(U"TIS-620") ||
@@ -5672,10 +5699,12 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows874Charset() -> bool
     {
         // windows-874
-        static const unsigned char c1[11] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x38, 0x37, 0x34};
+        static constexpr std::array<unsigned char, 11> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x38, 0x37, 0x34};
         // cswindows874
-        static const unsigned char c2[12] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x38, 0x37, 0x34};
-        return (CharsetEqual(c1, 11) || CharsetEqual(c2, 12));
+        static constexpr std::array<unsigned char, 12> c2 = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64,
+                                                             0x6F, 0x77, 0x73, 0x38, 0x37, 0x34};
+        return CharsetEqual(c1, 11) || CharsetEqual(c2, 12);
         /*
         return (
             CharsetEqual(U"windows-874") ||
@@ -5687,11 +5716,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1250Charset() -> bool
     {
         // windows-1250
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x30};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x30};
         // cswindows1250
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x30};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x30,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1250") ||
@@ -5703,11 +5734,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1251Charset() -> bool
     {
         // windows-1251
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x31};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x31};
         // cswindows1251
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x31};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x31,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1251") ||
@@ -5719,11 +5752,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1252Charset() -> bool
     {
         // windows-1252
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x32};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x32};
         // cswindows1252
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x32};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x32,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1252") ||
@@ -5735,11 +5770,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1253Charset() -> bool
     {
         // windows-1253
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x33};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x33};
         // cswindows1253
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x33};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x33,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1253") ||
@@ -5751,11 +5788,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1254Charset() -> bool
     {
         // windows-1254
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x34};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x34};
         // cswindows1254
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x34};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x34,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1254") ||
@@ -5767,11 +5806,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1255Charset() -> bool
     {
         // windows-1255
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x35};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x35};
         // cswindows1255
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x35};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x35,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1255") ||
@@ -5783,11 +5824,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1256Charset() -> bool
     {
         // windows-1256
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x36};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x36};
         // cswindows1256
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x36};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x36,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1256") ||
@@ -5799,11 +5842,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1257Charset() -> bool
     {
         // windows-1257
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x37};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x37};
         // cswindows1257
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x37};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x37,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1257") ||
@@ -5815,11 +5860,13 @@ namespace Xml
     inline auto Inspector<TCharactersWriter>::IsWindows1258Charset() -> bool
     {
         // windows-1258
-        static const unsigned char c1[12] = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x2D, 0x31, 0x32, 0x35, 0x38};
+        static constexpr std::array<unsigned char, 12> c1 = {0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77,
+                                                             0x73, 0x2D, 0x31, 0x32, 0x35, 0x38};
         // cswindows1258
-        static const unsigned char c2[13] = {0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F,
-                                             0x77, 0x73, 0x31, 0x32, 0x35, 0x38};
-        return (CharsetEqual(c1, 12) || CharsetEqual(c2, 13));
+        static constexpr std::array<unsigned char, 13> c2 = {
+            0x63, 0x73, 0x77, 0x69, 0x6E, 0x64, 0x6F, 0x77, 0x73, 0x31, 0x32, 0x35, 0x38,
+        };
+        return CharsetEqual(c1, 12) || CharsetEqual(c2, 13);
         /*
         return (
             CharsetEqual(U"windows-1258") ||
@@ -5908,15 +5955,31 @@ namespace Xml
     }
 
     template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::CharsetEqual(const char32_t* charset) -> bool
+    inline auto Inspector<TCharactersWriter>::CharsetEqual(std::span<const unsigned char> charset, const size_t len)
+        -> bool
     {
-        std::size_t length = 0;
-        const char32_t* pt = charset;
-        while (*pt != 0)
+        // comparingName contains encoding name.
+        if (len != comparingName.size())
         {
-            ++length;
-            ++pt;
+            return false;
         }
+
+        for (std::size_t i = 0; i < len; ++i)
+        {
+            if (ToLower[static_cast<unsigned char>(comparingName[i])] != ToLower[charset[i]])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    template <typename TCharactersWriter>
+    inline auto Inspector<TCharactersWriter>::CharsetEqual(std::span<const char32_t> charset) -> bool
+    {
+        auto length = charset.size();
 
         // comparingName contains encoding name.
         if (length != comparingName.size())
@@ -5928,26 +5991,6 @@ namespace Xml
         {
             if (ToLower[static_cast<unsigned char>(comparingName[i])] !=
                 ToLower[static_cast<unsigned char>(charset[i])])
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    template <typename TCharactersWriter>
-    inline auto Inspector<TCharactersWriter>::CharsetEqual(const unsigned char* charset, const std::size_t len) -> bool
-    {
-        // comparingName contains encoding name.
-        if (len != comparingName.size())
-        {
-            return false;
-        }
-
-        for (std::size_t i = 0; i < len; ++i)
-        {
-            if (ToLower[static_cast<unsigned char>(comparingName[i])] != ToLower[charset[i]])
             {
                 return false;
             }
@@ -6268,11 +6311,10 @@ namespace Xml
                             column = tempColumn;
                             return false;
                         }
-                        else // White spaces followed by invalid character or stream error.
-                        {
-                            // Error is set already.
-                            return false;
-                        }
+                        // White spaces followed by invalid character or stream error.
+
+                        // Error is set already.
+                        return false;
                     }
                 }
                 while (IsWhiteSpace(currentCharacter));
@@ -6326,16 +6368,14 @@ namespace Xml
                 entityName.clear();
                 node = Inspected::EntityReference;
                 row = currentRow;
-                column = (currentColumn - entityNameCharCount - 1);
+                column = currentColumn - entityNameCharCount - 1;
                 return true;
             }
-            else
+
+            // End of reference.
+            if (NextCharBad(false) && !eof)
             {
-                // End of reference.
-                if (NextCharBad(false) && !eof)
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
@@ -6482,7 +6522,7 @@ namespace Xml
     template <typename TCharactersWriter>
     inline auto Inspector<TCharactersWriter>::HasAttributes() const -> bool
     {
-        return (attributesSize != 0);
+        return attributesSize != 0;
     }
 
     template <typename TCharactersWriter>
@@ -6534,10 +6574,8 @@ namespace Xml
         {
             return static_cast<SizeType>(unclosedTagsSize - 1);
         }
-        else
-        {
-            return static_cast<SizeType>(unclosedTagsSize);
-        }
+
+        return static_cast<SizeType>(unclosedTagsSize);
     }
 
     template <typename TCharactersWriter>
@@ -6977,7 +7015,7 @@ namespace Xml
         template <typename TInputIterator, typename TCharacterType, typename TTraits>
         inline auto BasicIteratorsBuf<TInputIterator, TCharacterType, TTraits>::showmanyc() -> std::streamsize
         {
-            return (curIter != endIter) ? 1 : 0;
+            return curIter != endIter ? 1 : 0;
         }
     } // namespace Details
     /// @endcond
