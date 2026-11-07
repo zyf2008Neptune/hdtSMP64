@@ -15,11 +15,10 @@ namespace hdt
 
         auto getConstraint() const -> btTypedConstraint* { return m_constraint; }
 
-        float m_scaleA{};
-        float m_scaleB{};
-
         SkinnedMeshBone* m_boneA{nullptr};
         SkinnedMeshBone* m_boneB{nullptr};
         btTypedConstraint* m_constraint{nullptr};
+        float m_scaleA{};
+        float m_scaleB{};
     };
 } // namespace hdt

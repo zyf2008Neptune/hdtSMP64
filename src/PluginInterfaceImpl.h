@@ -18,6 +18,9 @@ namespace hdt
         auto addListener(IPreStepListener* l) -> void override;
         auto removeListener(IPreStepListener* l) -> void override;
 
+        auto setPlayerBodyCameraDriven(bool active) -> void override;
+        auto isPlayerBodyCameraDriven() const -> bool { return m_playerBodyCameraDriven; }
+
         auto addListener(IPostStepListener* l) -> void override;
         auto removeListener(IPostStepListener* l) -> void override;
 
@@ -29,10 +32,10 @@ namespace hdt
         auto init(const SKSE::LoadInterface* skse) -> void;
 
     private:
-        VersionInfo m_versionInfo{INTERFACE_VERSION, BULLET_VERSION};
+        VersionInfo m_versionInfo{.interfaceVersion = INTERFACE_VERSION, .bulletVersion = BULLET_VERSION};
         RE::BSTEventSource<PreStepEvent> m_preStepDispatcher;
         RE::BSTEventSource<PostStepEvent> m_postStepDispatcher;
-
+        bool m_playerBodyCameraDriven{false};
         SKSE::PluginHandle m_sksePluginHandle;
         SKSE::MessagingInterface* m_skseMessagingInterface;
     };

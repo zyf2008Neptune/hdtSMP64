@@ -10,7 +10,7 @@ namespace hdt
     class XMLReader : public Xml::Inspector<Xml::Encoding::Utf8Writer>
     {
         using Base = Inspector;
-        bool isEmptyStart;
+        bool isEmptyStart{false};
 
     public:
         XMLReader(BYTE* data, const size_t count) : Base(data, data + count) {}

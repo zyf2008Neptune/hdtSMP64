@@ -73,7 +73,7 @@ namespace hdt
             {
                 for (const auto& j : i->m_constraints)
                 {
-                    if (j->m_constraint)
+                    if (j->m_constraint != nullptr)
                     {
                         btDiscreteDynamicsWorld::removeConstraint(j->m_constraint);
                     }

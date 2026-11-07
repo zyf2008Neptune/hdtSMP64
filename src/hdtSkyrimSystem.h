@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include "RE/B/BSTSmartPointer.h"
 #include "hdtConvertNi.h"
 #include "hdtDefaultBBP.h"
 #include "hdtSkinnedMesh/hdtConeTwistConstraint.h"
@@ -18,12 +20,6 @@ namespace hdt
         friend class SkyrimSystemCreator;
 
     public:
-        struct BoneData
-        {
-            std::array<u16, 4> boneWeights{};
-            std::array<u8, 4> boneIndices{};
-        };
-
         explicit SkyrimSystem(RE::NiNode* skeleton);
         ~SkyrimSystem() override = default;
 
@@ -35,14 +31,42 @@ namespace hdt
 
         auto meshes() const -> const std::vector<RE::BSTSmartPointer<SkinnedMeshBody>>& { return m_meshes; }
 
-        RE::NiPointer<RE::NiNode> m_skeleton;
-        RE::NiPointer<RE::NiNode> m_oldRoot;
-        bool m_initialized{false};
-        float m_windFactor{1.f};
-        // wind factor for the system (i.e., full actor/skeleton) (calculated based off obstructions)
-
         // angular velocity damper
         btQuaternion m_lastRootRotation;
+
+        struct BoneData
+        {
+            std::array<u16, 4> boneWeights{};
+            std::array<u8, 4> boneIndices{};
+        };
+
+        RE::NiPointer<RE::NiNode> m_skeleton;
+        RE::NiPointer<RE::NiNode> m_oldRoot;
+        float m_windFactor{1.f};
+        // wind factor for the system (i.e., full actor/skeleton) (calculated based off obstructions)
+        bool m_initialized{false};
+
+    protected:
+        // PC root rotation damper (m_resetPc / clampRotations / unclampedResets).
+        virtual auto dampRootRotation(float timeStep) -> float;
+    };
+
+    // Player skeleton: while a mod declares the body camera-driven
+    // (PluginInterface::setPlayerBodyCameraDriven), the damper is replaced by body-local space
+    // simulation - whole-body motion is cancelled out of the rigid bodies and injects no velocity.
+    class PlayerSkyrimSystem final : public SkyrimSystem
+    {
+    public:
+        explicit PlayerSkyrimSystem(RE::NiNode* skeleton);
+
+    protected:
+        auto dampRootRotation(float timeStep) -> float override;
+
+    private:
+        btQuaternion m_localSpaceRotation;
+        btVector3 m_localSpacePosition;
+        RE::NiPointer<RE::NiNode> m_localSpaceRef;
+        bool m_localSpaceActive{false};
     };
 
     class XMLReader;
@@ -71,7 +95,7 @@ namespace hdt
         std::unordered_map<const char*, SkyrimBone*, PooledStringHash, PooledStringEqual> m_boneIndex;
 
         auto indexBone(SkyrimBone* bone) -> void;
-        auto findBoneFromIndex(const RE::BSFixedString& name) const -> SkyrimBone*;
+        [[nodiscard]] auto findBoneFromIndex(const RE::BSFixedString& name) const -> SkyrimBone*;
 
         struct DeferredBuild
         {
@@ -91,10 +115,10 @@ namespace hdt
                 m_marginMultipler = 1.f;
             }
 
-            std::shared_ptr<btCollisionShape> m_shape;
+            btTransform m_centerOfMassTransform;
             std::vector<RE::BSFixedString> m_canCollideWithBone;
             std::vector<RE::BSFixedString> m_noCollideWithBone;
-            btTransform m_centerOfMassTransform;
+            std::shared_ptr<btCollisionShape> m_shape;
             float m_marginMultipler{};
             float m_gravityFactor{1.0f};
             float m_windFactor{1.0f};
@@ -184,8 +208,8 @@ namespace hdt
         XMLReader* m_reader;
         std::unordered_map<RE::BSFixedString, RE::BSFixedString> m_renameMap;
 
-        auto findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*;
-        auto getOrCreateBone(const RE::BSFixedString& name) -> SkyrimBone*;
+        [[nodiscard]] auto findObjectByName(const RE::BSFixedString& name) const -> RE::NiNode*;
+        auto getOrCreateBone(const RE::BSFixedString& name) -> RE::BSTSmartPointer<SkyrimBone>;
 
         std::string m_filePath;
 
@@ -216,7 +240,7 @@ namespace hdt
         auto getConeTwistConstraintTemplate(const RE::BSFixedString& name) -> const ConeTwistConstraintTemplate&;
 
         auto createBoneFromNodeName(const RE::BSFixedString& bodyName, const RE::BSFixedString& templateName = "",
-                                    bool readTemplate = false) -> SkyrimBone*;
+                                    bool readTemplate = false) -> RE::BSTSmartPointer<SkyrimBone>;
         auto readOrUpdateBone() -> void;
         auto readPerVertexShape(DefaultBBP::NameMap_t meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
         auto readPerTriangleShape(DefaultBBP::NameMap_t* meshNameMap) -> RE::BSTSmartPointer<SkyrimBody>;
